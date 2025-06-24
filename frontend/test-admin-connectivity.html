@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard Connectivity Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1e293b;
+            color: white;
+        }
+        .container {
+            background: #334155;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .warning { color: #f59e0b; }
+        .info { color: #3b82f6; }
+        button {
+            background: #f59e0b;
+            color: #1e293b;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #d97706;
+        }
+        .log {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .data-card {
+            background: #475569;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #f59e0b;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .stat-card {
+            background: #475569;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #f59e0b;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            color: #cbd5e1;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Admin Dashboard Connectivity Test</h1>
+    <p>Testing admin dashboard API connectivity and data retrieval</p>
+
+    <div class="container">
+        <h2>🔐 Authentication Status</h2>
+        <div id="auth-status"></div>
+        <button onclick="checkAuth()">Check Authentication</button>
+        <button onclick="clearStorage()">Clear Storage & Re-login</button>
+    </div>
+
+    <div class="container">
+        <h2>🌐 API Connectivity</h2>
+        <div id="api-status"></div>
+        <button onclick="testConnectivity()">Test API Connection</button>
+    </div>
+
+    <div class="container">
+        <h2>📊 Dashboard Summary Test</h2>
+        <div id="summary-status"></div>
+        <div id="summary-data"></div>
+        <button onclick="testSummaryAPI()">Test Summary API</button>
+    </div>
+
+    <div class="container">
+        <h2>📦 Recent Shipments Test</h2>
+        <div id="shipments-status"></div>
+        <div id="shipments-data"></div>
+        <button onclick="testShipmentsAPI()">Test Shipments API</button>
+    </div>
+
+    <div class="container">
+        <h2>👥 Users Data Test</h2>
+        <div id="users-status"></div>
+        <div id="users-data"></div>
+        <button onclick="testUsersAPI()">Test Users API</button>
+    </div>
+
+    <div class="container">
+        <h2>📈 Analytics Test</h2>
+        <div id="analytics-status"></div>
+        <div id="analytics-data"></div>
+        <button onclick="testAnalyticsAPI()">Test Analytics API</button>
+        <button onclick="testRevenueAPI()">Test Revenue API</button>
+    </div>
+
+    <div class="container">
+        <h2>🔄 Real-time Test</h2>
+        <div id="realtime-status"></div>
+        <button onclick="startRealTimeTest()">Start Real-time Monitoring</button>
+        <button onclick="stopRealTimeTest()">Stop Monitoring</button>
+    </div>
+
+    <div class="container">
+        <h2>📝 Test Logs</h2>
+        <div id="logs" class="log"></div>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let realTimeInterval = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logElement.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function getAuthHeaders() {
+            const token = sessionStorage.getItem('admin_token');
+            return {
+                'Content-Type': 'application/json',
+                ...(token && { Authorization: `Bearer ${token}` })
+            };
+        }
+
+        async function checkAuth() {
+            log('🔐 Checking admin authentication...', 'info');
+            
+            const token = sessionStorage.getItem('admin_token');
+            const adminData = sessionStorage.getItem('admin_data');
+            
+            const authDiv = document.getElementById('auth-status');
+            
+            if (token) {
+                log('✅ Admin token found', 'success');
+                authDiv.innerHTML = `<div class="success">✅ Token: ${token.substring(0, 50)}...</div>`;
+                
+                // Validate token format
+                const tokenParts = token.split('.');
+                if (tokenParts.length === 3) {
+                    log('✅ Token format is valid (JWT)', 'success');
+                    authDiv.innerHTML += `<div class="success">✅ Valid JWT format</div>`;
+                } else {
+                    log('⚠️ Token format is invalid', 'warning');
+                    authDiv.innerHTML += `<div class="warning">⚠️ Invalid token format</div>`;
+                }
+                
+                if (adminData) {
+                    try {
+                        const parsed = JSON.parse(adminData);
+                        log(`✅ Admin data: ${parsed.name || parsed.email}`, 'success');
+                        authDiv.innerHTML += `<div class="success">✅ Admin: ${parsed.name || parsed.email}</div>`;
+                    } catch (e) {
+                        log('⚠️ Admin data corrupted', 'warning');
+                        authDiv.innerHTML += `<div class="warning">⚠️ Admin data corrupted</div>`;
+                    }
+                }
+            } else {
+                log('❌ No admin token found', 'error');
+                authDiv.innerHTML = `<div class="error">❌ No authentication token found. Please login first.</div>`;
+            }
+        }
+
+        async function testConnectivity() {
+            log('🌐 Testing API connectivity...', 'info');
+            
+            const apiDiv = document.getElementById('api-status');
+            
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ Backend server is reachable', 'success');
+                    apiDiv.innerHTML = `<div class="success">✅ Server Status: ${data.message}</div>`;
+                    apiDiv.innerHTML += `<div class="info">📊 Uptime: ${data.uptime?.toFixed(2)} seconds</div>`;
+                } else {
+                    log(`❌ Backend server error: ${response.status}`, 'error');
+                    apiDiv.innerHTML = `<div class="error">❌ Server Error: ${response.status}</div>`;
+                }
+            } catch (error) {
+                log(`❌ Cannot connect to backend: ${error.message}`, 'error');
+                apiDiv.innerHTML = `<div class="error">❌ Connection Failed: ${error.message}</div>`;
+            }
+        }
+
+        async function testSummaryAPI() {
+            log('📊 Testing admin summary API...', 'info');
+            
+            const summaryDiv = document.getElementById('summary-status');
+            const dataDiv = document.getElementById('summary-data');
+            
+            try {
+                const response = await fetch(`${API_URL}/admin/summary`, {
+                    headers: getAuthHeaders()
+                });
+                
+                log(`📡 Summary API Response: ${response.status} ${response.statusText}`, 'info');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ Summary API working: ${JSON.stringify(data)}`, 'success');
+                    summaryDiv.innerHTML = `<div class="success">✅ Summary API Working</div>`;
+                    
+                    // Display summary data
+                    dataDiv.innerHTML = `
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-number">${data.totalUsers || 0}</div>
+                                <div class="stat-label">Total Users</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${data.activeShipments || 0}</div>
+                                <div class="stat-label">Active Shipments</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">₹${data.totalRevenue || 0}</div>
+                                <div class="stat-label">Total Revenue</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${data.pendingDeliveries || 0}</div>
+                                <div class="stat-label">Pending Deliveries</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const errorData = await response.json();
+                    log(`❌ Summary API failed: ${errorData.message}`, 'error');
+                    summaryDiv.innerHTML = `<div class="error">❌ API Failed: ${errorData.message}</div>`;
+                    
+                    if (response.status === 401) {
+                        summaryDiv.innerHTML += `<div class="warning">⚠️ Authentication failed - token may be expired</div>`;
+                    }
+                }
+            } catch (error) {
+                log(`❌ Summary API error: ${error.message}`, 'error');
+                summaryDiv.innerHTML = `<div class="error">❌ API Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testShipmentsAPI() {
+            log('📦 Testing recent shipments API...', 'info');
+            
+            const shipmentsDiv = document.getElementById('shipments-status');
+            const dataDiv = document.getElementById('shipments-data');
+            
+            try {
+                const response = await fetch(`${API_URL}/admin/shipments/recent`, {
+                    headers: getAuthHeaders()
+                });
+                
+                log(`📡 Shipments API Response: ${response.status} ${response.statusText}`, 'info');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ Shipments API working: ${data.length} shipments found`, 'success');
+                    shipmentsDiv.innerHTML = `<div class="success">✅ Shipments API Working - ${data.length} shipments</div>`;
+                    
+                    // Display shipments data
+                    if (data.length > 0) {
+                        let html = '<h4>Recent Shipments:</h4>';
+                        data.slice(0, 5).forEach((shipment, index) => {
+                            html += `
+                                <div class="data-card">
+                                    <strong>${shipment.id || shipment.trackingId}</strong> - ${shipment.status}
+                                    <br><small>From: ${shipment.origin} → To: ${shipment.destination}</small>
+                                    <br><small>Customer: ${shipment.customer}</small>
+                                </div>
+                            `;
+                        });
+                        dataDiv.innerHTML = html;
+                    } else {
+                        dataDiv.innerHTML = '<div class="warning">⚠️ No shipments found</div>';
+                    }
+                } else {
+                    const errorData = await response.json();
+                    log(`❌ Shipments API failed: ${errorData.message}`, 'error');
+                    shipmentsDiv.innerHTML = `<div class="error">❌ API Failed: ${errorData.message}</div>`;
+                }
+            } catch (error) {
+                log(`❌ Shipments API error: ${error.message}`, 'error');
+                shipmentsDiv.innerHTML = `<div class="error">❌ API Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testUsersAPI() {
+            log('👥 Testing users API...', 'info');
+            
+            const usersDiv = document.getElementById('users-status');
+            const dataDiv = document.getElementById('users-data');
+            
+            try {
+                const response = await fetch(`${API_URL}/admin/users`, {
+                    headers: getAuthHeaders()
+                });
+                
+                log(`📡 Users API Response: ${response.status} ${response.statusText}`, 'info');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ Users API working: ${data.length} users found`, 'success');
+                    usersDiv.innerHTML = `<div class="success">✅ Users API Working - ${data.length} users</div>`;
+                    
+                    // Display users data
+                    if (data.length > 0) {
+                        let html = '<h4>Recent Users:</h4>';
+                        data.slice(0, 5).forEach((user, index) => {
+                            html += `
+                                <div class="data-card">
+                                    <strong>${user.name}</strong> - ${user.email}
+                                    <br><small>Role: ${user.role} | Active: ${user.isActive ? 'Yes' : 'No'}</small>
+                                </div>
+                            `;
+                        });
+                        dataDiv.innerHTML = html;
+                    } else {
+                        dataDiv.innerHTML = '<div class="warning">⚠️ No users found</div>';
+                    }
+                } else {
+                    const errorData = await response.json();
+                    log(`❌ Users API failed: ${errorData.message}`, 'error');
+                    usersDiv.innerHTML = `<div class="error">❌ API Failed: ${errorData.message}</div>`;
+                }
+            } catch (error) {
+                log(`❌ Users API error: ${error.message}`, 'error');
+                usersDiv.innerHTML = `<div class="error">❌ API Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testAnalyticsAPI() {
+            log('📈 Testing analytics API...', 'info');
+            
+            const analyticsDiv = document.getElementById('analytics-status');
+            const dataDiv = document.getElementById('analytics-data');
+            
+            try {
+                const response = await fetch(`${API_URL}/admin/analytics/realtime`, {
+                    headers: getAuthHeaders()
+                });
+                
+                log(`📡 Analytics API Response: ${response.status} ${response.statusText}`, 'info');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ Analytics API working`, 'success');
+                    analyticsDiv.innerHTML = `<div class="success">✅ Analytics API Working</div>`;
+                    
+                    // Display analytics data
+                    let html = '<h4>Analytics Data:</h4>';
+                    if (data.statusDistribution) {
+                        html += '<div class="data-card"><strong>Status Distribution:</strong><br>';
+                        data.statusDistribution.forEach(status => {
+                            html += `${status._id}: ${status.count}<br>`;
+                        });
+                        html += '</div>';
+                    }
+                    
+                    if (data.shipmentTrends) {
+                        html += `<div class="data-card"><strong>Shipment Trends:</strong> ${data.shipmentTrends.length} data points</div>`;
+                    }
+                    
+                    if (data.regionalData) {
+                        html += `<div class="data-card"><strong>Regional Data:</strong> ${data.regionalData.length} regions</div>`;
+                    }
+                    
+                    dataDiv.innerHTML = html;
+                } else {
+                    const errorData = await response.json();
+                    log(`❌ Analytics API failed: ${errorData.message}`, 'error');
+                    analyticsDiv.innerHTML = `<div class="error">❌ API Failed: ${errorData.message}</div>`;
+                }
+            } catch (error) {
+                log(`❌ Analytics API error: ${error.message}`, 'error');
+                analyticsDiv.innerHTML = `<div class="error">❌ API Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testRevenueAPI() {
+            log('💰 Testing revenue API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_URL}/admin/analytics/revenue`, {
+                    headers: getAuthHeaders()
+                });
+                
+                log(`📡 Revenue API Response: ${response.status} ${response.statusText}`, 'info');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ Revenue API working: Total Revenue ₹${data.totalRevenue}`, 'success');
+                    
+                    const dataDiv = document.getElementById('analytics-data');
+                    dataDiv.innerHTML += `
+                        <div class="data-card">
+                            <strong>Revenue Analytics:</strong><br>
+                            Total Revenue: ₹${data.totalRevenue}<br>
+                            Average Order Value: ₹${data.averageOrderValue?.toFixed(2)}<br>
+                            Monthly Data Points: ${data.monthly?.length || 0}<br>
+                            Daily Data Points: ${data.daily?.length || 0}
+                        </div>
+                    `;
+                } else {
+                    const errorData = await response.json();
+                    log(`❌ Revenue API failed: ${errorData.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Revenue API error: ${error.message}`, 'error');
+            }
+        }
+
+        function startRealTimeTest() {
+            log('🔄 Starting real-time monitoring...', 'info');
+            
+            const realtimeDiv = document.getElementById('realtime-status');
+            realtimeDiv.innerHTML = '<div class="info">🔄 Monitoring every 10 seconds...</div>';
+            
+            realTimeInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_URL}/admin/summary`, {
+                        headers: getAuthHeaders()
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const timestamp = new Date().toLocaleTimeString();
+                        log(`🔄 [${timestamp}] Real-time check: ${data.activeShipments} active shipments, ₹${data.totalRevenue} revenue`, 'success');
+                    }
+                } catch (error) {
+                    log(`🔄 Real-time check error: ${error.message}`, 'error');
+                }
+            }, 10000);
+        }
+
+        function stopRealTimeTest() {
+            if (realTimeInterval) {
+                clearInterval(realTimeInterval);
+                realTimeInterval = null;
+                log('⏹️ Real-time monitoring stopped', 'info');
+                document.getElementById('realtime-status').innerHTML = '<div class="warning">⏹️ Monitoring stopped</div>';
+            }
+        }
+
+        function clearStorage() {
+            sessionStorage.clear();
+            localStorage.clear();
+            log('🗑️ All storage cleared. Please login again.', 'warning');
+            setTimeout(() => {
+                window.location.href = '/admin';
+            }, 2000);
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        // Auto-run initial checks
+        window.onload = function() {
+            log('🚀 Admin Dashboard Connectivity Test Started', 'info');
+            checkAuth();
+        };
+    </script>
+</body>
+</html>
