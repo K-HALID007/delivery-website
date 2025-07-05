@@ -203,15 +203,81 @@ export default function MyShipments() {
     }
   }, [shipments]);
 
+  // Skeleton Component with shimmer effect
+  const ShipmentSkeleton = () => (
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+      <div className="p-8">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-4">
+            <div className="w-8 h-8 animate-shimmer rounded"></div>
+            <div>
+              <div className="h-5 animate-shimmer rounded w-48 mb-2"></div>
+              <div className="h-4 animate-shimmer rounded w-32"></div>
+            </div>
+          </div>
+          <div className="h-6 animate-shimmer rounded-full w-20"></div>
+        </div>
+
+        {/* Content Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-start">
+              <div className="w-5 h-5 animate-shimmer rounded mt-0.5"></div>
+              <div className="ml-3 flex-1">
+                <div className="h-4 animate-shimmer rounded w-24 mb-2"></div>
+                <div className="h-5 animate-shimmer rounded w-32"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Payment Status Skeleton */}
+        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="h-4 animate-shimmer rounded w-24 mb-2"></div>
+              <div className="h-5 animate-shimmer rounded w-40"></div>
+            </div>
+            <div className="h-6 animate-shimmer rounded-full w-24"></div>
+          </div>
+        </div>
+
+        {/* Buttons Skeleton */}
+        <div className="flex justify-end space-x-3">
+          <div className="h-10 animate-shimmer rounded w-16"></div>
+          <div className="h-10 animate-shimmer rounded w-24"></div>
+          <div className="h-10 animate-shimmer rounded w-32"></div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
+        <main className="pt-24 pb-12">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Header Skeleton */}
+            <div className="mb-8">
+              <div className="h-8 animate-shimmer rounded w-64 mb-2"></div>
+              <div className="h-6 animate-shimmer rounded w-96"></div>
+            </div>
+            
+            {/* Button Skeleton */}
+            <div className="flex justify-end mb-6">
+              <div className="h-10 animate-shimmer rounded w-48"></div>
+            </div>
+
+            {/* Shipments Skeleton */}
+            <div className="space-y-6">
+              {[1, 2, 3].map((i) => (
+                <ShipmentSkeleton key={i} />
+              ))}
+            </div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
