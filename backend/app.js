@@ -32,6 +32,31 @@ app.get('/', (req, res) => {
   });
 });
 
+// Basic auth routes (temporary for testing)
+app.post('/api/auth/register', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Registration endpoint working',
+    data: { userId: '123', token: 'test-token' }
+  });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Login endpoint working',
+    data: { userId: '123', token: 'test-token' }
+  });
+});
+
+app.post('/api/auth/admin/login', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Admin login endpoint working',
+    data: { adminId: '123', token: 'admin-test-token' }
+  });
+});
+
 // MongoDB connection (simplified)
 if (process.env.MONGODB_URI) {
   mongoose.connect(process.env.MONGODB_URI)
