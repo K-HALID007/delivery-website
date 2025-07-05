@@ -1,6 +1,6 @@
 import express from 'express';
 import { verifyToken, isAdmin } from '../middleware/auth.middleware.js';
-import { uploadRefundImages, handleUploadError } from '../middleware/upload.middleware.js';
+// import { uploadRefundImages, handleUploadError } from '../middleware/upload.middleware.js'; // Disabled for Vercel
 import {
   verifyTracking,
   addTracking,
@@ -30,8 +30,8 @@ router.get('/user', getUserShipments);
 // Cancel a shipment (protected route - user can cancel their own orders)
 router.put('/cancel/:trackingId', cancelTracking);
 
-// Request refund for delivered shipment (protected route with file upload)
-router.put('/refund/:trackingId', uploadRefundImages, handleUploadError, requestRefund);
+// Request refund for delivered shipment (protected route - file upload disabled for Vercel)
+router.put('/refund/:trackingId', requestRefund);
 
 // Submit complaint for shipment (protected route)
 router.post('/complaint/:trackingId', submitComplaint);
