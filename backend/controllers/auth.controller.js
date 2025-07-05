@@ -104,7 +104,7 @@ export const register = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, role: user.role },
+      { userId: user._id, role: user.role, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -180,7 +180,7 @@ export const login = async (req, res) => {
     console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
     
     const token = jwt.sign(
-      { userId: user._id, role: user.role },
+      { userId: user._id, role: user.role, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -588,7 +588,7 @@ export const adminLogin = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, role: user.role },
+      { userId: user._id, role: user.role, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -645,7 +645,7 @@ export const createFirstAdmin = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: admin._id, role: 'admin' },
+      { userId: admin._id, role: 'admin', email: admin.email },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
