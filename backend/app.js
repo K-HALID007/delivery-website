@@ -9,7 +9,7 @@ import adminRoutes from './routes/admin.routes.js';
 import partnerRoutes from './routes/partner.routes.js';
 import trackingRoutes from './routes/tracking.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
-import uploadsRoutes from './routes/uploads.routes.js';
+// import uploadsRoutes from './routes/uploads.routes.js'; // Disabled for Vercel
 import debugRoutes from './routes/debug.routes.js';
 import geminiRoutes from './routes/gemini.routes.js';
 import complaintRoutes from './routes/complaint.routes.js';
@@ -36,8 +36,8 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Serve static files from uploads directory
-app.use('/api/uploads', express.static('uploads'));
+// Note: File uploads disabled for Vercel serverless environment
+// app.use('/api/uploads', express.static('uploads'));
 
 // MongoDB connection with improved configuration
 mongoose.connect(process.env.MONGODB_URI, {
@@ -108,7 +108,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/partner', partnerRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/payment', paymentRoutes);
-app.use('/api/uploads', uploadsRoutes);
+// app.use('/api/uploads', uploadsRoutes); // Disabled for Vercel
 app.use('/api/debug', debugRoutes);
 app.use('/api/gemini', geminiRoutes);
 app.use('/api/complaint', complaintRoutes);
