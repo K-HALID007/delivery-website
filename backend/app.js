@@ -33,6 +33,10 @@ app.get('/', (req, res) => {
 });
 
 // Basic auth routes (temporary for testing)
+app.get('/api/auth/register', (req, res) => {
+  res.json({ message: 'Register endpoint working (GET)' });
+});
+
 app.post('/api/auth/register', (req, res) => {
   res.json({
     success: true,
@@ -41,12 +45,20 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
+app.get('/api/auth/login', (req, res) => {
+  res.json({ message: 'Login endpoint working (GET)' });
+});
+
 app.post('/api/auth/login', (req, res) => {
   res.json({
     success: true,
     message: 'Login endpoint working',
     data: { userId: '123', token: 'test-token' }
   });
+});
+
+app.get('/api/auth/admin/login', (req, res) => {
+  res.json({ message: 'Admin login endpoint working (GET)' });
 });
 
 app.post('/api/auth/admin/login', (req, res) => {
