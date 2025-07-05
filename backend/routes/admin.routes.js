@@ -12,12 +12,6 @@ import {
   updateAdminSettings,
   getAdminNotifications,
   getReportsData,
-  getAllPartners,
-  getPartnerDetails,
-  updatePartnerStatus,
-  assignDeliveryToPartner,
-  getPartnerAnalytics,
-  bulkPartnerActions,
   getAllDeliveries,
   getDeliveryDetails,
   updateDeliveryStatus,
@@ -25,6 +19,14 @@ import {
   getDeliveryAnalytics,
   bulkDeliveryActions
 } from '../controllers/admin.controller.js';
+import {
+  getAllPartners,
+  getPartnerDetails,
+  updatePartnerStatus,
+  assignDeliveryToPartner,
+  getPartnerAnalytics,
+  bulkPartnerActions
+} from '../controllers/admin.partners.controller.js';
 import {
   getSettings,
   updateSettings,
