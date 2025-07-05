@@ -91,7 +91,7 @@ export default function CreateShipment() {
   <Navbar />
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 pt-28">
   <div className="text-center mb-16">
-  <h1 className="text-5xl font-bold text-gray-900 mb-6">Create New Shipment</h1>
+  <h1 className="text-5xl font-bold text-slate-700 mb-6">Create New Shipment</h1>
   <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
   Fill in the comprehensive details below to create your shipment. We ensure secure processing and real-time tracking for all your packages.
   </p>
@@ -109,14 +109,14 @@ export default function CreateShipment() {
   {/* Left: Sender */}
   <div className="flex-1 min-w-0">
   {/* Sender Information */}
-  <div className="bg-gray-50 p-8 rounded-lg border border-gray-200">
-  <h2 className="text-2xl font-semibold text-gray-900 mb-8 flex items-center">
+  <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+  <h2 className="text-2xl font-semibold text-slate-800 mb-8 flex items-center">
   <User className="h-7 w-7 mr-3 text-yellow-500" />
   Sender Information
   </h2>
   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-3">Full Name</label>
+                <label className="block text-sm font-medium text-slate-700 mb-3">Full Name</label>
                 <input
                   type="text"
                   name="senderName"
@@ -124,11 +124,11 @@ export default function CreateShipment() {
                   onChange={handleChange}
                   required
                   placeholder="Enter sender's complete full name"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-slate-900 text-base hover:border-slate-400 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-3">Phone Number</label>
+                <label className="block text-sm font-medium text-slate-700 mb-3">Phone Number</label>
                 <input
                   type="tel"
                   name="senderPhone"
@@ -136,7 +136,7 @@ export default function CreateShipment() {
                   onChange={handleChange}
                   required
                   placeholder="Enter sender's contact phone number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-slate-900 text-base hover:border-slate-400 transition-colors"
                 />
               </div>
               <div>
@@ -218,8 +218,8 @@ export default function CreateShipment() {
             {/* Right: Receiver */}
             <div className="flex-1 min-w-0">
               {/* Receiver Information */}
-              <div className="bg-gray-50 p-8 rounded-lg border border-gray-200">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-8 flex items-center">
+              <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <h2 className="text-2xl font-semibold text-slate-800 mb-8 flex items-center">
                   <Truck className="h-7 w-7 mr-3 text-yellow-500" />
                   Receiver Information
                 </h2>
@@ -325,94 +325,91 @@ export default function CreateShipment() {
             </div>
           </div>
 
-          {/* Second Row: Package Information and Additional Information */}
-          <div className="flex flex-col lg:flex-row gap-12">
-            {/* Left: Package Information */}
-            <div className="flex-1 min-w-0">
-              <div className="bg-gray-50 p-8 rounded-lg border border-gray-200">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-8 flex items-center">
-                  <Package className="h-7 w-7 mr-3 text-yellow-500" />
-                  Package Information
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-3">Package Type</label>
-                    <select
-                      name="packageType"
-                      value={formData.packageType}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base"
-                    >
-                      <option value="" disabled className="text-gray-900">Select package type</option>
-                      <option value="standard" className="text-gray-900">Standard Delivery (3-5 days)</option>
-                      <option value="express" className="text-gray-900">Express Delivery (1-2 days)</option>
-                      <option value="fragile" className="text-gray-900">Fragile Items (Special Handling)</option>
-                      <option value="oversized" className="text-gray-900">Oversized Items (Special Handling)</option>
-                    </select>
-                    <p className="mt-2 text-sm text-gray-600">Choose the appropriate delivery type for your package</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-3">Weight (kg)</label>
-                    <input
-                      type="number"
-                      name="weight"
-                      value={formData.weight}
-                      onChange={handleChange}
-                      required
-                      min="0"
-                      step="0.1"
-                      placeholder="Enter package weight in kilograms"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base"
-                    />
-                    <p className="mt-2 text-sm text-gray-600">Enter weight in kilograms (e.g., 2.5) - Price will be calculated based on weight</p>
-                  </div>
+          {/* Package Information - Full Width */}
+          <div className="w-full">
+            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+              <h2 className="text-2xl font-semibold text-slate-800 mb-8 flex items-center">
+                <Package className="h-7 w-7 mr-3 text-yellow-500" />
+                Package Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-3">Package Type</label>
+                  <select
+                    name="packageType"
+                    value={formData.packageType}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base"
+                  >
+                    <option value="" disabled className="text-gray-900">Select package type</option>
+                    <option value="standard" className="text-gray-900">Standard Delivery (3-5 days)</option>
+                    <option value="express" className="text-gray-900">Express Delivery (1-2 days)</option>
+                    <option value="fragile" className="text-gray-900">Fragile Items (Special Handling)</option>
+                    <option value="oversized" className="text-gray-900">Oversized Items (Special Handling)</option>
+                  </select>
+                  <p className="mt-2 text-sm text-gray-600">Choose the appropriate delivery type for your package</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-3">Weight (kg)</label>
+                  <input
+                    type="number"
+                    name="weight"
+                    value={formData.weight}
+                    onChange={handleChange}
+                    required
+                    min="0"
+                    step="0.1"
+                    placeholder="Enter package weight in kilograms"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base"
+                  />
+                  <p className="mt-2 text-sm text-gray-600">Enter weight in kilograms (e.g., 2.5) - Price will be calculated based on weight</p>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Right: Additional Information */}
-            <div className="flex-1 min-w-0">
-              <div className="bg-gray-50 p-8 rounded-lg border border-gray-200">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-8 flex items-center">
-                  <MapPin className="h-7 w-7 mr-3 text-yellow-500" />
-                  Additional Information
-                </h2>
-                <div className="space-y-8">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-3">Package Description</label>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      rows="5"
-                      placeholder="Provide a detailed description of your package contents (e.g., 'Electronics - Laptop and accessories', 'Clothing - Winter jackets and boots', 'Documents - Legal contracts and certificates')"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base resize-none"
-                    />
-                    <p className="mt-2 text-sm text-gray-600">Provide a clear and detailed description of the package contents for customs and handling purposes</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-3">Special Instructions</label>
-                    <textarea
-                      name="specialInstructions"
-                      value={formData.specialInstructions}
-                      onChange={handleChange}
-                      rows="5"
-                      placeholder="Add any special handling instructions or delivery requirements (e.g., 'Handle with extreme care - fragile electronics', 'Keep upright at all times', 'Temperature sensitive - avoid heat', 'Signature required upon delivery')"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base resize-none"
-                    />
-                    <p className="mt-2 text-sm text-gray-600">Add any special handling requirements or delivery instructions to ensure safe transport</p>
-                  </div>
+          {/* Additional Information - Full Width */}
+          <div className="w-full">
+            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+              <h2 className="text-2xl font-semibold text-slate-800 mb-8 flex items-center">
+                <MapPin className="h-7 w-7 mr-3 text-yellow-500" />
+                Additional Information
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-3">Package Description</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    rows="5"
+                    placeholder="Provide a detailed description of your package contents (e.g., 'Electronics - Laptop and accessories', 'Clothing - Winter jackets and boots', 'Documents - Legal contracts and certificates')"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base resize-none"
+                  />
+                  <p className="mt-2 text-sm text-gray-600">Provide a clear and detailed description of the package contents for customs and handling purposes</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-3">Special Instructions</label>
+                  <textarea
+                    name="specialInstructions"
+                    value={formData.specialInstructions}
+                    onChange={handleChange}
+                    rows="5"
+                    placeholder="Add any special handling instructions or delivery requirements (e.g., 'Handle with extreme care - fragile electronics', 'Keep upright at all times', 'Temperature sensitive - avoid heat', 'Signature required upon delivery')"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base resize-none"
+                  />
+                  <p className="mt-2 text-sm text-gray-600">Add any special handling requirements or delivery instructions to ensure safe transport</p>
                 </div>
               </div>
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row justify-center sm:justify-end space-y-4 sm:space-y-0 sm:space-x-6 mt-16 pt-8 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-center sm:justify-end space-y-4 sm:space-y-0 sm:space-x-6 mt-16 pt-8 border-t border-slate-200">
           <button
           type="button"
           onClick={() => router.push('/my-shipments')}
-          className="px-8 py-4 border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200"
+          className="px-8 py-4 border-2 border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200"
           >
           Cancel
           </button>
