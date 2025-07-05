@@ -166,7 +166,6 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
               setSuccess('Login successful!');
               setTimeout(() => {
                 onClose();
-                router.push('/');
               }, 1000);
             }
             return;
