@@ -81,7 +81,7 @@ export default function PaymentPage() {
 
       console.log('Sending to backend:', formattedData);
 
-      const response = await fetch('http://localhost:5000/api/tracking/add', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/tracking/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
