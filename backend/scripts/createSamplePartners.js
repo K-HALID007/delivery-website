@@ -20,7 +20,7 @@ const samplePartners = [
     email: 'john@delivery.com',
     password: 'partner123',
     phone: '+1234567890',
-    vehicleType: 'Motorcycle',
+    vehicleType: 'bike',
     vehicleNumber: 'MH01AB1234',
     licenseNumber: 'DL123456789',
     address: {
@@ -34,6 +34,7 @@ const samplePartners = [
       type: 'Point',
       coordinates: [72.8777, 19.0760] // Mumbai coordinates
     },
+    workingHours: 'flexible',
     status: 'approved',
     isOnline: true,
     totalEarnings: 15000,
@@ -46,7 +47,7 @@ const samplePartners = [
     email: 'sarah@express.com',
     password: 'partner123',
     phone: '+1234567891',
-    vehicleType: 'Van',
+    vehicleType: 'van',
     vehicleNumber: 'MH02CD5678',
     licenseNumber: 'DL987654321',
     address: {
@@ -60,6 +61,7 @@ const samplePartners = [
       type: 'Point',
       coordinates: [77.2090, 28.6139] // Delhi coordinates
     },
+    workingHours: 'morning',
     status: 'approved',
     isOnline: true,
     totalEarnings: 22000,
@@ -72,7 +74,7 @@ const samplePartners = [
     email: 'mike@logistics.com',
     password: 'partner123',
     phone: '+1234567892',
-    vehicleType: 'Truck',
+    vehicleType: 'truck',
     vehicleNumber: 'KA03EF9012',
     licenseNumber: 'DL456789123',
     address: {
@@ -86,6 +88,7 @@ const samplePartners = [
       type: 'Point',
       coordinates: [77.5946, 12.9716] // Bangalore coordinates
     },
+    workingHours: 'afternoon',
     status: 'approved',
     isOnline: false,
     totalEarnings: 18500,
@@ -98,7 +101,7 @@ const samplePartners = [
     email: 'lisa@quick.com',
     password: 'partner123',
     phone: '+1234567893',
-    vehicleType: 'Bicycle',
+    vehicleType: 'bike',
     vehicleNumber: 'BC001',
     licenseNumber: 'DL789123456',
     address: {
@@ -112,6 +115,7 @@ const samplePartners = [
       type: 'Point',
       coordinates: [80.2707, 13.0827] // Chennai coordinates
     },
+    workingHours: 'evening',
     status: 'pending',
     isOnline: false,
     totalEarnings: 8500,
@@ -124,7 +128,7 @@ const samplePartners = [
     email: 'david@fast.com',
     password: 'partner123',
     phone: '+1234567894',
-    vehicleType: 'Motorcycle',
+    vehicleType: 'bike',
     vehicleNumber: 'GJ04GH3456',
     licenseNumber: 'DL321654987',
     address: {
@@ -138,6 +142,7 @@ const samplePartners = [
       type: 'Point',
       coordinates: [72.5714, 23.0225] // Ahmedabad coordinates
     },
+    workingHours: 'flexible',
     status: 'suspended',
     isOnline: false,
     totalEarnings: 5200,
