@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { X, User, Mail, Lock, Phone, MapPin, Building, Globe, Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { authService } from '@/services/auth.service';
 
 const LoginRegisterModal = ({ isOpen, onClose }) => {
+  const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
