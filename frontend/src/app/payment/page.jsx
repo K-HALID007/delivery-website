@@ -62,6 +62,8 @@ export default function PaymentPage() {
 
     try {
       const token = sessionStorage.getItem('user_token');
+      console.log('Token from storage:', token ? `${token.substring(0, 20)}...` : 'null');
+      
       if (!token) {
         setError('Please login first');
         router.push('/');
