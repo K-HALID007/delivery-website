@@ -175,11 +175,19 @@ export const login = async (req, res) => {
     await user.save();
 
     // Generate JWT token
+    console.log('Generating JWT token for user:', user.email);
+    console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+    console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
+    
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
+
+    console.log('Token generated successfully');
+    console.log('Token length:', token.length);
+    console.log('Token payload:', { userId: user._id, role: user.role });
 
     // Return user data without password
     const userData = user.toObject();
