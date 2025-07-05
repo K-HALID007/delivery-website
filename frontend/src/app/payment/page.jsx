@@ -80,6 +80,8 @@ export default function PaymentPage() {
       };
 
       console.log('Sending to backend:', formattedData);
+      console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
+      console.log('Token:', token ? 'Present' : 'Missing');
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/tracking/add`, {
         method: 'POST',
@@ -91,10 +93,20 @@ export default function PaymentPage() {
       });
 
       console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Backend error:', errorData);
+        const errorText = await response.text();
+        console.error('Backend error response:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { message: errorText || 'Failed to create shipment' };
+        }
+        
+        console.error('Parsed backend error:', errorData);
         throw new Error(errorData.message || 'Failed to create shipment');
       }
 
