@@ -37,6 +37,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
     vehicleNumber: '',
     licenseNumber: '',
     experience: '',
+    workingHours: '',
     bankAccount: '',
     ifscCode: ''
   });
@@ -95,8 +96,8 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
     }
 
     // Final step - submit registration
-    if (!registerData.vehicleType || !registerData.vehicleNumber || !registerData.licenseNumber) {
-      setError('Please fill in all vehicle and document details');
+    if (!registerData.vehicleType || !registerData.vehicleNumber || !registerData.licenseNumber || !registerData.workingHours) {
+      setError('Please fill in all required vehicle and document details');
       return;
     }
 
@@ -116,7 +117,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
             name: '', email: '', password: '', confirmPassword: '', phone: '',
             address: '', city: '', state: '', postalCode: '',
             vehicleType: '', vehicleNumber: '', licenseNumber: '', experience: '',
-            bankAccount: '', ifscCode: ''
+            workingHours: '', bankAccount: '', ifscCode: ''
           });
           setRegistrationStep(1);
           setActiveTab('login');
@@ -497,17 +498,39 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Experience (Years)
+                Experience
               </label>
-              <input
-                type="number"
+              <select
                 name="experience"
                 value={registerData.experience}
                 onChange={handleRegisterChange}
-                min="0"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
-                placeholder="Years of driving experience"
-              />
+                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+              >
+                <option value="">Select Experience Level</option>
+                <option value="0-1">0-1 Years</option>
+                <option value="1-3">1-3 Years</option>
+                <option value="3-5">3-5 Years</option>
+                <option value="5+">5+ Years</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Working Hours *
+              </label>
+              <select
+                name="workingHours"
+                value={registerData.workingHours}
+                onChange={handleRegisterChange}
+                required
+                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+              >
+                <option value="">Select Working Hours</option>
+                <option value="morning">Morning (6 AM - 12 PM)</option>
+                <option value="afternoon">Afternoon (12 PM - 6 PM)</option>
+                <option value="evening">Evening (6 PM - 12 AM)</option>
+                <option value="flexible">Flexible (Any Time)</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
