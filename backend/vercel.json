@@ -2,18 +2,18 @@
   "version": 2,
   "builds": [
     {
-      "src": "app.js",
+      "src": "app-minimal.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/app.js"
+      "dest": "/app-minimal.js"
     }
   ],
   "functions": {
-    "app.js": {
+    "app-minimal.js": {
       "maxDuration": 30
     }
   }
