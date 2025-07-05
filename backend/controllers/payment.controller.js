@@ -3,9 +3,9 @@ import Shipment from '../models/shipment.model.js';
 import razorpay from '../config/razorpay.js';
 import crypto from 'crypto';
 
-// Calculate shipping cost based on package details
+// Calculate shipping cost based on package details (weight-based pricing only)
 export const calculateShippingCost = (packageDetails, origin, destination) => {
-  const { type, weight, dimensions } = packageDetails;
+  const { type, weight } = packageDetails;
   
   // Base rates by package type
   const baseRates = {
@@ -17,17 +17,13 @@ export const calculateShippingCost = (packageDetails, origin, destination) => {
   
   let baseCost = baseRates[type] || 50;
   
-  // Weight-based pricing (per kg)
-  const weightCost = weight * 10;
-  
-  // Volume-based pricing (per cubic cm, converted to reasonable units)
-  const volume = (dimensions.length * dimensions.width * dimensions.height) / 1000; // Convert to liters
-  const volumeCost = volume * 5;
+  // Weight-based pricing (per kg) - main pricing factor
+  const weightCost = (weight || 1) * 15; // Increased weight cost since no volume pricing
   
   // Distance-based pricing (simplified - in real app would use actual distance calculation)
-  const distanceCost = 20; // Flat rate for now
+  const distanceCost = 25; // Flat rate for now
   
-  const totalCost = baseCost + weightCost + volumeCost + distanceCost;
+  const totalCost = baseCost + weightCost + distanceCost;
   
   return Math.round(totalCost);
 };
