@@ -28,32 +28,16 @@ export default function CreateShipment() {
     receiverCountry: '',
     packageType: 'standard',
     weight: '',
-    dimensions: {
-      length: '',
-      width: '',
-      height: ''
-    },
     description: '',
     specialInstructions: ''
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name.includes('dimensions.')) {
-      const dimension = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        dimensions: {
-          ...prev.dimensions,
-          [dimension]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -87,11 +71,6 @@ export default function CreateShipment() {
         packageDetails: {
           type: formData.packageType,
           weight: parseFloat(formData.weight),
-          dimensions: {
-            length: parseFloat(formData.dimensions.length),
-            width: parseFloat(formData.dimensions.width),
-            height: parseFloat(formData.dimensions.height)
-          },
           description: formData.description,
           specialInstructions: formData.specialInstructions
         }
@@ -386,49 +365,7 @@ export default function CreateShipment() {
                       placeholder="Enter package weight in kilograms"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base"
                     />
-                    <p className="mt-2 text-sm text-gray-600">Enter weight in kilograms (e.g., 2.5)</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-3">Length (cm)</label>
-                    <input
-                      type="number"
-                      name="dimensions.length"
-                      value={formData.dimensions.length}
-                      onChange={handleChange}
-                      required
-                      min="0"
-                      placeholder="Enter package length in centimeters"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base"
-                    />
-                    <p className="mt-2 text-sm text-gray-600">Enter length in centimeters</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-3">Width (cm)</label>
-                    <input
-                      type="number"
-                      name="dimensions.width"
-                      value={formData.dimensions.width}
-                      onChange={handleChange}
-                      required
-                      min="0"
-                      placeholder="Enter package width in centimeters"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base"
-                    />
-                    <p className="mt-2 text-sm text-gray-600">Enter width in centimeters</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-900 mb-3">Height (cm)</label>
-                    <input
-                      type="number"
-                      name="dimensions.height"
-                      value={formData.dimensions.height}
-                      onChange={handleChange}
-                      required
-                      min="0"
-                      placeholder="Enter package height in centimeters"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white text-gray-900 text-base"
-                    />
-                    <p className="mt-2 text-sm text-gray-600">Enter height in centimeters</p>
+                    <p className="mt-2 text-sm text-gray-600">Enter weight in kilograms (e.g., 2.5) - Price will be calculated based on weight</p>
                   </div>
                 </div>
               </div>
