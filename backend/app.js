@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import trackingRoutes from './routes/tracking.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import partnerRoutes from './routes/partner.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 
 // Load environment variables
@@ -26,6 +27,7 @@ app.use(express.json());
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/partner', partnerRoutes);
 app.use('/api/payment', paymentRoutes);
 
 // Health check
