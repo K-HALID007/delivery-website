@@ -125,6 +125,26 @@ class AuthService {
         throw new Error(data.message || 'Registration failed');
       }
 
+      // Store user data and token after successful registration
+      if (data.token && data.user) {
+        // Clear any existing sessions
+        sessionStorage.removeItem(this.adminTokenKey);
+        sessionStorage.removeItem(this.adminUserKey);
+        
+        // Set user session
+        sessionStorage.setItem(this.userTokenKey, data.token);
+        sessionStorage.setItem(this.userUserKey, JSON.stringify(data.user));
+        
+        this.token = data.token;
+        this.user = data.user;
+        this.isAdminSession = false;
+
+        // Dispatch auth change event
+        window.dispatchEvent(new CustomEvent('authChange', {
+          detail: { user: data.user, isAuthenticated: true }
+        }));
+      }
+
       return data;
     } catch (error) {
       console.error('Registration error:', error);

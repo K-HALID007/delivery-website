@@ -143,16 +143,15 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
           try {
             response = await authService.login(formData.email, formData.password);
           } catch (userLoginError) {
-            // If regular login fails, try admin login
+            // If regular login fails, try admin login silently
             console.log('Regular login failed, trying admin login...');
-            console.log('User login error:', userLoginError.message);
             try {
               response = await authService.adminLogin(formData.email, formData.password);
               console.log('Admin login successful');
             } catch (adminLoginError) {
-              console.log('Admin login error:', adminLoginError.message);
-              // If both fail, show a combined error message
-              throw new Error(`Login failed. User login: ${userLoginError.message}. Admin login: ${adminLoginError.message}`);
+              console.log('Both login attempts failed');
+              // Show simple user-friendly error message
+              throw new Error('Invalid email or password');
             }
           }
 
@@ -203,13 +202,11 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
 
         const response = await authService.register(registrationData);
         if (response.user) {
-          setSuccess('Registration successful! Please log in.');
-          setIsLogin(true);
-          setFormData(prev => ({
-            ...prev,
-            password: '',
-            confirmPassword: ''
-          }));
+          setSuccess('Registration successful! Redirecting...');
+          setTimeout(() => {
+            onClose();
+            window.location.href = '/';
+          }, 1000);
         }
       }
     } catch (error) {
