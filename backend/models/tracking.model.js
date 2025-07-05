@@ -41,9 +41,9 @@ const trackingSchema = new mongoose.Schema({
       required: true
     },
     dimensions: {
-      length: { type: Number, required: true },
-      width: { type: Number, required: true },
-      height: { type: Number, required: true }
+      length: { type: Number },
+      width: { type: Number },
+      height: { type: Number }
     },
     description: String,
     specialInstructions: String
