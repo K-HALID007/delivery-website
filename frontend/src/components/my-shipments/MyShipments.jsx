@@ -23,24 +23,37 @@ export default function MyShipments() {
     const fetchShipments = async () => {
       try {
         const token = sessionStorage.getItem('user_token');
+        console.log('Token from sessionStorage:', token ? 'Present' : 'Missing');
+        console.log('Token length:', token ? token.length : 0);
+        
         if (!token) {
+          console.log('No token found, redirecting to login');
           router.push('/login');
           return;
         }
 
+        console.log('Making request to fetch shipments...');
         const response = await fetch('https://delivery-backend100.vercel.app/api/tracking/user', {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
 
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+
         if (!response.ok) {
-          throw new Error('Failed to fetch shipments');
+          const errorData = await response.json();
+          console.log('Error response:', errorData);
+          throw new Error(errorData.message || 'Failed to fetch shipments');
         }
 
         const data = await response.json();
+        console.log('Shipments data received:', data);
         setShipments(Array.isArray(data) ? data : data.shipments || []);
       } catch (err) {
+        console.error('Fetch shipments error:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -48,6 +61,7 @@ export default function MyShipments() {
     };
 
     const currentUser = authService.getCurrentUser();
+    console.log('Current user:', currentUser);
     setUser(currentUser);
 
     fetchShipments();
