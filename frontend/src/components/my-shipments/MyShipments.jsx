@@ -28,7 +28,7 @@ export default function MyShipments() {
           return;
         }
 
-        const response = await fetch('http://localhost:5000/api/tracking/user', {
+        const response = await fetch('https://delivery-backend100.vercel.app/api/tracking/user', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -76,7 +76,7 @@ export default function MyShipments() {
     
     try {
       const token = sessionStorage.getItem('user_token');
-      const response = await fetch(`http://localhost:5000/api/tracking/cancel/${trackingId}`, {
+      const response = await fetch(`https://delivery-backend100.vercel.app/api/tracking/cancel/${trackingId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -126,7 +126,7 @@ export default function MyShipments() {
   const submitRefund = async (formData) => {
     try {
       const token = sessionStorage.getItem('user_token');
-      const response = await fetch(`http://localhost:5000/api/tracking/refund/${selectedShipment.trackingId}`, {
+      const response = await fetch(`https://delivery-backend100.vercel.app/api/tracking/refund/${selectedShipment.trackingId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -160,7 +160,7 @@ export default function MyShipments() {
   const submitComplaint = async (complaintData) => {
     try {
       const token = sessionStorage.getItem('user_token');
-      const response = await fetch(`http://localhost:5000/api/tracking/complaint/${selectedShipment.trackingId}`, {
+      const response = await fetch(`https://delivery-backend100.vercel.app/api/tracking/complaint/${selectedShipment.trackingId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
