@@ -1,25 +1,8 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = 'uploads/refunds';
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const extension = path.extname(file.originalname);
-    cb(null, `refund-${uniqueSuffix}${extension}`);
-  }
-});
+// Use memory storage for Vercel serverless functions
+const storage = multer.memoryStorage();
 
 // File filter to only allow images
 const fileFilter = (req, file, cb) => {
