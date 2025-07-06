@@ -264,6 +264,50 @@ export default function AdminAnalytics() {
     }
   };
 
+  const revenueChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: { color: '#000' },
+        position: 'top'
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              label += '₹' + context.parsed.y.toLocaleString();
+            }
+            return label;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#000' },
+        grid: { color: 'rgba(0, 0, 0, 0.1)' }
+      },
+      y: {
+        ticks: { 
+          color: '#000', 
+          beginAtZero: true,
+          callback: function(value, index, values) {
+            return '₹' + value.toLocaleString();
+          }
+        },
+        grid: { color: 'rgba(0, 0, 0, 0.1)' }
+      }
+    }
+  };
+
   const pieChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -462,7 +506,7 @@ export default function AdminAnalytics() {
           </div>
           <div className="h-80">
             {getRevenueChart() ? (
-              <Line data={getRevenueChart()} options={chartOptions} />
+              <Line data={getRevenueChart()} options={revenueChartOptions} />
             ) : (
               <div className="flex items-center justify-center h-full bg-gray-50 rounded">
                 <div className="text-center">
