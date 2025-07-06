@@ -39,8 +39,11 @@ export default function AdminDashboard() {
   // Fetch real-time analytics data
   const fetchRealTimeAnalytics = useCallback(async () => {
     try {
-      const token = sessionStorage.getItem('admin_token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const token = sessionStorage.getItem('admin_token') || sessionStorage.getItem('user_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
       
       const response = await fetch(`${API_URL}/admin/analytics/realtime`, { headers });
       const data = await response.json();
@@ -95,8 +98,11 @@ export default function AdminDashboard() {
   // Fetch revenue analytics
   const fetchRevenueAnalytics = useCallback(async () => {
     try {
-      const token = sessionStorage.getItem('admin_token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const token = sessionStorage.getItem('admin_token') || sessionStorage.getItem('user_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
       
       const response = await fetch(`${API_URL}/admin/analytics/revenue`, { headers });
       const data = await response.json();
@@ -134,8 +140,11 @@ export default function AdminDashboard() {
       const startTime = Date.now();
       
       try {
-        const token = sessionStorage.getItem('admin_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const token = sessionStorage.getItem('admin_token') || sessionStorage.getItem('user_token');
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        };
         
         // Show loading immediately with default data
         setSummary({ totalShipments: 0, activeUsers: 0, revenue: 0, pendingDeliveries: 0 });
