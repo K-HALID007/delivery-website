@@ -112,30 +112,26 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  // Setup socket event listeners
+  // Setup socket event listeners (disabled for Vercel - using polling)
   useEffect(() => {
     on('connect', () => {
-      setConnectionStatus('Connected');
-      console.log('Socket connected');
+      setConnectionStatus('Polling Mode');
+      console.log('Socket: Polling mode active (WebSocket disabled for Vercel)');
     });
 
     on('disconnect', () => {
       setConnectionStatus('Disconnected');
-      console.log('Socket disconnected');
+      console.log('Socket: Polling mode disconnected');
     });
 
-    on('dashboard-update', handleDashboardUpdate);
-    on('shipment-update', handleShipmentUpdate);
-    on('analytics-update', handleAnalyticsUpdate);
+    // Note: Real-time events disabled for Vercel deployment
+    // Using periodic polling instead in the main useEffect
 
     return () => {
       off('connect');
       off('disconnect');
-      off('dashboard-update', handleDashboardUpdate);
-      off('shipment-update', handleShipmentUpdate);
-      off('analytics-update', handleAnalyticsUpdate);
     };
-  }, [on, off, handleDashboardUpdate, handleShipmentUpdate, handleAnalyticsUpdate]);
+  }, [on, off]);
 
   // Fetch real-time analytics data
   const fetchRealTimeAnalytics = useCallback(async () => {
@@ -326,10 +322,12 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-white">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-black">Real-Time Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold text-black">Admin Dashboard</h1>
         <div className="flex items-center space-x-4">
           <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-            connectionStatus === 'Connected' 
+            connectionStatus === 'Polling Mode' 
+              ? 'bg-blue-100 text-blue-800' 
+              : connectionStatus === 'Connected'
               ? 'bg-green-100 text-green-800' 
               : 'bg-red-100 text-red-800'
           }`}>
