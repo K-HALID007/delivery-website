@@ -115,7 +115,7 @@ export default function AdminDashboard() {
         setNotifications(prev => [
           { 
             id: Date.now(), 
-            message: `Total Revenue: ${data.totalRevenue.toLocaleString()} | Avg Order: ${data.averageOrderValue?.toFixed(2) || '0'}`, 
+            message: `Total Revenue: ₹${data.totalRevenue.toLocaleString()} | Avg Order: ₹${data.averageOrderValue?.toFixed(2) || '0'}`, 
             type: 'success' 
           },
           ...prev.slice(0, 4)

@@ -448,7 +448,7 @@ export default function AdminAnalyticsWorking() {
             <div>
               <p className="text-green-600 text-sm font-medium">Total Revenue</p>
               <p className="text-3xl font-bold text-green-800">
-                ${revenueData?.totalRevenue?.toLocaleString() || '0'}
+                ₹{revenueData?.totalRevenue?.toLocaleString() || '0'}
               </p>
             </div>
             <DollarSign className="w-12 h-12 text-green-500" />

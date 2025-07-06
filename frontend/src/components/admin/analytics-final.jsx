@@ -350,7 +350,7 @@ export default function AdminAnalyticsClean() {
             <div>
               <p className="text-green-600 text-sm font-medium">Total Revenue</p>
               <p className="text-3xl font-bold text-green-800">
-                ${(dashboardStats ? dashboardStats.totalRevenue : revenueData.totalRevenue).toLocaleString()}
+                ₹{(dashboardStats ? dashboardStats.totalRevenue : revenueData.totalRevenue).toLocaleString()}
               </p>
               <p className="text-xs text-green-600 mt-1">Real-time data</p>
             </div>
