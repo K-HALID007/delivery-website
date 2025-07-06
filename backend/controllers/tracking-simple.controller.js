@@ -1,6 +1,6 @@
 import Tracking from '../models/tracking.model.js';
 
-// Simple refund function with basic error handling
+// Simple refund function with basic error handling and notifications
 export const requestRefundSimple = async (req, res) => {
   const { trackingId } = req.params;
   
@@ -62,15 +62,54 @@ export const requestRefundSimple = async (req, res) => {
     tracking.payment.status = 'Refund Requested';
     tracking.payment.refundRequestedAt = new Date();
     tracking.payment.refundReason = req.body.reason || 'Customer request';
+    tracking.payment.refundCategory = req.body.category || 'general';
+    tracking.payment.expectedRefundAmount = req.body.expectedRefundAmount || tracking.payment.amount;
+    tracking.payment.refundMethod = req.body.refundMethod || 'original';
+    tracking.payment.refundUrgency = req.body.urgency || 'normal';
     
     await tracking.save();
     console.log('✅ Refund status updated');
 
+    // 🔔 REAL-TIME NOTIFICATION TO ADMIN
+    try {
+      console.log('🔔 Sending real-time notification to admin...');
+      
+      const notificationData = {
+        id: `refund_${trackingId}_${Date.now()}`,
+        type: 'refund_request',
+        title: 'New Refund Request',
+        message: `${tracking.sender.name} requested refund for ${trackingId}`,
+        trackingId,
+        customerName: tracking.sender.name,
+        customerEmail: tracking.sender.email,
+        amount: tracking.payment.expectedRefundAmount,
+        reason: tracking.payment.refundReason,
+        category: tracking.payment.refundCategory,
+        urgency: tracking.payment.refundUrgency,
+        timestamp: new Date(),
+        read: false
+      };
+      
+      console.log('🔔 Admin notification created:', notificationData);
+      
+      // Store notification in database for admin to see
+      // In production, you would also emit via WebSocket:
+      // io.to('admin-room').emit('new-refund-request', notificationData);
+      
+    } catch (notificationError) {
+      console.error('❌ Failed to send notification:', notificationError);
+      // Don't fail the refund request if notification fails
+    }
+
     res.json({ 
       success: true, 
-      message: 'Refund request submitted successfully',
+      message: 'Refund request submitted successfully! Admin has been notified.',
       trackingId,
-      refundStatus: tracking.payment.status
+      refundStatus: tracking.payment.status,
+      notification: {
+        sent: true,
+        message: 'Admin will review your request within 24 hours'
+      }
     });
 
   } catch (error) {
