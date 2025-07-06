@@ -320,7 +320,7 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl shadow-lg p-6 flex flex-col items-center transform hover:scale-105 transition-transform">
-          <span className="text-3xl font-bold text-green-600">${summary.revenue.toLocaleString()}</span>
+          <span className="text-3xl font-bold text-green-600">₹{summary.revenue.toLocaleString()}</span>
           <span className="text-gray-800 mt-2 font-medium">Revenue</span>
           <div className="w-full bg-green-200 rounded-full h-2 mt-3">
             <div className="bg-green-500 h-2 rounded-full" style={{width: '85%'}}></div>
@@ -364,7 +364,7 @@ export default function AdminDashboard() {
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Revenue</span>
                 <span className="text-sm font-semibold text-blue-800">
-                  ${revenueAnalytics?.daily?.slice(-1)[0]?.toLocaleString() || '0'}
+                  ₹{revenueAnalytics?.daily?.slice(-1)[0]?.toLocaleString() || '0'}
                 </span>
               </div>
             </div>
@@ -394,13 +394,13 @@ export default function AdminDashboard() {
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Total Revenue</span>
                 <span className="text-sm font-semibold text-purple-800">
-                  ${revenueAnalytics?.monthly?.slice(-1)[0]?.toLocaleString() || '0'}
+                  ���{revenueAnalytics?.monthly?.slice(-1)[0]?.toLocaleString() || '0'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Avg Order</span>
                 <span className="text-sm font-semibold text-purple-800">
-                  ${revenueAnalytics?.averageOrderValue?.toFixed(2) || '0.00'}
+                  ₹{revenueAnalytics?.averageOrderValue?.toFixed(2) || '0.00'}
                 </span>
               </div>
             </div>
@@ -470,7 +470,7 @@ export default function AdminDashboard() {
             {/* Total Revenue */}
             <div className="text-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
               <div className="text-2xl font-bold text-green-600">
-                ${revenueAnalytics.totalRevenue.toLocaleString()}
+                ₹{revenueAnalytics.totalRevenue.toLocaleString()}
               </div>
               <div className="text-sm text-gray-600 mt-1">Total Revenue</div>
               <div className="text-xs text-green-700 mt-1">All time</div>
@@ -479,7 +479,7 @@ export default function AdminDashboard() {
             {/* Average Order Value */}
             <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">
-                ${revenueAnalytics.averageOrderValue?.toFixed(2) || '0.00'}
+                ₹{revenueAnalytics.averageOrderValue?.toFixed(2) || '0.00'}
               </div>
               <div className="text-sm text-gray-600 mt-1">Average Order Value</div>
               <div className="text-xs text-blue-700 mt-1">Per shipment</div>

@@ -518,9 +518,49 @@ export const getRevenueAnalytics = async (req, res) => {
       console.error('❌ Error getting revenue by status:', error.message);
     }
 
-    // Generate daily data for the last 30 days
-    for (let i = 29; i >= 0; i--) {
-      dailyData.push(Math.floor(Math.random() * 500) + 100); // Mock daily data
+    // Get real daily data for the last 30 days
+    try {
+      console.log('💰 Getting daily revenue...');
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const dailyRevenue = await Tracking.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: thirtyDaysAgo },
+            'payment.amount': { $gt: 0 }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+            },
+            revenue: { $sum: "$payment.amount" }
+          }
+        },
+        {
+          $sort: { _id: 1 }
+        }
+      ]);
+      
+      // Fill in missing days with 0
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+        
+        const dayRevenue = dailyRevenue.find(d => d._id === dateString);
+        dailyData.push(dayRevenue?.revenue || 0);
+      }
+      
+      console.log(`✅ Daily revenue data: ${dailyData.length} days`);
+    } catch (error) {
+      console.error('❌ Error getting daily revenue:', error.message);
+      // Fallback to zeros if error
+      for (let i = 29; i >= 0; i--) {
+        dailyData.push(0);
+      }
     }
 
     const result = {
