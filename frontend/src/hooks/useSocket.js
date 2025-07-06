@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { API_URL } from '../services/api.config.js';
 
-export const useSocket = (serverPath = '${process.env.NEXT_PUBLIC_API_URL || 'https://delivery-backend100.vercel.app'}') => {
+export const useSocket = (serverPath = process.env.NEXT_PUBLIC_API_URL || 'https://delivery-backend100.vercel.app') => {
   const socketRef = useRef(null);
 
   useEffect(() => {
