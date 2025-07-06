@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Backend Health</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Backend Health Check</h1>
+        <p>Test various backend endpoints to diagnose issues.</p>
+        
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <button onclick="testPartnerRoutes()">Test Partner Routes</button>
+        <button onclick="testCORS()">Test CORS</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://delivery-backend100.vercel.app';
+        const resultDiv = document.getElementById('result');
+        
+        async function testHealth() {
+            resultDiv.innerHTML = '<div class="info">Testing health endpoint...</div>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Health Check Passed!\n\nResponse:\n${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Health Check Failed!\n\nStatus: ${response.status}\nResponse:\n${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Health Check Error!\n\nError: ${error.message}</div>`;
+            }
+        }
+        
+        async function testPartnerRoutes() {
+            resultDiv.innerHTML = '<div class="info">Testing partner routes...</div>';
+            
+            const tests = [
+                { name: 'Partner Login Endpoint', url: `${API_URL}/api/partner/login`, method: 'POST' },
+                { name: 'Partner Register Endpoint', url: `${API_URL}/api/partner/register`, method: 'POST' }
+            ];
+            
+            let results = [];
+            
+            for (const test of tests) {
+                try {
+                    const response = await fetch(test.url, {
+                        method: test.method,
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({}) // Empty body to test if endpoint exists
+                    });
+                    
+                    const responseText = await response.text();
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (e) {
+                        data = { rawResponse: responseText };
+                    }
+                    
+                    results.push({
+                        test: test.name,
+                        status: response.status,
+                        ok: response.ok,
+                        data: data
+                    });
+                } catch (error) {
+                    results.push({
+                        test: test.name,
+                        error: error.message
+                    });
+                }
+            }
+            
+            resultDiv.innerHTML = `<div class="info">Partner Routes Test Results:\n\n${JSON.stringify(results, null, 2)}</div>`;
+        }
+        
+        async function testCORS() {
+            resultDiv.innerHTML = '<div class="info">Testing CORS...</div>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                    'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials')
+                };
+                
+                resultDiv.innerHTML = `<div class="info">CORS Headers:\n\n${JSON.stringify(corsHeaders, null, 2)}\n\nResponse Status: ${response.status}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ CORS Test Error!\n\nError: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</body>
+</html>

@@ -14,10 +14,18 @@ const generateToken = (partnerId) => {
 // Partner Registration
 export const registerPartner = async (req, res) => {
   try {
+    console.log('🔍 Partner registration request received');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     const {
       name, email, password, phone, address, city, state, postalCode, country,
       vehicleType, vehicleNumber, licenseNumber, experience, workingHours, preferredZones
     } = req.body;
+    
+    console.log('Extracted fields:', {
+      name, email, phone, address, city, state, postalCode, country,
+      vehicleType, vehicleNumber, licenseNumber, experience, workingHours, preferredZones
+    });
 
     // Check if partner already exists
     const existingPartner = await Partner.findOne({ email });
@@ -77,10 +85,30 @@ export const registerPartner = async (req, res) => {
 
   } catch (error) {
     console.error('Partner registration error:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
+    if (error.errors) {
+      console.error('Validation errors:', error.errors);
+    }
+    
+    if (error.code === 11000) {
+      console.error('Duplicate key error:', error.keyPattern, error.keyValue);
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Registration failed. Please try again.',
-      error: error.message
+      error: error.message,
+      ...(process.env.NODE_ENV === 'development' && {
+        details: {
+          name: error.name,
+          stack: error.stack,
+          errors: error.errors,
+          code: error.code
+        }
+      })
     });
   }
 };
