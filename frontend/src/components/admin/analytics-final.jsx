@@ -118,7 +118,7 @@ export default function AdminAnalyticsClean() {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
         datasets: [
           {
-            label: 'Monthly Revenue ($)',
+            label: 'Monthly Revenue (₹)',
             data: [0, 0, 0, 0, 0, 0],
             borderColor: '#94a3b8',
             backgroundColor: 'rgba(148, 163, 184, 0.1)',
@@ -140,7 +140,7 @@ export default function AdminAnalyticsClean() {
       labels: revenueData.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
       datasets: [
         {
-          label: hasRealData ? 'Monthly Revenue ($)' : 'Monthly Revenue ($ - No Data Yet)',
+          label: hasRealData ? 'Monthly Revenue (₹)' : 'Monthly Revenue (₹ - No Data Yet)',
           data: revenueData.monthly || [0, 0, 0, 0, 0, 0],
           borderColor: hasRealData ? '#10b981' : '#94a3b8',
           backgroundColor: hasRealData ? 'rgba(16, 185, 129, 0.1)' : 'rgba(148, 163, 184, 0.1)',

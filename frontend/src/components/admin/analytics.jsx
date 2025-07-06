@@ -4,7 +4,7 @@ import { Bar, Line, Doughnut, Pie, Radar } from 'react-chartjs-2';
 import 'chart.js/auto';
 import { 
   TrendingUp, 
-  DollarSign, 
+  TrendingUp as RevenueIcon, 
   Package, 
   Users, 
   Calendar,
@@ -398,7 +398,7 @@ export default function AdminAnalytics() {
                 ₹{revenueData?.totalRevenue?.toLocaleString() || '0'}
               </p>
             </div>
-            <DollarSign className="w-12 h-12 text-green-500" />
+            <RevenueIcon className="w-12 h-12 text-green-500" />
           </div>
         </div>
 
@@ -466,7 +466,7 @@ export default function AdminAnalytics() {
             ) : (
               <div className="flex items-center justify-center h-full bg-gray-50 rounded">
                 <div className="text-center">
-                  <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                  <RevenueIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                   <p className="text-gray-500">No revenue data available</p>
                   <p className="text-sm text-gray-400">Revenue: ₹{revenueData?.totalRevenue || 0}</p>
                 </div>
@@ -543,7 +543,7 @@ export default function AdminAnalytics() {
         <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-black flex items-center">
-              <DollarSign className="w-5 h-5 mr-2 text-green-500" />
+              <RevenueIcon className="w-5 h-5 mr-2 text-green-500" />
               Revenue by Status
             </h3>
           </div>
