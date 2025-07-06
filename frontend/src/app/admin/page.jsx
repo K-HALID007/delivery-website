@@ -30,113 +30,11 @@ export default function AdminDashboard() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
 
-  // Initialize socket connection
-  const { on, off } = useSocket();
-
-  // Real-time data update handler
-  const handleDashboardUpdate = useCallback((data) => {
-    console.log('Real-time dashboard update received:', data);
-    setSummary(prev => ({
-      totalShipments: data.activeShipments || prev?.totalShipments || 0,
-      activeUsers: data.totalUsers || prev?.activeUsers || 0,
-      revenue: data.totalRevenue || prev?.revenue || 0,
-      pendingDeliveries: data.pendingDeliveries || prev?.pendingDeliveries || 0,
-    }));
-    setLastUpdate(new Date());
-    
-    // Add notification for real-time update
-    setNotifications(prev => [
-      { id: Date.now(), message: 'Dashboard data updated in real-time', type: 'info' },
-      ...prev.slice(0, 4) // Keep only last 5 notifications
-    ]);
-  }, []);
-
-  // Real-time shipment update handler
-  const handleShipmentUpdate = useCallback((data) => {
-    console.log('Real-time shipment update received:', data);
-    setNotifications(prev => [
-      { 
-        id: Date.now(), 
-        message: `Shipment ${data.trackingId} status updated to ${data.status}`, 
-        type: 'success' 
-      },
-      ...prev.slice(0, 4)
-    ]);
-    
-    // Update recent shipments
-    setRecentShipments(prev => {
-      const updated = prev.map(shipment => 
-        shipment.id === data.trackingId || shipment.trackingId === data.trackingId
-          ? { ...shipment, status: data.status, currentLocation: data.currentLocation }
-          : shipment
-      );
-      return updated;
-    });
-  }, []);
-
-  // Real-time analytics update handler
-  const handleAnalyticsUpdate = useCallback((data) => {
-    console.log('Real-time analytics update received:', data);
-    if (data) {
-      setRealTimeData(data);
-      setLastUpdate(new Date());
-      
-      // Update chart data if shipment trends are available
-      if (data.shipmentTrends && data.shipmentTrends.length > 0) {
-        setChartData({
-          labels: data.shipmentTrends.map(item => {
-            const date = new Date(item._id);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          }),
-          datasets: [
-            {
-              label: 'Daily Shipments',
-              data: data.shipmentTrends.map(item => item.count),
-              backgroundColor: 'rgba(251, 191, 36, 0.8)',
-              borderColor: '#f59e0b',
-              borderWidth: 2,
-              borderRadius: 6,
-              borderSkipped: false,
-              hoverBackgroundColor: 'rgba(251, 191, 36, 1)',
-              hoverBorderColor: '#d97706',
-              hoverBorderWidth: 3,
-            },
-          ],
-        });
-      }
-
-      // Update regional heatmap
-      if (data.regionalData && data.regionalData.length > 0) {
-        setShipmentHeatmap({
-          regions: data.regionalData.map(item => ({
-            region: item._id,
-            count: item.count
-          }))
-        });
-      }
-    }
-  }, []);
-
-  // Setup socket event listeners (disabled for Vercel - using polling)
+  // Connection status for compatibility
   useEffect(() => {
-    on('connect', () => {
-      setConnectionStatus('Polling Mode');
-      console.log('Socket: Polling mode active (WebSocket disabled for Vercel)');
-    });
-
-    on('disconnect', () => {
-      setConnectionStatus('Disconnected');
-      console.log('Socket: Polling mode disconnected');
-    });
-
-    // Note: Real-time events disabled for Vercel deployment
-    // Using periodic polling instead in the main useEffect
-
-    return () => {
-      off('connect');
-      off('disconnect');
-    };
-  }, [on, off]);
+    setConnectionStatus('Polling Mode');
+    console.log('Dashboard: Using polling mode for real-time updates');
+  }, []);
 
   // Fetch real-time analytics data
   const fetchRealTimeAnalytics = useCallback(async () => {
@@ -318,7 +216,7 @@ export default function AdminDashboard() {
     }, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
-  }, [fetchRealTimeAnalytics, fetchRevenueAnalytics, connectionStatus]);
+  }, [fetchRealTimeAnalytics, fetchRevenueAnalytics]);
 
   if (loading || !summary) {
     return <AdminDashboardSkeleton />;
