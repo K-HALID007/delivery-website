@@ -226,6 +226,14 @@ export const updatePartnerStatus = async (req, res) => {
     const oldStatus = partner.status;
     partner.status = status;
     
+    // Set isActive to true when approving partner
+    if (status === 'approved') {
+      partner.isActive = true;
+    } else if (status === 'suspended' || status === 'rejected') {
+      partner.isActive = false;
+      partner.isOnline = false; // Also set offline if suspended/rejected
+    }
+    
     if (reason) {
       partner.statusReason = reason;
     }
@@ -404,13 +412,23 @@ export const bulkPartnerActions = async (req, res) => {
           });
         }
         
+        const updateData = { 
+          status: data.status,
+          statusReason: data.reason || 'Bulk update',
+          statusUpdatedAt: new Date()
+        };
+        
+        // Set isActive based on status
+        if (data.status === 'approved') {
+          updateData.isActive = true;
+        } else if (data.status === 'suspended' || data.status === 'rejected') {
+          updateData.isActive = false;
+          updateData.isOnline = false;
+        }
+        
         result = await Partner.updateMany(
           { _id: { $in: partnerIds } },
-          { 
-            status: data.status,
-            statusReason: data.reason || 'Bulk update',
-            statusUpdatedAt: new Date()
-          }
+          updateData
         );
         break;
 
@@ -423,7 +441,7 @@ export const bulkPartnerActions = async (req, res) => {
           { _id: { $in: partnerIds } },
           { 
             status: 'approved',
-            isOnline: true,
+            isActive: true,
             statusUpdatedAt: new Date()
           }
         );
@@ -434,6 +452,7 @@ export const bulkPartnerActions = async (req, res) => {
           { _id: { $in: partnerIds } },
           { 
             status: 'suspended',
+            isActive: false,
             isOnline: false,
             statusUpdatedAt: new Date()
           }
