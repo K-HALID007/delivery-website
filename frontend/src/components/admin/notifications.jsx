@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { 
-import { API_URL } from '../../services/api.config.js';
   Bell, 
   AlertTriangle, 
   CheckCircle, 
@@ -19,6 +18,7 @@ import { API_URL } from '../../services/api.config.js';
   DollarSign,
   Shield
 } from 'lucide-react';
+import { API_URL } from '../../services/api.config.js';
 
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState([]);
@@ -56,7 +56,7 @@ export default function AdminNotifications() {
       const token = sessionStorage.getItem('admin_token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       
-      const response = await fetch('${API_URL}/admin/notifications', { headers });
+      const response = await fetch(`${API_URL}/admin/notifications`, { headers });
       const data = await response.json();
       
       if (response.ok) {

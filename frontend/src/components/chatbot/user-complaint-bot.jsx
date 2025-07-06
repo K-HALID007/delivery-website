@@ -5,7 +5,7 @@ import { MessageCircle, X, Send, Bot, User, AlertTriangle, Package, Phone, Mail,
 import toast from 'react-hot-toast';
 import { complaintService } from '@/services/complaint.service';
 import { chatbotService } from '@/services/chatbot.service';
-import { API_URL } from '../services/api.config.js';
+import { API_URL } from '../../services/api.config.js';
 
 export default function UserComplaintBot() {
   const [isOpen, setIsOpen] = useState(false);
