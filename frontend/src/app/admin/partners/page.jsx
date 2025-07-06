@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { API_URL } from '../../../services/api.config.js';
 
 export default function AdminPartners() {
   const [partners, setPartners] = useState([]);
@@ -36,7 +37,7 @@ export default function AdminPartners() {
         if (filters[key]) queryParams.append(key, filters[key]);
       });
 
-      const response = await fetch(`http://localhost:5000/api/admin/partners?${queryParams}`, {
+      const response = await fetch(`${API_URL}/admin/partners?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -61,7 +62,7 @@ export default function AdminPartners() {
   const handleStatusUpdate = async (partnerId, newStatus, notes = '') => {
     try {
       const token = sessionStorage.getItem('admin_token');
-      const response = await fetch(`http://localhost:5000/api/admin/partners/${partnerId}/status`, {
+      const response = await fetch(`${API_URL}/admin/partners/${partnerId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +97,7 @@ export default function AdminPartners() {
 
     try {
       const token = sessionStorage.getItem('admin_token');
-      const response = await fetch('http://localhost:5000/api/admin/partners/bulk-actions', {
+      const response = await fetch(`${API_URL}/admin/partners/bulk-actions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

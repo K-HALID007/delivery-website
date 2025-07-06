@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Partner Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Partner Management Test</h1>
+        <p>Test admin authentication and partner management endpoints.</p>
+        
+        <div class="form-group">
+            <label for="adminToken">Admin Token (from localStorage)</label>
+            <input type="text" id="adminToken" placeholder="Admin JWT token">
+            <button onclick="loadTokenFromStorage()">Load from localStorage</button>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="testAdminAuth()">Test Admin Auth</button>
+            <button onclick="testGetPartners()">Get All Partners</button>
+            <button onclick="testPartnerStats()">Get Partner Stats</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Results</h2>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://delivery-backend100.vercel.app/api';
+        const resultDiv = document.getElementById('result');
+        
+        function loadTokenFromStorage() {
+            const token = localStorage.getItem('user_token') || sessionStorage.getItem('user_token');
+            if (token) {
+                document.getElementById('adminToken').value = token;
+                resultDiv.innerHTML = '<div class="info">Token loaded from storage</div>';
+            } else {
+                resultDiv.innerHTML = '<div class="warning">No token found in localStorage or sessionStorage</div>';
+            }
+        }
+        
+        function getAuthHeaders() {
+            const token = document.getElementById('adminToken').value;
+            if (!token) {
+                throw new Error('Admin token is required');
+            }
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
+        
+        async function testAdminAuth() {
+            try {
+                resultDiv.innerHTML = '<div class="info">Testing admin authentication...</div>';
+                
+                const response = await fetch(`${API_URL}/admin/test`, {
+                    method: 'GET',
+                    headers: getAuthHeaders()
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Admin Auth Test Passed!\n\nResponse:\n${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Admin Auth Test Failed!\n\nStatus: ${response.status}\nResponse:\n${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Admin Auth Test Error!\n\nError: ${error.message}</div>`;
+            }
+        }
+        
+        async function testGetPartners() {
+            try {
+                resultDiv.innerHTML = '<div class="info">Testing get all partners...</div>';
+                
+                const response = await fetch(`${API_URL}/admin/partners`, {
+                    method: 'GET',
+                    headers: getAuthHeaders()
+                });
+                
+                const responseText = await response.text();
+                let data;
+                
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    data = { rawResponse: responseText };
+                }
+                
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    data: data
+                };
+                
+                if (response.ok) {
+                    const partnersCount = data.partners ? data.partners.length : 0;
+                    const totalRecords = data.pagination ? data.pagination.totalRecords : 0;
+                    
+                    resultDiv.innerHTML = `<div class="success">✅ Get Partners Successful!\n\nFound ${partnersCount} partners (Total: ${totalRecords})\n\nResponse:\n${JSON.stringify(result, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Get Partners Failed!\n\nResponse:\n${JSON.stringify(result, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Get Partners Error!\n\nError: ${error.message}</div>`;
+            }
+        }
+        
+        async function testPartnerStats() {
+            try {
+                resultDiv.innerHTML = '<div class="info">Testing partner analytics...</div>';
+                
+                const response = await fetch(`${API_URL}/admin/partners/analytics`, {
+                    method: 'GET',
+                    headers: getAuthHeaders()
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Partner Analytics Successful!\n\nResponse:\n${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Partner Analytics Failed!\n\nStatus: ${response.status}\nResponse:\n${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Partner Analytics Error!\n\nError: ${error.message}</div>`;
+            }
+        }
+        
+        function clearResults() {
+            resultDiv.innerHTML = '';
+        }
+        
+        // Auto-load token on page load
+        window.onload = function() {
+            loadTokenFromStorage();
+        };
+    </script>
+</body>
+</html>
