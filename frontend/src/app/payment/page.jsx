@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CreditCard, Banknote, ArrowLeft, CheckCircle, Loader } from 'lucide-react';
 import Navbar from '@/components/home/navbar/navbar';
+import { API_URL } from '../../../services/api.config.js';
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -85,7 +86,7 @@ export default function PaymentPage() {
       console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
       console.log('Token:', token ? 'Present' : 'Missing');
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/tracking/add`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '${API_URL}'}/tracking/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

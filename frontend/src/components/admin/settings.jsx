@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { 
+import { API_URL } from '../../services/api.config.js';
   Save, 
   RefreshCw, 
   Bell, 
@@ -78,7 +79,7 @@ export default function AdminSettings() {
       const token = sessionStorage.getItem('admin_token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       
-      const response = await fetch('http://localhost:5000/api/admin/settings', { headers });
+      const response = await fetch('${API_URL}/admin/settings', { headers });
       
       if (response.ok) {
         const data = await response.json();
@@ -155,7 +156,7 @@ export default function AdminSettings() {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       };
       
-      const response = await fetch('http://localhost:5000/api/admin/settings', {
+      const response = await fetch('${API_URL}/admin/settings', {
         method: 'PUT',
         headers,
         body: JSON.stringify(settings)
@@ -682,7 +683,7 @@ export default function AdminSettings() {
                     onClick={async () => {
                       try {
                         const token = sessionStorage.getItem('admin_token');
-                        const response = await fetch('http://localhost:5000/api/admin/settings/test-email', {
+                        const response = await fetch('${API_URL}/admin/settings/test-email', {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',

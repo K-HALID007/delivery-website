@@ -6,6 +6,7 @@ import ChartsRow from '@/components/admin/charts/ChartsRow';
 import { useSocket } from '@/hooks/useSocket';
 import { RefreshCw } from 'lucide-react';
 import AdminDashboardSkeleton from '@/components/admin/AdminDashboardSkeleton';
+import { API_URL } from '../../services/api.config.js';
 
 export default function AdminDashboard() {
   const [summary, setSummary] = useState(null);
@@ -142,7 +143,7 @@ export default function AdminDashboard() {
       const token = sessionStorage.getItem('admin_token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       
-      const response = await fetch('http://localhost:5000/api/admin/analytics/realtime', { headers });
+      const response = await fetch(`${API_URL}/admin/analytics/realtime`, { headers });
       const data = await response.json();
       console.log('Fetched real-time analytics data:', data);
       setRealTimeData(data);
@@ -198,7 +199,7 @@ export default function AdminDashboard() {
       const token = sessionStorage.getItem('admin_token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       
-      const response = await fetch('http://localhost:5000/api/admin/analytics/revenue', { headers });
+      const response = await fetch(`${API_URL}/admin/analytics/revenue`, { headers });
       const data = await response.json();
       
       console.log('Real revenue data received:', data);
@@ -236,7 +237,7 @@ export default function AdminDashboard() {
         
         // Summary
         console.log('🔍 Fetching admin summary data...');
-        const res = await fetch('http://localhost:5000/api/admin/summary', { headers });
+        const res = await fetch(`${API_URL}/admin/summary`, { headers });
         console.log('📡 Summary API Response:', res.status, res.statusText);
         
         if (!res.ok) {
@@ -257,7 +258,7 @@ export default function AdminDashboard() {
         
         // Recent Shipments
         console.log('🔍 Fetching recent shipments...');
-        const chartRes = await fetch('http://localhost:5000/api/admin/shipments/recent', { headers });
+        const chartRes = await fetch(`${API_URL}/admin/shipments/recent`, { headers });
         console.log('📡 Shipments API Response:', chartRes.status, chartRes.statusText);
         
         if (chartRes.ok) {
@@ -271,7 +272,7 @@ export default function AdminDashboard() {
         
         // Users
         console.log('🔍 Fetching users data...');
-        const usersRes = await fetch('http://localhost:5000/api/admin/users', { headers });
+        const usersRes = await fetch(`${API_URL}/admin/users`, { headers });
         console.log('📡 Users API Response:', usersRes.status, usersRes.statusText);
         
         if (usersRes.ok) {

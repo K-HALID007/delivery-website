@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, XCircle, Loader, ArrowRight } from 'lucide-react';
 import Navbar from '@/components/home/navbar/navbar';
+import { API_URL } from '../../../services/api.config.js';
 
 function PaymentSuccessContent() {
   const router = useRouter();
@@ -32,7 +33,7 @@ function PaymentSuccessContent() {
         }
 
         // Verify payment with backend
-        const response = await fetch(`http://localhost:5000/api/payment/verify/${orderId}`, {
+        const response = await fetch(`${API_URL}/payment/verify/${orderId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

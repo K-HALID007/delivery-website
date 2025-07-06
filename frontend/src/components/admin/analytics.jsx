@@ -15,6 +15,7 @@ import {
   PieChart,
   Activity
 } from 'lucide-react';
+import { API_URL } from '../../services/api.config.js';
 
 export default function AdminAnalytics() {
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -47,7 +48,7 @@ export default function AdminAnalytics() {
       
       console.log('📊 Fetching realtime analytics...');
       // Fetch real-time analytics
-      const analyticsResponse = await fetch('http://localhost:5000/api/admin/analytics/realtime', { 
+      const analyticsResponse = await fetch(`${API_URL}/admin/analytics/realtime`, { 
         method: 'GET',
         headers 
       });
@@ -65,7 +66,7 @@ export default function AdminAnalytics() {
       
       console.log('💰 Fetching revenue analytics...');
       // Fetch revenue analytics
-      const revenueResponse = await fetch('http://localhost:5000/api/admin/analytics/revenue', { 
+      const revenueResponse = await fetch(`${API_URL}/admin/analytics/revenue`, { 
         method: 'GET',
         headers 
       });

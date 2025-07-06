@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import 'chart.js/auto';
+import { API_URL } from '../../services/api.config.js';
 
 export default function AdminReports() {
   const [selectedReport, setSelectedReport] = useState('performance');
@@ -75,7 +76,7 @@ export default function AdminReports() {
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       
       const response = await fetch(
-        `http://localhost:5000/api/admin/reports?reportType=${selectedReport}&dateRange=${dateRange}`, 
+        `${API_URL}/admin/reports?reportType=${selectedReport}&dateRange=${dateRange}`, 
         { headers }
       );
       
@@ -133,7 +134,7 @@ export default function AdminReports() {
       // Fix the image URL to use correct backend URL
       const imageUrl = image.imageUrl.startsWith('http') 
         ? image.imageUrl 
-        : `http://localhost:5000${image.imageUrl}`;
+        : `${process.env.NEXT_PUBLIC_API_URL || 'https://delivery-backend100.vercel.app'}${image.imageUrl}`;
       
       const response = await fetch(imageUrl);
       const blob = await response.blob();
@@ -214,7 +215,7 @@ export default function AdminReports() {
   const handleRefundApproval = async (action) => {
     try {
       const token = sessionStorage.getItem('admin_token');
-      const response = await fetch(`http://localhost:5000/api/admin/refund/${selectedRefund.trackingId}`, {
+      const response = await fetch(`${API_URL}/admin/refund/${selectedRefund.trackingId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -867,7 +868,7 @@ export default function AdminReports() {
                                         // Fix image URL
                                         const imageUrl = image.imageUrl.startsWith('http') 
                                           ? image.imageUrl 
-                                          : `http://localhost:5000${image.imageUrl}`;
+                                          : `${process.env.NEXT_PUBLIC_API_URL || 'https://delivery-backend100.vercel.app'}${image.imageUrl}`;
                                         
                                         // Debug log
                                         console.log('Image URL:', imageUrl, 'Original:', image.imageUrl);
@@ -1104,7 +1105,7 @@ export default function AdminReports() {
                     {selectedRefund.images && selectedRefund.images.slice(0, 8).map((image, index) => {
                       const imageUrl = image.imageUrl.startsWith('http') 
                         ? image.imageUrl 
-                        : `http://localhost:5000${image.imageUrl}`;
+                        : `${process.env.NEXT_PUBLIC_API_URL || 'https://delivery-backend100.vercel.app'}${image.imageUrl}`;
                       
                       return (
                         <div key={index} className="relative group">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import partnerService from '../../../services/partner.service.js';
+import { API_URL } from '../../services/api.config.js';
 
 export default function PartnerTestPage() {
   const [testResults, setTestResults] = useState({});
@@ -48,7 +49,7 @@ export default function PartnerTestPage() {
     // Test 2: API Connectivity
     addLog('2️⃣ Testing API Connectivity...', 'info');
     try {
-      const response = await fetch('http://localhost:5000/api/health');
+      const response = await fetch('${API_URL}/health');
       if (response.ok) {
         addLog('✅ Backend server is reachable', 'success');
         setTestResults(prev => ({ ...prev, connectivity: 'pass' }));

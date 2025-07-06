@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Package, MapPin, User, Phone, Mail, Truck } from 'lucide-react';
 import AdminNavbar from '@/components/admin/navbar';
+import { API_URL } from '../../../services/api.config.js';
 
 export default function AdminCreateShipmentPage() {
   const router = useRouter();
@@ -96,7 +97,7 @@ export default function AdminCreateShipmentPage() {
         }
       };
 
-      const response = await fetch('http://localhost:5000/api/tracking/add', {
+      const response = await fetch('${API_URL}/tracking/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

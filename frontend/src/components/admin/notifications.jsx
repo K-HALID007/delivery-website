@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { 
+import { API_URL } from '../../services/api.config.js';
   Bell, 
   AlertTriangle, 
   CheckCircle, 
@@ -55,7 +56,7 @@ export default function AdminNotifications() {
       const token = sessionStorage.getItem('admin_token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       
-      const response = await fetch('http://localhost:5000/api/admin/notifications', { headers });
+      const response = await fetch('${API_URL}/admin/notifications', { headers });
       const data = await response.json();
       
       if (response.ok) {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import partnerService from '../../services/partner.service.js';
+import { API_URL } from '../../services/api.config.js';
 
 export default function TestPartnerContent() {
   const [result, setResult] = useState('');
@@ -58,7 +59,7 @@ export default function TestPartnerContent() {
     setResult('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/partner/register', {
+      const response = await fetch('${API_URL}/partner/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

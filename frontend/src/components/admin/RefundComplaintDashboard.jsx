@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Package, AlertTriangle, Clock, User, Star, CreditCard, Truck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { API_URL } from '../../services/api.config.js';
 
 export default function RefundComplaintDashboard() {
   const [refunds, setRefunds] = useState([]);
@@ -20,14 +21,14 @@ export default function RefundComplaintDashboard() {
       const token = sessionStorage.getItem('admin_token');
       
       // Fetch refunds
-      const refundResponse = await fetch('http://localhost:5000/api/admin/refunds', {
+      const refundResponse = await fetch('${API_URL}/admin/refunds', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const refundData = await refundResponse.json();
       setRefunds(refundData.refunds || []);
 
       // Fetch complaints
-      const complaintResponse = await fetch('http://localhost:5000/api/admin/complaints', {
+      const complaintResponse = await fetch('${API_URL}/admin/complaints', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const complaintData = await complaintResponse.json();
@@ -43,7 +44,7 @@ export default function RefundComplaintDashboard() {
   const handleRefundAction = async (trackingId, action, response) => {
     try {
       const token = sessionStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/admin/refund/${trackingId}/${action}`, {
+      const res = await fetch(`${API_URL}/admin/refund/${trackingId}/${action}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -64,7 +65,7 @@ export default function RefundComplaintDashboard() {
   const handleComplaintAction = async (trackingId, complaintId, action, response) => {
     try {
       const token = sessionStorage.getItem('admin_token');
-      const res = await fetch(`http://localhost:5000/api/admin/complaint/${trackingId}/${complaintId}/${action}`, {
+      const res = await fetch(`${API_URL}/admin/complaint/${trackingId}/${complaintId}/${action}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { API_URL } from '../services/api.config.js';
 
 export default function ConnectionStatus() {
   const [isOnline, setIsOnline] = useState(true);
@@ -28,7 +29,7 @@ export default function ConnectionStatus() {
     // Check API connectivity
     const checkApiStatus = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/health', {
+        const response = await fetch('${API_URL}/health', {
           method: 'GET',
           timeout: 5000
         });

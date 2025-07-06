@@ -5,6 +5,7 @@ import { MessageCircle, X, Send, Bot, User, AlertTriangle, Package, Phone, Mail,
 import toast from 'react-hot-toast';
 import { complaintService } from '@/services/complaint.service';
 import { chatbotService } from '@/services/chatbot.service';
+import { API_URL } from '../services/api.config.js';
 
 export default function UserComplaintBot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -141,7 +142,7 @@ export default function UserComplaintBot() {
     
     try {
       // Fetch tracking data from backend using the correct verify endpoint
-      const response = await fetch(`http://localhost:5000/api/tracking/verify`, {
+      const response = await fetch(`${API_URL}/tracking/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

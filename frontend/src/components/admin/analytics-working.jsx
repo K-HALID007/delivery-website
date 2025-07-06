@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Bar, Line, Doughnut, Pie } from 'react-chartjs-2';
 import 'chart.js/auto';
 import { 
+import { API_URL } from '../../services/api.config.js';
   TrendingUp, 
   DollarSign, 
   Package, 
@@ -125,7 +126,7 @@ export default function AdminAnalyticsWorking() {
         console.log('📊 Attempting to fetch from API...');
         
         // Try to fetch real-time analytics
-        const analyticsResponse = await fetch('http://localhost:5000/api/admin/analytics/realtime', { 
+        const analyticsResponse = await fetch('${API_URL}/admin/analytics/realtime', { 
           method: 'GET',
           headers,
           timeout: 5000 // 5 second timeout
@@ -141,7 +142,7 @@ export default function AdminAnalyticsWorking() {
         console.log('✅ Analytics data received:', analytics);
         
         // Try to fetch revenue analytics
-        const revenueResponse = await fetch('http://localhost:5000/api/admin/analytics/revenue', { 
+        const revenueResponse = await fetch('${API_URL}/admin/analytics/revenue', { 
           method: 'GET',
           headers,
           timeout: 5000
