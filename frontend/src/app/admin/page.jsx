@@ -130,96 +130,148 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     async function fetchData() {
+      console.log('🚀 Starting fast parallel data loading...');
+      const startTime = Date.now();
+      
       try {
         const token = sessionStorage.getItem('admin_token');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         
-        // Summary
-        console.log('🔍 Fetching admin summary data...');
-        const res = await fetch(`${API_URL}/admin/summary`, { headers });
-        console.log('📡 Summary API Response:', res.status, res.statusText);
+        // Show loading immediately with default data
+        setSummary({ totalShipments: 0, activeUsers: 0, revenue: 0, pendingDeliveries: 0 });
+        setNotifications([
+          { id: 1, message: 'Loading dashboard data...', type: 'info' }
+        ]);
         
-        if (!res.ok) {
-          const errorData = await res.json();
-          console.error('❌ Summary API Error:', errorData);
-          throw new Error(errorData.message || 'Failed to fetch summary');
+        // Parallel API calls for faster loading
+        console.log('⚡ Making parallel API calls...');
+        const [summaryRes, shipmentsRes, usersRes] = await Promise.allSettled([
+          fetch(`${API_URL}/admin/summary`, { 
+            headers,
+            signal: AbortSignal.timeout(10000) // 10 second timeout
+          }),
+          fetch(`${API_URL}/admin/shipments/recent`, { 
+            headers,
+            signal: AbortSignal.timeout(8000) // 8 second timeout
+          }),
+          fetch(`${API_URL}/admin/users`, { 
+            headers,
+            signal: AbortSignal.timeout(8000) // 8 second timeout
+          })
+        ]);
+        
+        const loadTime = Date.now() - startTime;
+        console.log(`⚡ Parallel API calls completed in ${loadTime}ms`);
+        
+        // Process Summary Data
+        if (summaryRes.status === 'fulfilled' && summaryRes.value.ok) {
+          const summaryData = await summaryRes.value.json();
+          console.log('✅ Summary loaded:', summaryData);
+          setSummary({
+            totalShipments: summaryData.activeShipments || summaryData.totalShipments || 0,
+            activeUsers: summaryData.totalUsers || summaryData.activeUsers || 0,
+            revenue: summaryData.totalRevenue || summaryData.revenue || 0,
+            pendingDeliveries: summaryData.pendingDeliveries || 0,
+          });
+        } else {
+          console.log('⚠️ Summary failed, using defaults');
+          setSummary({ totalShipments: 0, activeUsers: 0, revenue: 0, pendingDeliveries: 0 });
         }
         
-        const summaryData = await res.json();
-        console.log('📊 Summary Data Received:', summaryData);
-        
-        setSummary({
-          totalShipments: summaryData.activeShipments || 0,
-          activeUsers: summaryData.totalUsers || 0,
-          revenue: summaryData.totalRevenue || 0,
-          pendingDeliveries: summaryData.pendingDeliveries || 0,
-        });
-        
-        // Recent Shipments
-        console.log('🔍 Fetching recent shipments...');
-        const chartRes = await fetch(`${API_URL}/admin/shipments/recent`, { headers });
-        console.log('📡 Shipments API Response:', chartRes.status, chartRes.statusText);
-        
-        if (chartRes.ok) {
-          const chartJson = await chartRes.json();
-          console.log('📦 Shipments Data Received:', chartJson.length, 'shipments');
-          setRecentShipments(chartJson);
+        // Process Shipments Data
+        if (shipmentsRes.status === 'fulfilled' && shipmentsRes.value.ok) {
+          const shipmentsData = await shipmentsRes.value.json();
+          console.log('✅ Shipments loaded:', shipmentsData.length);
+          setRecentShipments(shipmentsData);
         } else {
-          console.error('❌ Failed to fetch shipments');
+          console.log('⚠️ Shipments failed, using empty array');
           setRecentShipments([]);
         }
         
-        // Users
-        console.log('🔍 Fetching users data...');
-        const usersRes = await fetch(`${API_URL}/admin/users`, { headers });
-        console.log('📡 Users API Response:', usersRes.status, usersRes.statusText);
-        
-        if (usersRes.ok) {
-          const usersJson = await usersRes.json();
-          console.log('👥 Users Data Received:', usersJson.length, 'users');
-          setUsers(usersJson);
+        // Process Users Data
+        if (usersRes.status === 'fulfilled' && usersRes.value.ok) {
+          const usersData = await usersRes.value.json();
+          console.log('✅ Users loaded:', usersData.length);
+          setUsers(usersData);
         } else {
-          console.error('❌ Failed to fetch users');
+          console.log('⚠️ Users failed, using empty array');
           setUsers([]);
         }
         
-        // Initial notifications
+        // Update notifications with success
         setNotifications([
-          { id: 1, message: 'Real-time dashboard initialized', type: 'info' },
-          { id: 2, message: `Connected to server - ${connectionStatus}`, type: 'success' },
+          { id: 1, message: `Dashboard loaded in ${loadTime}ms`, type: 'success' },
+          { id: 2, message: 'Real-time updates active', type: 'info' },
         ]);
-
-        // Fetch real-time analytics
-        await fetchRealTimeAnalytics();
-        await fetchRevenueAnalytics();
+        
+        // Load analytics in background (non-blocking)
+        setTimeout(() => {
+          console.log('🔄 Loading analytics in background...');
+          fetchRealTimeAnalytics().catch(err => console.log('Analytics failed:', err));
+          fetchRevenueAnalytics().catch(err => console.log('Revenue failed:', err));
+        }, 100);
         
       } catch (e) {
-        console.error('Error fetching dashboard data:', e);
+        console.error('❌ Dashboard loading error:', e);
         setSummary({ totalShipments: 0, activeUsers: 0, revenue: 0, pendingDeliveries: 0 });
-        setChartData({ labels: [], datasets: [] });
         setUsers([]);
         setRecentShipments([]);
         setNotifications([
-          { id: 1, message: 'Error loading dashboard data', type: 'error' }
+          { id: 1, message: 'Dashboard loaded with limited data', type: 'warning' }
         ]);
       } finally {
         setLoading(false);
+        const totalTime = Date.now() - startTime;
+        console.log(`🏁 Dashboard loading completed in ${totalTime}ms`);
       }
     }
     
     fetchData();
     
-    // Set up periodic refresh for real-time data
+    // Set up periodic refresh for real-time data (less frequent to reduce load)
     const interval = setInterval(() => {
-      fetchRealTimeAnalytics();
-      fetchRevenueAnalytics();
-    }, 30000); // Refresh every 30 seconds
+      console.log('🔄 Background refresh...');
+      fetchRealTimeAnalytics().catch(err => console.log('Background analytics failed:', err));
+      fetchRevenueAnalytics().catch(err => console.log('Background revenue failed:', err));
+    }, 60000); // Refresh every 60 seconds instead of 30
 
     return () => clearInterval(interval);
   }, [fetchRealTimeAnalytics, fetchRevenueAnalytics]);
 
-  if (loading || !summary) {
-    return <AdminDashboardSkeleton />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-black">Admin Dashboard</h1>
+          <div className="flex items-center space-x-4">
+            <div className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 animate-pulse">
+              Loading...
+            </div>
+          </div>
+        </div>
+        
+        {/* Fast Loading Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl shadow-lg p-6 flex flex-col items-center animate-pulse">
+              <div className="w-16 h-8 bg-gray-300 rounded mb-2"></div>
+              <div className="w-24 h-4 bg-gray-300 rounded"></div>
+            </div>
+          ))}
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-300 rounded w-1/4 mb-4"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-300 rounded"></div>
+              <div className="h-4 bg-gray-300 rounded w-5/6"></div>
+              <div className="h-4 bg-gray-300 rounded w-4/6"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
