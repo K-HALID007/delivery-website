@@ -11,8 +11,12 @@ export default function DeliveryDetails() {
   const [updating, setUpdating] = useState(false);
   const [statusUpdate, setStatusUpdate] = useState({
     status: '',
-    notes: ''
+    notes: '',
+    deliveryProof: null,
+    receiverName: '',
+    receiverSignature: ''
   });
+  const [showDeliveryConfirmation, setShowDeliveryConfirmation] = useState(false);
   const router = useRouter();
   const params = useParams();
   const trackingId = params.trackingId;
@@ -53,6 +57,12 @@ export default function DeliveryDetails() {
     e.preventDefault();
     if (!statusUpdate.status) return;
 
+    // If updating to delivered, show confirmation modal
+    if (statusUpdate.status === 'delivered' && !showDeliveryConfirmation) {
+      setShowDeliveryConfirmation(true);
+      return;
+    }
+
     try {
       setUpdating(true);
       const response = await partnerService.updateDeliveryStatus(trackingId, statusUpdate);
@@ -60,7 +70,14 @@ export default function DeliveryDetails() {
       if (response.success) {
         // Reload delivery details
         await loadDeliveryDetails();
-        setStatusUpdate({ ...statusUpdate, notes: '' });
+        setStatusUpdate({ 
+          status: '', 
+          notes: '', 
+          deliveryProof: null, 
+          receiverName: '', 
+          receiverSignature: '' 
+        });
+        setShowDeliveryConfirmation(false);
         alert('Delivery status updated successfully!');
       }
     } catch (error) {
@@ -68,6 +85,18 @@ export default function DeliveryDetails() {
     } finally {
       setUpdating(false);
     }
+  };
+
+  const handleDeliveryConfirmation = async (e) => {
+    e.preventDefault();
+    
+    // Validate delivery confirmation
+    if (!statusUpdate.receiverName.trim()) {
+      alert('Please enter receiver name');
+      return;
+    }
+
+    await handleStatusUpdate(e);
   };
 
   const getStatusColor = (status) => {
@@ -160,6 +189,59 @@ export default function DeliveryDetails() {
 
   return (
     <div className="min-h-screen bg-white text-black">
+      {/* Delivery Confirmation Modal */}
+      {showDeliveryConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-black mb-4">Confirm Delivery</h3>
+            <form onSubmit={handleDeliveryConfirmation} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-black mb-1">
+                  Receiver Name *
+                </label>
+                <input
+                  type="text"
+                  value={statusUpdate.receiverName}
+                  onChange={(e) => setStatusUpdate({ ...statusUpdate, receiverName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  placeholder="Who received the package?"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-black mb-1">
+                  Delivery Notes
+                </label>
+                <textarea
+                  value={statusUpdate.notes}
+                  onChange={(e) => setStatusUpdate({ ...statusUpdate, notes: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  placeholder="Package delivered to front door, handed to security, etc."
+                />
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowDeliveryConfirmation(false)}
+                  className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating}
+                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                  {updating ? 'Confirming...' : 'Confirm Delivery'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -294,6 +376,47 @@ export default function DeliveryDetails() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Delivered Status Display */}
+            {delivery?.status === 'delivered' && (
+              <div className="bg-green-50 border border-green-200 rounded-lg shadow p-6 text-black">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-green-800 mb-2">Package Delivered</h3>
+                  <p className="text-green-700 mb-4">Delivery completed successfully</p>
+                  
+                  {delivery?.deliveredAt && (
+                    <div className="bg-white rounded-lg p-4 mb-4">
+                      <div className="text-sm text-gray-600 mb-2">Delivery Details:</div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-medium">Delivered At:</span>
+                          <span>{formatDate(delivery.deliveredAt)}</span>
+                        </div>
+                        {delivery?.receiverName && (
+                          <div className="flex justify-between">
+                            <span className="font-medium">Received By:</span>
+                            <span>{delivery.receiverName}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="font-medium">Earnings:</span>
+                          <span className="text-green-600 font-semibold">₹{delivery?.partnerEarnings || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="text-sm text-green-600 font-medium">
+                    ✓ Payment processed
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Status Update */}
             {delivery?.status !== 'delivered' && delivery?.status !== 'cancelled' && (
               <div className="bg-white rounded-lg shadow p-6 text-black border-l-4 border-blue-500">
