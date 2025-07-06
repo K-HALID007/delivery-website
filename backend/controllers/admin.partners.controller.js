@@ -4,6 +4,10 @@ import Tracking from '../models/tracking.model.js';
 // Get all partners with pagination and filtering
 export const getAllPartners = async (req, res) => {
   try {
+    console.log('🔍 Admin getAllPartners request received');
+    console.log('Query params:', req.query);
+    console.log('User:', req.userId, 'Role:', req.userRole);
+    
     const { 
       page = 1, 
       limit = 10, 
@@ -34,6 +38,9 @@ export const getAllPartners = async (req, res) => {
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
+    console.log('Filter:', filter);
+    console.log('Sort options:', sortOptions);
+    
     // Get partners with pagination
     const partners = await Partner.find(filter)
       .sort(sortOptions)
@@ -42,8 +49,11 @@ export const getAllPartners = async (req, res) => {
       .select('-password')
       .lean();
 
+    console.log(`Found ${partners.length} partners`);
+
     // Get total count for pagination
     const total = await Partner.countDocuments(filter);
+    console.log(`Total partners: ${total}`);
 
     // Add delivery statistics for each partner
     const partnersWithStats = await Promise.all(
@@ -87,6 +97,8 @@ export const getAllPartners = async (req, res) => {
       })
     );
 
+    console.log(`Returning ${partnersWithStats.length} partners with stats`);
+
     res.json({
       success: true,
       partners: partnersWithStats,
@@ -100,7 +112,10 @@ export const getAllPartners = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching partners:', error);
+    console.error('❌ Error fetching partners:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch partners',

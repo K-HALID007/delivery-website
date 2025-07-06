@@ -55,6 +55,21 @@ const router = express.Router();
 router.use(verifyToken);
 router.use(isAdmin);
 
+// Test endpoint for debugging
+router.get('/test', (req, res) => {
+  console.log('🔍 Admin test endpoint hit');
+  console.log('User ID:', req.userId);
+  console.log('User Role:', req.userRole);
+  res.json({
+    success: true,
+    message: 'Admin authentication working',
+    user: {
+      id: req.userId,
+      role: req.userRole
+    }
+  });
+});
+
 router.get('/summary', getDashboardStats);
 router.get('/shipments/trends', getRecentShipments); // For now, use recent shipments as chart data
 router.get('/shipments/recent', getRecentShipments); // Explicit recent shipments endpoint
