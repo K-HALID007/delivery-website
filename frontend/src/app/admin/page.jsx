@@ -3,10 +3,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import 'chart.js/auto';
 import ChartsRow from '@/components/admin/charts/ChartsRow';
-import { useSocket } from '@/hooks/useSocket';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import AdminDashboardSkeleton from '@/components/admin/AdminDashboardSkeleton';
 import { API_URL } from '../../services/api.config.js';
+import { 
+  useRealTimeDashboard, 
+  useRealTimeShipments, 
+  useRealTimeAnalytics, 
+  useRealTimeNotifications 
+} from '@/hooks/useRealTimeData';
 
 export default function AdminDashboard() {
   const [summary, setSummary] = useState(null);
