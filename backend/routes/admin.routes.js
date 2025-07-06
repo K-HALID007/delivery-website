@@ -4,13 +4,15 @@ import {
   getDashboardStats,
   getRecentShipments,
   getAllUsers,
-  updateUserStatus,
-  updateTrackingStatusAdmin,
   getRealtimeAnalytics,
   getRevenueAnalytics,
+  getAdminNotifications
+} from '../controllers/admin.controller.simple.js';
+import {
+  updateUserStatus,
+  updateTrackingStatusAdmin,
   getAdminSettings,
   updateAdminSettings,
-  getAdminNotifications,
   getReportsData,
   getAllDeliveries,
   getDeliveryDetails,

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .log {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Backend API Test Tool</h1>
+        <p>Test backend API endpoints to diagnose 500 errors</p>
+
+        <div class="test-section">
+            <h3>🏥 Health Check</h3>
+            <button onclick="testHealth()">Test Health Endpoint</button>
+            <div id="health-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔐 Admin Authentication</h3>
+            <input type="email" id="admin-email" placeholder="Admin Email" value="admin@courier.com">
+            <input type="password" id="admin-password" placeholder="Admin Password" value="admin123">
+            <button onclick="testAdminLogin()">Login as Admin</button>
+            <div id="auth-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Admin Summary (Requires Login)</h3>
+            <button onclick="testAdminSummary()">Test Admin Summary</button>
+            <div id="summary-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔔 Admin Notifications (Requires Login)</h3>
+            <button onclick="testAdminNotifications()">Test Admin Notifications</button>
+            <div id="notifications-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📈 Admin Analytics (Requires Login)</h3>
+            <button onclick="testAdminAnalytics()">Test Admin Analytics</button>
+            <div id="analytics-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🚚 Recent Shipments (Requires Login)</h3>
+            <button onclick="testRecentShipments()">Test Recent Shipments</button>
+            <div id="shipments-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>👥 Users List (Requires Login)</h3>
+            <button onclick="testUsersList()">Test Users List</button>
+            <div id="users-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Debug Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="debug-log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://delivery-backend100.vercel.app/api';
+        let adminToken = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            logDiv.textContent += logEntry;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            document.getElementById('debug-log').textContent = '';
+        }
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data, null, 2);
+            element.className = `result ${isError ? 'error' : 'success'}`;
+        }
+
+        async function testHealth() {
+            log('🏥 Testing health endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Health check passed');
+                    showResult('health-result', { status: response.status, data });
+                } else {
+                    log('❌ Health check failed');
+                    showResult('health-result', { status: response.status, error: data }, true);
+                }
+            } catch (error) {
+                log(`❌ Health check error: ${error.message}`);
+                showResult('health-result', { error: error.message }, true);
+            }
+        }
+
+        async function testAdminLogin() {
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+            
+            log(`🔐 Testing admin login for ${email}...`);
+            try {
+                const response = await fetch(`${API_BASE}/auth/admin/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    adminToken = data.token;
+                    log('✅ Admin login successful');
+                    showResult('auth-result', { status: response.status, message: 'Login successful', token: data.token.substring(0, 20) + '...' });
+                } else {
+                    log('❌ Admin login failed');
+                    showResult('auth-result', { status: response.status, error: data }, true);
+                }
+            } catch (error) {
+                log(`❌ Admin login error: ${error.message}`);
+                showResult('auth-result', { error: error.message }, true);
+            }
+        }
+
+        async function testAdminSummary() {
+            if (!adminToken) {
+                log('❌ No admin token. Please login first.');
+                showResult('summary-result', { error: 'Please login as admin first' }, true);
+                return;
+            }
+
+            log('📊 Testing admin summary endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/admin/summary`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Admin summary successful');
+                    showResult('summary-result', { status: response.status, data });
+                } else {
+                    log(`❌ Admin summary failed: ${response.status}`);
+                    showResult('summary-result', { status: response.status, error: data }, true);
+                }
+            } catch (error) {
+                log(`❌ Admin summary error: ${error.message}`);
+                showResult('summary-result', { error: error.message }, true);
+            }
+        }
+
+        async function testAdminNotifications() {
+            if (!adminToken) {
+                log('❌ No admin token. Please login first.');
+                showResult('notifications-result', { error: 'Please login as admin first' }, true);
+                return;
+            }
+
+            log('🔔 Testing admin notifications endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/admin/notifications`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Admin notifications successful');
+                    showResult('notifications-result', { status: response.status, count: data.length, data: data.slice(0, 3) });
+                } else {
+                    log(`❌ Admin notifications failed: ${response.status}`);
+                    showResult('notifications-result', { status: response.status, error: data }, true);
+                }
+            } catch (error) {
+                log(`❌ Admin notifications error: ${error.message}`);
+                showResult('notifications-result', { error: error.message }, true);
+            }
+        }
+
+        async function testAdminAnalytics() {
+            if (!adminToken) {
+                log('❌ No admin token. Please login first.');
+                showResult('analytics-result', { error: 'Please login as admin first' }, true);
+                return;
+            }
+
+            log('📈 Testing admin analytics endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/admin/analytics/realtime`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Admin analytics successful');
+                    showResult('analytics-result', { status: response.status, data });
+                } else {
+                    log(`❌ Admin analytics failed: ${response.status}`);
+                    showResult('analytics-result', { status: response.status, error: data }, true);
+                }
+            } catch (error) {
+                log(`❌ Admin analytics error: ${error.message}`);
+                showResult('analytics-result', { error: error.message }, true);
+            }
+        }
+
+        async function testRecentShipments() {
+            if (!adminToken) {
+                log('❌ No admin token. Please login first.');
+                showResult('shipments-result', { error: 'Please login as admin first' }, true);
+                return;
+            }
+
+            log('🚚 Testing recent shipments endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/admin/shipments/recent`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Recent shipments successful');
+                    showResult('shipments-result', { status: response.status, count: data.length, data: data.slice(0, 3) });
+                } else {
+                    log(`❌ Recent shipments failed: ${response.status}`);
+                    showResult('shipments-result', { status: response.status, error: data }, true);
+                }
+            } catch (error) {
+                log(`❌ Recent shipments error: ${error.message}`);
+                showResult('shipments-result', { error: error.message }, true);
+            }
+        }
+
+        async function testUsersList() {
+            if (!adminToken) {
+                log('❌ No admin token. Please login first.');
+                showResult('users-result', { error: 'Please login as admin first' }, true);
+                return;
+            }
+
+            log('👥 Testing users list endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/admin/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Users list successful');
+                    showResult('users-result', { status: response.status, count: data.length, data: data.slice(0, 3) });
+                } else {
+                    log(`❌ Users list failed: ${response.status}`);
+                    showResult('users-result', { status: response.status, error: data }, true);
+                }
+            } catch (error) {
+                log(`❌ Users list error: ${error.message}`);
+                showResult('users-result', { error: error.message }, true);
+            }
+        }
+
+        // Auto-run health check on page load
+        window.onload = function() {
+            log('🚀 Backend API Test Tool loaded');
+            testHealth();
+        };
+    </script>
+</body>
+</html>
