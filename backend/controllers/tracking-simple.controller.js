@@ -6,7 +6,7 @@ export const requestRefundSimple = async (req, res) => {
   
   try {
     console.log('🔍 Simple refund request for:', trackingId);
-    console.log('🔍 User:', req.user?.email);
+    console.log('🔍 User:', req.user ? req.user.email : 'Guest');
     console.log('🔍 Body:', req.body);
     
     // Check if user is authenticated

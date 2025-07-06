@@ -836,6 +836,166 @@ export const requestRefund = async (req, res) => {
   }
 };
 
+// ✔ Cancel refund request
+export const cancelRefund = async (req, res) => {
+  const { trackingId } = req.params;
+  const { reason } = req.body;
+  
+  try {
+    // Get the authenticated user
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    // Find the tracking record
+    const tracking = await Tracking.findOne({ trackingId }).populate('assignedPartner');
+    if (!tracking) {
+      return res.status(404).json({ message: 'Shipment not found' });
+    }
+
+    // Check if user is authorized to cancel refund (must be sender)
+    if (tracking.sender.email !== user.email) {
+      return res.status(403).json({ 
+        message: 'You can only cancel refund requests for shipments that you have sent' 
+      });
+    }
+
+    // Check if there's a refund request to cancel
+    if (tracking.payment.status !== 'Refund Requested') {
+      return res.status(400).json({ 
+        message: 'No active refund request found for this shipment',
+        currentStatus: tracking.payment.status
+      });
+    }
+
+    const previousStatus = tracking.payment.status;
+    
+    // Revert payment status back to completed (since it was delivered)
+    tracking.payment.status = 'Completed';
+    tracking.payment.refundCancelledAt = new Date();
+    tracking.payment.refundCancelReason = reason || 'Customer cancelled refund request';
+    
+    // Clear refund request data but keep it for history
+    tracking.payment.refundRequestCancelledBy = user._id;
+    tracking.payment.originalRefundReason = tracking.payment.refundReason;
+    tracking.payment.originalRefundCategory = tracking.payment.refundCategory;
+    tracking.payment.originalRefundDescription = tracking.payment.refundDescription;
+    tracking.payment.originalExpectedRefundAmount = tracking.payment.expectedRefundAmount;
+    tracking.payment.originalRefundMethod = tracking.payment.refundMethod;
+    tracking.payment.originalRefundUrgency = tracking.payment.refundUrgency;
+    
+    // Clear current refund request fields
+    delete tracking.payment.refundReason;
+    delete tracking.payment.refundCategory;
+    delete tracking.payment.refundDescription;
+    delete tracking.payment.expectedRefundAmount;
+    delete tracking.payment.refundMethod;
+    delete tracking.payment.refundUrgency;
+    delete tracking.payment.refundRequestedAt;
+
+    // Add to status history
+    tracking.statusHistory.push({
+      status: 'Refund Request Cancelled',
+      timestamp: new Date(),
+      location: tracking.currentLocation,
+      notes: `Refund request cancelled by customer: ${reason || 'No reason provided'}`,
+      updatedBy: user._id,
+      updatedByModel: 'User'
+    });
+
+    await tracking.save();
+
+    // Emit real-time notification to admin
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin-room').emit('refund-request-cancelled', {
+        trackingId,
+        customerInfo: {
+          name: tracking.sender.name,
+          email: tracking.sender.email,
+          phone: tracking.sender.phone
+        },
+        cancelReason: reason || 'No reason provided',
+        originalRefundAmount: tracking.payment.originalExpectedRefundAmount,
+        cancelledAt: new Date()
+      });
+
+      // Also emit general notification
+      io.to('admin-room').emit('new-notification', {
+        id: `refund_cancelled_${trackingId}_${Date.now()}`,
+        type: 'info',
+        title: 'Refund Request Cancelled',
+        message: `Customer ${tracking.sender.name} has cancelled their refund request for shipment ${trackingId}`,
+        timestamp: new Date(),
+        read: false,
+        category: 'refunds',
+        data: { trackingId, reason: reason || 'No reason provided' }
+      });
+    }
+
+    // Send cancellation email to customer
+    try {
+      await sendDeliveryEmail(
+        tracking.sender.email,
+        `Refund Request Cancelled - Tracking ID: ${trackingId}`,
+        `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #10b981;">Refund Request Cancelled Successfully</h2>
+          <p>Hello ${tracking.sender.name},</p>
+          <p>You have successfully cancelled your refund request for the following shipment:</p>
+          <div style="background: #f0fdf4; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #10b981;">
+            <p><strong>Tracking ID:</strong> ${trackingId}</p>
+            <p><strong>Delivered To:</strong> ${tracking.destination}</p>
+            <p><strong>Original Amount:</strong> ₹${tracking.payment.amount}</p>
+            <p><strong>Previous Status:</strong> ${previousStatus}</p>
+            <p><strong>Current Status:</strong> Payment Completed</p>
+            <p><strong>Cancelled At:</strong> ${new Date().toLocaleString()}</p>
+            ${reason ? `<p><strong>Cancellation Reason:</strong> ${reason}</p>` : ''}
+          </div>
+          <p><strong>What this means:</strong></p>
+          <ul>
+            <li>Your refund request has been cancelled</li>
+            <li>No refund will be processed</li>
+            <li>The original payment remains completed</li>
+            <li>You can submit a new refund request if needed</li>
+          </ul>
+          <p>If you cancelled by mistake or need to request a refund again, you can do so from your shipment details page.</p>
+          <p>Thank you for using our courier service!</p>
+        </div>
+        `
+      );
+
+      console.log('✅ Refund cancellation email sent successfully');
+    } catch (emailError) {
+      console.error('❌ Failed to send refund cancellation email:', emailError.message);
+    }
+
+    // Notify admin about the cancellation
+    try {
+      // You can add admin notification email here if needed
+      console.log(`✅ Refund request cancelled for ${trackingId} by customer ${tracking.sender.email}`);
+    } catch (adminNotifyError) {
+      console.error('❌ Failed to notify admin about refund cancellation:', adminNotifyError.message);
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Refund request cancelled successfully', 
+      tracking,
+      paymentStatus: tracking.payment.status,
+      cancelledAt: tracking.payment.refundCancelledAt
+    });
+  } catch (error) {
+    console.error('Error cancelling refund request:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to cancel refund request', 
+      error: error.message 
+    });
+  }
+};
+
 // ✔ Submit complaint for shipment
 export const submitComplaint = async (req, res) => {
   const { trackingId } = req.params;

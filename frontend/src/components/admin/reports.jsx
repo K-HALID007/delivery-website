@@ -134,7 +134,7 @@ export default function AdminReports() {
       // Fix the image URL to use correct backend URL
       const imageUrl = image.imageUrl.startsWith('http') 
         ? image.imageUrl 
-        : `${process.env.NEXT_PUBLIC_API_URL || 'https://delivery-backend100.vercel.app'}${image.imageUrl}`;
+        : `https://delivery-backend100.vercel.app${image.imageUrl}`;
       
       const response = await fetch(imageUrl);
       const blob = await response.blob();

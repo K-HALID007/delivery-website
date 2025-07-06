@@ -196,6 +196,42 @@ export default function MyShipments() {
     }
   };
 
+  const handleCancelRefund = async (trackingId) => {
+    const reason = window.prompt('Please provide a reason for cancelling the refund request (optional):');
+    if (reason === null) return; // User clicked cancel
+    
+    try {
+      const token = sessionStorage.getItem('user_token');
+      const response = await fetch(`https://delivery-backend100.vercel.app/api/tracking/refund/cancel/${trackingId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason: reason || 'Customer cancelled refund request' })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to cancel refund request');
+      }
+      
+      // Update the shipment refund status in the local state
+      setShipments((prev) => 
+        prev.map((s) => 
+          s.trackingId === trackingId 
+            ? { ...s, payment: { ...s.payment, status: 'Completed' } }
+            : s
+        )
+      );
+      
+      toast.success('Refund request cancelled successfully');
+      toast.info('Your payment status has been restored to completed.');
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   // Debug: log all tracking IDs
   useEffect(() => {
     if (shipments.length > 0) {
@@ -447,11 +483,20 @@ export default function MyShipments() {
                           </button>
                         )}
 
-                        {/* Show refund status for refund requested orders */}
+                        {/* Show refund status for refund requested orders with cancel option */}
                         {shipment.payment?.status === 'Refund Requested' && (
-                          <span className="px-6 py-2.5 bg-yellow-100 text-yellow-800 rounded-md text-sm font-medium">
-                            Under Review
-                          </span>
+                          <div className="flex space-x-2">
+                            <span className="px-6 py-2.5 bg-yellow-100 text-yellow-800 rounded-md text-sm font-medium">
+                              Under Review
+                            </span>
+                            <button
+                              onClick={() => handleCancelRefund(shipment.trackingId)}
+                              className="px-4 py-2.5 bg-gray-500 text-white rounded-md text-sm font-medium hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                              title="Cancel your refund request"
+                            >
+                              Cancel Refund
+                            </button>
+                          </div>
                         )}
 
                         {/* Show refunded status */}

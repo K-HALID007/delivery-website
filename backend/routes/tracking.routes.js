@@ -8,6 +8,7 @@ import {
   getUserShipments,
   cancelTracking,
   requestRefund,
+  cancelRefund,
   submitComplaint,
   deleteTracking
 } from '../controllers/tracking.controller.js';
@@ -33,6 +34,9 @@ router.put('/cancel/:trackingId', cancelTracking);
 
 // Request refund for delivered shipment (FIXED - using simple version)
 router.put('/refund/:trackingId', requestRefundSimple);
+
+// Cancel a refund request (user can cancel their own refund requests)
+router.put('/refund/cancel/:trackingId', cancelRefund);
 
 // Submit complaint for shipment (protected route)
 router.post('/complaint/:trackingId', submitComplaint);
