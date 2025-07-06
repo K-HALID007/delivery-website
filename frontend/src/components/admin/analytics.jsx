@@ -134,7 +134,7 @@ export default function AdminAnalytics() {
       labels: revenueData.labels,
       datasets: [
         {
-          label: 'Monthly Revenue ($)',
+          label: 'Monthly Revenue (₹)',
           data: revenueData.monthly,
           borderColor: '#10b981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -395,7 +395,7 @@ export default function AdminAnalytics() {
             <div>
               <p className="text-green-600 text-sm font-medium">Total Revenue</p>
               <p className="text-3xl font-bold text-green-800">
-                ${revenueData?.totalRevenue?.toLocaleString() || '0'}
+                ₹{revenueData?.totalRevenue?.toLocaleString() || '0'}
               </p>
             </div>
             <DollarSign className="w-12 h-12 text-green-500" />
@@ -419,7 +419,7 @@ export default function AdminAnalytics() {
             <div>
               <p className="text-purple-600 text-sm font-medium">Avg Order Value</p>
               <p className="text-3xl font-bold text-purple-800">
-                ${revenueData?.averageOrderValue?.toFixed(2) || '0.00'}
+                ₹{revenueData?.averageOrderValue?.toFixed(2) || '0.00'}
               </p>
             </div>
             <TrendingUp className="w-12 h-12 text-purple-500" />
@@ -468,7 +468,7 @@ export default function AdminAnalytics() {
                 <div className="text-center">
                   <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                   <p className="text-gray-500">No revenue data available</p>
-                  <p className="text-sm text-gray-400">Revenue: ${revenueData?.totalRevenue || 0}</p>
+                  <p className="text-sm text-gray-400">Revenue: ₹{revenueData?.totalRevenue || 0}</p>
                 </div>
               </div>
             )}
@@ -602,7 +602,7 @@ export default function AdminAnalytics() {
                 {revenueData?.revenueByStatus?.map((status, index) => (
                   <tr key={index} className="border-b border-gray-100">
                     <td className="py-3 text-sm text-gray-900">{status._id}</td>
-                    <td className="py-3 text-sm text-gray-900 text-right">${status.revenue.toLocaleString()}</td>
+                    <td className="py-3 text-sm text-gray-900 text-right">₹{status.revenue.toLocaleString()}</td>
                     <td className="py-3 text-sm text-gray-900 text-right">{status.count}</td>
                   </tr>
                 ))}

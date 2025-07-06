@@ -42,7 +42,7 @@ export default function AdminDashboard() {
           <span className="text-gray-600 mt-2">Active Users</span>
         </div>
         <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
-          <span className="text-2xl font-bold text-green-500">${summary.revenue.toLocaleString()}</span>
+          <span className="text-2xl font-bold text-green-500">₹{summary.revenue.toLocaleString()}</span>
           <span className="text-gray-600 mt-2">Revenue</span>
         </div>
         <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">

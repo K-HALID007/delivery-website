@@ -202,7 +202,7 @@ export default function RealTimeAdminDashboard() {
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             </div>
           )}
-          <span className="text-3xl font-bold text-green-600">${(summary?.totalRevenue || 0).toLocaleString()}</span>
+          <span className="text-3xl font-bold text-green-600">₹{(summary?.totalRevenue || 0).toLocaleString()}</span>
           <span className="text-gray-800 mt-2 font-medium">Revenue</span>
           <div className="w-full bg-green-200 rounded-full h-2 mt-3">
             <div className="bg-green-500 h-2 rounded-full" style={{width: '85%'}}></div>
