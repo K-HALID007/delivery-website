@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Partner Active Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #d97706;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+        .error {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+        .info {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            color: #1e40af;
+        }
+        input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Partner Active Status</h1>
+        <p>This tool will fix the issue where approved partners have <code>isActive: false</code> and cannot login.</p>
+        
+        <div>
+            <h3>1. Fix All Approved Partners</h3>
+            <button onclick="fixPartnerActiveStatus()">Fix Partner Active Status</button>
+        </div>
+
+        <div>
+            <h3>2. Check Individual Partner Status</h3>
+            <input type="email" id="partnerEmail" placeholder="Enter partner email" style="width: 250px;">
+            <button onclick="checkPartnerStatus()">Check Status</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://delivery-backend100.vercel.app/api';
+
+        async function fixPartnerActiveStatus() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="info">🔄 Fixing partner active status...</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/fix/fix-partner-active-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    let message = `✅ Success: ${data.message}\n`;
+                    message += `📊 Partners Fixed: ${data.partnersFixed}\n\n`;
+                    
+                    if (data.updatedPartners && data.updatedPartners.length > 0) {
+                        message += `📋 Updated Partners:\n`;
+                        data.updatedPartners.forEach(partner => {
+                            message += `  • ${partner.name} (${partner.email}) - Status: ${partner.status}, Active: ${partner.isActive}\n`;
+                        });
+                    }
+
+                    resultDiv.innerHTML = `<div class="success">${message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Error: ${data.message}</div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        async function checkPartnerStatus() {
+            const email = document.getElementById('partnerEmail').value.trim();
+            const resultDiv = document.getElementById('result');
+
+            if (!email) {
+                resultDiv.innerHTML = '<div class="error">❌ Please enter a partner email</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="info">🔄 Checking partner status...</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/fix/check-partner-status/${encodeURIComponent(email)}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const partner = data.partner;
+                    let message = `📋 Partner Status for ${partner.email}:\n\n`;
+                    message += `👤 Name: ${partner.name}\n`;
+                    message += `📧 Email: ${partner.email}\n`;
+                    message += `📊 Status: ${partner.status}\n`;
+                    message += `✅ Is Active: ${partner.isActive}\n`;
+                    message += `🟢 Is Online: ${partner.isOnline}\n`;
+                    message += `🔐 Can Login: ${partner.canLogin ? 'YES' : 'NO'}\n`;
+
+                    if (!partner.canLogin) {
+                        message += `\n⚠️ Issue: Partner cannot login because:\n`;
+                        if (partner.status !== 'approved') {
+                            message += `  • Status is '${partner.status}' (should be 'approved')\n`;
+                        }
+                        if (!partner.isActive) {
+                            message += `  • isActive is false (should be true)\n`;
+                        }
+                    }
+
+                    resultDiv.innerHTML = `<div class="success">${message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Error: ${data.message}</div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-focus on email input
+        document.getElementById('partnerEmail').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPartnerStatus();
+            }
+        });
+    </script>
+</body>
+</html>

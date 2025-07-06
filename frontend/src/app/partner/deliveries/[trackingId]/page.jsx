@@ -94,14 +94,38 @@ export default function DeliveryDetails() {
 
   const getNextStatuses = (currentStatus) => {
     const statusFlow = {
-      'assigned': ['picked_up', 'in_transit', 'out_for_delivery', 'delivered'],
-      'picked_up': ['in_transit', 'out_for_delivery', 'delivered'],
-      'in_transit': ['out_for_delivery', 'delivered'],
+      'assigned': ['picked_up'],
+      'picked_up': ['in_transit'],
+      'in_transit': ['out_for_delivery'],
       'out_for_delivery': ['delivered'],
       'delivered': [],
       'cancelled': []
     };
     return statusFlow[currentStatus] || [];
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      'assigned': 'Assigned',
+      'picked_up': 'Picked Up',
+      'in_transit': 'In Transit',
+      'out_for_delivery': 'Out for Delivery',
+      'delivered': 'Delivered',
+      'cancelled': 'Cancelled'
+    };
+    return labels[status] || status;
+  };
+
+  const getStatusDescription = (status) => {
+    const descriptions = {
+      'assigned': 'Package assigned to delivery partner',
+      'picked_up': 'Package collected from sender',
+      'in_transit': 'Package in transit to destination',
+      'out_for_delivery': 'Package out for final delivery',
+      'delivered': 'Package delivered successfully',
+      'cancelled': 'Delivery cancelled'
+    };
+    return descriptions[status] || '';
   };
 
   if (loading) {
@@ -178,8 +202,11 @@ export default function DeliveryDetails() {
                 </div>
                 <div className="text-right">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(delivery?.status)}`}>
-                    {delivery?.status?.replace('_', ' ').toUpperCase()}
+                    {getStatusLabel(delivery?.status)}
                   </span>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {getStatusDescription(delivery?.status)}
+                  </div>
                   <div className="text-lg font-semibold text-green-600 mt-2">
                     ₹{delivery?.partnerEarnings || 0}
                   </div>
@@ -242,10 +269,15 @@ export default function DeliveryDetails() {
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-medium text-black">
-                              {history.status?.replace('_', ' ').toUpperCase()}
+                              {getStatusLabel(history.status)}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {getStatusDescription(history.status)}
                             </p>
                             {history.notes && (
-                              <p className="text-sm text-black mt-1">{history.notes}</p>
+                              <p className="text-sm text-black mt-1 bg-gray-50 p-2 rounded">
+                                Note: {history.notes}
+                              </p>
                             )}
                           </div>
                           <span className="text-sm text-black">
@@ -264,49 +296,82 @@ export default function DeliveryDetails() {
           <div className="space-y-6">
             {/* Status Update */}
             {delivery?.status !== 'delivered' && delivery?.status !== 'cancelled' && (
-              <div className="bg-white rounded-lg shadow p-6 text-black">
-                <h3 className="text-lg font-medium text-black mb-4">Update Status</h3>
+              <div className="bg-white rounded-lg shadow p-6 text-black border-l-4 border-blue-500">
+                <div className="flex items-center mb-4">
+                  <h3 className="text-lg font-medium text-black">Update Delivery Status</h3>
+                </div>
+                
+                {/* Current Status Display */}
+                <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                  <div className="text-sm text-gray-600 mb-1">Current Status:</div>
+                  <div className="flex items-center">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(delivery?.status)}`}>
+                      {getStatusLabel(delivery?.status)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {getStatusDescription(delivery?.status)}
+                  </div>
+                </div>
+
                 <form onSubmit={handleStatusUpdate} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-black mb-1">
-                      New Status
+                    <label className="block text-sm font-medium text-black mb-2">
+                      Select New Status
                     </label>
                     <select
                       value={statusUpdate.status}
                       onChange={(e) => setStatusUpdate({ ...statusUpdate, status: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                      className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-white"
                       required
                     >
-                      <option value={delivery?.status} className="text-black">
-                        {delivery?.status?.replace('_', ' ').toUpperCase()} (Current)
+                      <option value={delivery?.status} className="text-gray-500">
+                        {getStatusLabel(delivery?.status)} (Current)
                       </option>
                       {getNextStatuses(delivery?.status).map((status) => (
                         <option key={status} value={status} className="text-black">
-                          {status.replace('_', ' ').toUpperCase()}
+                          {getStatusLabel(status)}
                         </option>
                       ))}
                     </select>
+                    
+                    {/* Show description for selected status */}
+                    {statusUpdate.status !== delivery?.status && (
+                      <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
+                        {getStatusDescription(statusUpdate.status)}
+                      </div>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-black mb-1">
-                      Notes (Optional)
+                    <label className="block text-sm font-medium text-black mb-2">
+                      Additional Notes (Optional)
                     </label>
                     <textarea
                       value={statusUpdate.notes}
                       onChange={(e) => setStatusUpdate({ ...statusUpdate, notes: e.target.value })}
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                      placeholder="Add any notes about this status update..."
+                      placeholder="Add delivery notes, customer instructions, or any relevant information..."
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={updating || statusUpdate.status === delivery?.status}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-md hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all duration-200"
                   >
-                    {updating ? 'Updating...' : 'Update Status'}
+                    {updating ? (
+                      <span className="flex items-center justify-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Updating Status...
+                      </span>
+                    ) : (
+                      'Update Status'
+                    )}
                   </button>
                 </form>
               </div>

@@ -1,0 +1,13 @@
+# Commands to fix partner active status issue
+
+# 1. Check specific partner status
+curl -X GET "https://delivery-backend100.vercel.app/api/fix/check-partner-status/atharvbhintade1@gmail.com"
+
+# 2. Fix all approved partners (run this to fix the issue)
+curl -X POST "https://delivery-backend100.vercel.app/api/fix/fix-partner-active-status" -H "Content-Type: application/json"
+
+# 3. Check partner status again after fix
+curl -X GET "https://delivery-backend100.vercel.app/api/fix/check-partner-status/atharvbhintade1@gmail.com"
+
+# Alternative: Use PowerShell
+Invoke-RestMethod -Uri "https://delivery-backend100.vercel.app/api/fix/fix-partner-active-status" -Method POST -ContentType "application/json"
