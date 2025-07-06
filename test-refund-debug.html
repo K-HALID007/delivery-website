@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Refund API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #d97706;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+        .error {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+        .info {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            color: #1e40af;
+        }
+        input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            margin: 5px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Debug Refund API Issue</h1>
+        <p>This tool will help debug the 500 error in refund API for tracking ID: <strong>TRK25071930</strong></p>
+        
+        <div>
+            <h3>1. Check if Tracking Exists</h3>
+            <input type="text" id="trackingId" value="TRK25071930" placeholder="Enter tracking ID">
+            <button onclick="checkTracking()">Check Tracking</button>
+        </div>
+
+        <div>
+            <h3>2. Test Refund API (with debug)</h3>
+            <button onclick="testRefundAPI()">Test Refund Request</button>
+        </div>
+
+        <div>
+            <h3>3. Check Backend Health</h3>
+            <button onclick="checkHealth()">Check Backend Health</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://delivery-backend100.vercel.app/api';
+
+        async function checkTracking() {
+            const trackingId = document.getElementById('trackingId').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            if (!trackingId) {
+                resultDiv.innerHTML = '<div class="error">❌ Please enter a tracking ID</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="info">🔄 Checking tracking...</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/debug/tracking/${trackingId}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    let message = `✅ Tracking Check Results:\n\n`;
+                    message += `Tracking ID: ${data.trackingId}\n`;
+                    message += `Exists: ${data.exists ? 'YES' : 'NO'}\n\n`;
+                    
+                    if (data.exists && data.data) {
+                        message += `📋 Tracking Details:\n`;
+                        message += `Status: ${data.data.status}\n`;
+                        message += `Sender Email: ${data.data.sender?.email}\n`;
+                        message += `Payment Status: ${data.data.payment?.status || 'N/A'}\n`;
+                        message += `Payment Method: ${data.data.payment?.method || 'N/A'}\n`;
+                        message += `Created: ${new Date(data.data.createdAt).toLocaleString()}\n`;
+                        message += `Delivered: ${data.data.deliveredAt ? new Date(data.data.deliveredAt).toLocaleString() : 'Not delivered'}\n`;
+                    }
+
+                    resultDiv.innerHTML = `<div class="success">${message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Error: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testRefundAPI() {
+            const trackingId = document.getElementById('trackingId').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            if (!trackingId) {
+                resultDiv.innerHTML = '<div class="error">❌ Please enter a tracking ID</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="info">🔄 Testing refund API...</div>';
+
+            try {
+                // First, let's try without authentication to see the exact error
+                const response = await fetch(`${API_URL}/tracking/refund/${trackingId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        reason: 'Test refund request',
+                        category: 'damaged',
+                        description: 'Testing refund API',
+                        expectedRefundAmount: 100,
+                        refundMethod: 'UPI',
+                        urgency: 'medium'
+                    })
+                });
+
+                const data = await response.json();
+
+                let message = `🔍 Refund API Test Results:\n\n`;
+                message += `Status Code: ${response.status}\n`;
+                message += `Response: ${JSON.stringify(data, null, 2)}\n`;
+
+                if (response.status === 500) {
+                    message += `\n❌ This is the 500 error we're debugging!\n`;
+                    message += `Likely causes:\n`;
+                    message += `- Database connection issue\n`;
+                    message += `- Missing tracking record\n`;
+                    message += `- Model validation error\n`;
+                    message += `- Authentication middleware issue\n`;
+                }
+
+                resultDiv.innerHTML = `<div class="${response.ok ? 'success' : 'error'}">${message}</div>`;
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        async function checkHealth() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="info">🔄 Checking backend health...</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+
+                let message = `🏥 Backend Health Check:\n\n`;
+                message += `Status: ${response.status}\n`;
+                message += `Response: ${JSON.stringify(data, null, 2)}\n`;
+
+                resultDiv.innerHTML = `<div class="${response.ok ? 'success' : 'error'}">${message}</div>`;
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<div class="error">❌ Backend Health Check Failed: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-check tracking on page load
+        window.onload = function() {
+            checkTracking();
+        };
+    </script>
+</body>
+</html>
