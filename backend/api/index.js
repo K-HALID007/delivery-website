@@ -913,6 +913,99 @@ app.get('/api/admin/analytics/users', verifyToken, verifyAdmin, async (req, res)
   }
 });
 
+// Additional endpoints that frontend might be expecting
+app.get('/api/admin/stats', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    await connectDB();
+    
+    const stats = {
+      totalUsers: await User.countDocuments(),
+      totalShipments: await Tracking.countDocuments(),
+      totalPartners: await Partner.countDocuments(),
+      totalRevenue: 0
+    };
+    
+    // Calculate total revenue
+    const revenueResult = await Tracking.aggregate([
+      { $match: { 'payment.status': 'Completed' } },
+      { $group: { _id: null, total: { $sum: '$payment.amount' } } }
+    ]);
+    
+    if (revenueResult.length > 0) {
+      stats.totalRevenue = revenueResult[0].total;
+    }
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Stats error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching stats', 
+      error: error.message 
+    });
+  }
+});
+
+// Get recent activities
+app.get('/api/admin/activities', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    await connectDB();
+    
+    const recentShipments = await Tracking.find()
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate('userId', 'name email');
+    
+    const recentUsers = await User.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('name email createdAt');
+    
+    res.json({
+      success: true,
+      data: {
+        recentShipments: recentShipments || [],
+        recentUsers: recentUsers || []
+      }
+    });
+  } catch (error) {
+    console.error('Activities error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching activities', 
+      error: error.message,
+      data: {
+        recentShipments: [],
+        recentUsers: []
+      }
+    });
+  }
+});
+
+// Catch-all for missing admin routes
+app.all('/api/admin/*', verifyToken, verifyAdmin, (req, res) => {
+  console.log(`Missing admin route: ${req.method} ${req.path}`);
+  res.status(404).json({
+    success: false,
+    message: `Admin route not found: ${req.method} ${req.path}`,
+    availableRoutes: [
+      'GET /api/admin/dashboard',
+      'GET /api/admin/users',
+      'GET /api/admin/shipments',
+      'GET /api/admin/partners',
+      'GET /api/admin/stats',
+      'GET /api/admin/activities',
+      'GET /api/admin/analytics/realtime',
+      'GET /api/admin/analytics/revenue',
+      'GET /api/admin/analytics/shipments',
+      'GET /api/admin/analytics/users'
+    ]
+  });
+});
+
 // Error handling
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);
