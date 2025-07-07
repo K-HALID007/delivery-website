@@ -1,2 +1,2 @@
 // Redirect to API for Vercel deployment
-export { default } from './api/index.js';
+module.exports = require('./api/index.js');
