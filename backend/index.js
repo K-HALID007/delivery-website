@@ -1,5 +1,2 @@
-// Import the main app
-import app from './app.js';
-
-// For Vercel deployment
-export default app;
+// Redirect to API for Vercel deployment
+export { default } from './api/index.js';
