@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "app-minimal.js",
+      "src": "app-working.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/app-minimal.js",
+      "dest": "/app-working.js",
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "*",
@@ -19,7 +19,7 @@
     }
   ],
   "functions": {
-    "app-minimal.js": {
+    "app-working.js": {
       "maxDuration": 30
     }
   }
