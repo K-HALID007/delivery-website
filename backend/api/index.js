@@ -244,6 +244,162 @@ app.get('/api/cors-test', (req, res) => {
   });
 });
 
+// Debug endpoint - No auth required
+app.get('/api/debug/dashboard', async (req, res) => {
+  try {
+    await connectDB();
+    
+    console.log('Debug dashboard called');
+    
+    // Simple counts without complex aggregations
+    const totalUsers = await User.countDocuments().catch(() => 0);
+    const totalShipments = await Tracking.countDocuments().catch(() => 0);
+    const totalPartners = await Partner.countDocuments().catch(() => 0);
+    
+    const mockData = {
+      success: true,
+      data: {
+        stats: {
+          totalUsers,
+          activeUsers: Math.floor(totalUsers * 0.7),
+          totalShipments,
+          pendingShipments: Math.floor(totalShipments * 0.3),
+          deliveredShipments: Math.floor(totalShipments * 0.6),
+          totalPartners,
+          activePartners: Math.floor(totalPartners * 0.8),
+          totalRevenue: 50000
+        },
+        recentShipments: [
+          {
+            _id: "mock1",
+            trackingId: "TRK001",
+            status: "Delivered",
+            sender: { name: "Test User", email: "test@example.com" },
+            receiver: { name: "Receiver", email: "receiver@example.com" },
+            origin: "Mumbai",
+            destination: "Delhi",
+            createdAt: new Date().toISOString(),
+            payment: { amount: 150, status: "Completed" }
+          }
+        ]
+      }
+    };
+    
+    console.log('Debug dashboard response:', JSON.stringify(mockData, null, 2));
+    res.json(mockData);
+  } catch (error) {
+    console.error('Debug dashboard error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Debug dashboard error',
+      error: error.message,
+      data: {
+        stats: {
+          totalUsers: 0,
+          activeUsers: 0,
+          totalShipments: 0,
+          pendingShipments: 0,
+          deliveredShipments: 0,
+          totalPartners: 0,
+          activePartners: 0,
+          totalRevenue: 0
+        },
+        recentShipments: []
+      }
+    });
+  }
+});
+
+// Debug analytics endpoints - No auth required
+app.get('/api/debug/analytics/realtime', async (req, res) => {
+  try {
+    await connectDB();
+    
+    res.json({
+      success: true,
+      data: {
+        todayShipments: 5,
+        todayRevenue: 1250,
+        todayDeliveries: 3,
+        activeUsers: 12,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      data: {
+        todayShipments: 0,
+        todayRevenue: 0,
+        todayDeliveries: 0,
+        activeUsers: 0,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+});
+
+app.get('/api/debug/analytics/revenue', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      daily: [
+        { date: "2025-01-01", revenue: 500 },
+        { date: "2025-01-02", revenue: 750 },
+        { date: "2025-01-03", revenue: 600 },
+        { date: "2025-01-04", revenue: 800 },
+        { date: "2025-01-05", revenue: 900 },
+        { date: "2025-01-06", revenue: 700 },
+        { date: "2025-01-07", revenue: 1000 }
+      ],
+      monthly: [
+        { month: 1, revenue: 15000 },
+        { month: 2, revenue: 18000 },
+        { month: 3, revenue: 22000 },
+        { month: 4, revenue: 19000 },
+        { month: 5, revenue: 25000 },
+        { month: 6, revenue: 28000 },
+        { month: 7, revenue: 30000 },
+        { month: 8, revenue: 27000 },
+        { month: 9, revenue: 32000 },
+        { month: 10, revenue: 35000 },
+        { month: 11, revenue: 38000 },
+        { month: 12, revenue: 40000 }
+      ]
+    }
+  });
+});
+
+app.get('/api/debug/analytics/shipments', (req, res) => {
+  res.json({
+    success: true,
+    data: [
+      { status: "Delivered", count: 45 },
+      { status: "In Transit", count: 23 },
+      { status: "Pending", count: 12 },
+      { status: "Out for Delivery", count: 8 },
+      { status: "Cancelled", count: 2 }
+    ]
+  });
+});
+
+app.get('/api/debug/analytics/users', (req, res) => {
+  const last30Days = [];
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    last30Days.push({
+      date: date.toISOString().split('T')[0],
+      users: Math.floor(Math.random() * 10) + 1
+    });
+  }
+  
+  res.json({
+    success: true,
+    data: last30Days
+  });
+});
+
 // User Login
 app.post('/api/auth/login', async (req, res) => {
   try {
