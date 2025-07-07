@@ -2,24 +2,25 @@
   "version": 2,
   "builds": [
     {
-      "src": "app.js",
+      "src": "app-cors-emergency.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/app.js",
+      "dest": "/app-cors-emergency.js",
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "*",
         "Access-Control-Allow-Headers": "*",
-        "Access-Control-Allow-Credentials": "true"
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Max-Age": "3600"
       }
     }
   ],
   "functions": {
-    "app.js": {
+    "app-cors-emergency.js": {
       "maxDuration": 30
     }
   }
