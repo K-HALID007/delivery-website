@@ -2,11 +2,12 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { verifyToken, isAdmin } from '../middleware/auth.middleware.js';
+import Tracking from '../models/tracking.model.js';
 
 const router = express.Router();
 
-// Serve refund images (admin only)
-router.get('/refunds/:filename', verifyToken, isAdmin, (req, res) => {
+// Serve refund images (admin or image owner)
+router.get('/refunds/:filename', verifyToken, async (req, res) => {
   try {
     const { filename } = req.params;
     const filePath = path.join(process.cwd(), 'uploads', 'refunds', filename);
@@ -17,6 +18,31 @@ router.get('/refunds/:filename', verifyToken, isAdmin, (req, res) => {
         success: false,
         message: 'Image not found'
       });
+    }
+    
+    // Check if user is admin or owns the image
+    const isUserAdmin = req.user.role === 'admin';
+    
+    if (!isUserAdmin) {
+      // Find the tracking record that contains this image
+      const tracking = await Tracking.findOne({
+        'payment.refundImages.filename': filename
+      });
+      
+      if (!tracking) {
+        return res.status(404).json({
+          success: false,
+          message: 'Image not found in any refund request'
+        });
+      }
+      
+      // Check if the user is the sender (owner of the refund request)
+      if (tracking.sender.email !== req.user.email) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. You can only view your own refund images.'
+        });
+      }
     }
     
     // Send the file

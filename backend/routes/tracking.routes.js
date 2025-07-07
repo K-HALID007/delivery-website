@@ -1,5 +1,6 @@
 import express from 'express';
 import { verifyToken, isAdmin } from '../middleware/auth.middleware.js';
+import { uploadRefundImages, handleUploadError } from '../middleware/upload.middleware.js';
 import {
   verifyTracking,
   addTracking,
@@ -32,8 +33,8 @@ router.get('/user', getUserShipments);
 // Cancel a shipment (protected route - user can cancel their own orders)
 router.put('/cancel/:trackingId', cancelTracking);
 
-// Request refund for delivered shipment (FIXED - using simple version)
-router.put('/refund/:trackingId', requestRefundSimple);
+// Request refund for delivered shipment (with image upload support)
+router.put('/refund/:trackingId', uploadRefundImages, handleUploadError, requestRefund);
 
 // Cancel a refund request (user can cancel their own refund requests)
 router.put('/refund/cancel/:trackingId', cancelRefund);

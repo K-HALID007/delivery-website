@@ -11,6 +11,7 @@ import adminRoutes from './routes/admin.routes.js';
 import partnerRoutes from './routes/partner.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import fixRoutes from './routes/fix.routes.js';
+import uploadsRoutes from './routes/uploads.routes.js';
 
 // Load environment variables
 dotenv.config();
@@ -34,6 +35,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/partner', partnerRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/fix', fixRoutes);
+app.use('/api/uploads', uploadsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

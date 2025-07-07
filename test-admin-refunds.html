@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Refund View</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .refund-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+        .refund-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .refund-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .refund-images img {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Refund Requests Dashboard</h1>
+        <p>This page tests the admin view of refund requests to ensure images are properly received.</p>
+        
+        <div class="form-group">
+            <label for="adminToken">Admin Token:</label>
+            <input type="text" id="adminToken" name="adminToken" placeholder="Enter admin authentication token" required>
+        </div>
+        
+        <button onclick="fetchRefunds()">Load Refund Requests</button>
+        <button onclick="fetchRefundDetails()">Get Specific Refund Details</button>
+        
+        <div id="result" class="result"></div>
+        <div id="refundsContainer"></div>
+    </div>
+
+    <script>
+        async function fetchRefunds() {
+            const token = document.getElementById('adminToken').value;
+            if (!token) {
+                alert('Please enter admin token');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('result');
+            const container = document.getElementById('refundsContainer');
+            
+            resultDiv.style.display = 'none';
+            container.innerHTML = '<div class="loading">Loading refund requests...</div>';
+            
+            try {
+                console.log('Fetching refunds with admin token...');
+                
+                const response = await fetch('https://delivery-backend100.vercel.app/api/admin/refunds', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayRefunds(data.refunds || [], data.summary);
+                    
+                    resultDiv.style.display = 'block';
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Success!</h3>
+                        <p><strong>Total Refunds:</strong> ${data.count || 0}</p>
+                        <p><strong>With Images:</strong> ${data.summary?.withImages || 0}</p>
+                        <p><strong>Total Amount:</strong> ₹${data.summary?.totalAmount || 0}</p>
+                    `;
+                } else {
+                    container.innerHTML = '';
+                    resultDiv.style.display = 'block';
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ Error!</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Message:</strong> ${data.message}</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Request failed:', error);
+                container.innerHTML = '';
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Network Error!</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+        
+        function displayRefunds(refunds, summary) {
+            const container = document.getElementById('refundsContainer');
+            
+            if (refunds.length === 0) {
+                container.innerHTML = '<div class="loading">No refund requests found.</div>';
+                return;
+            }
+            
+            let html = '<h2>Refund Requests</h2>';
+            
+            refunds.forEach(refund => {
+                const hasImages = refund.adminDetails?.refundRequest?.hasImages || false;
+                const imageCount = refund.adminDetails?.refundRequest?.imageCount || 0;
+                const images = refund.adminDetails?.refundRequest?.images || [];
+                
+                html += `
+                    <div class="refund-card">
+                        <div class="refund-header">
+                            <h3>Tracking ID: ${refund.trackingId}</h3>
+                            <span class="status-badge status-pending">Pending Review</span>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div>
+                                <p><strong>Customer:</strong> ${refund.adminDetails?.customerInfo?.name || 'Unknown'}</p>
+                                <p><strong>Email:</strong> ${refund.adminDetails?.customerInfo?.email || 'Unknown'}</p>
+                                <p><strong>Phone:</strong> ${refund.adminDetails?.customerInfo?.phone || 'Not provided'}</p>
+                                <p><strong>Reason:</strong> ${refund.adminDetails?.refundRequest?.reason || 'Not specified'}</p>
+                                <p><strong>Category:</strong> ${refund.adminDetails?.refundRequest?.category || 'Not specified'}</p>
+                                <p><strong>Amount:</strong> ₹${refund.adminDetails?.refundRequest?.expectedAmount || refund.payment?.amount || 0}</p>
+                            </div>
+                            <div>
+                                <p><strong>Origin:</strong> ${refund.adminDetails?.shipmentInfo?.origin || 'Unknown'}</p>
+                                <p><strong>Destination:</strong> ${refund.adminDetails?.shipmentInfo?.destination || 'Unknown'}</p>
+                                <p><strong>Partner:</strong> ${refund.adminDetails?.partnerInfo?.name || 'Unassigned'}</p>
+                                <p><strong>Delivered:</strong> ${refund.adminDetails?.shipmentInfo?.deliveredAt ? new Date(refund.adminDetails.shipmentInfo.deliveredAt).toLocaleDateString() : 'Unknown'}</p>
+                                <p><strong>Urgency:</strong> ${refund.adminDetails?.refundRequest?.urgency || 'Normal'}</p>
+                                <p><strong>Images:</strong> ${hasImages ? `${imageCount} uploaded` : 'No images'}</p>
+                            </div>
+                        </div>
+                        
+                        ${refund.adminDetails?.refundRequest?.description ? `
+                            <div style="margin-top: 15px;">
+                                <p><strong>Description:</strong></p>
+                                <p style="background: white; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                                    ${refund.adminDetails.refundRequest.description}
+                                </p>
+                            </div>
+                        ` : ''}
+                        
+                        ${hasImages && images.length > 0 ? `
+                            <div>
+                                <p><strong>Evidence Images (${imageCount}):</strong></p>
+                                <div class="refund-images">
+                                    ${images.map(image => `
+                                        <img src="https://delivery-backend100.vercel.app${image.imageUrl}" 
+                                             alt="Refund evidence" 
+                                             onclick="window.open(this.src, '_blank')"
+                                             title="Click to view full size">
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div style="margin-top: 20px;">
+                            <button onclick="approveRefund('${refund.trackingId}')" style="background: #28a745;">
+                                Approve Refund
+                            </button>
+                            <button onclick="rejectRefund('${refund.trackingId}')" style="background: #dc3545;">
+                                Reject Refund
+                            </button>
+                            <button onclick="viewDetails('${refund.trackingId}')" style="background: #6c757d;">
+                                View Full Details
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        async function fetchRefundDetails() {
+            const trackingId = prompt('Enter Tracking ID to get detailed refund information:');
+            if (!trackingId) return;
+            
+            const token = document.getElementById('adminToken').value;
+            if (!token) {
+                alert('Please enter admin token');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`https://delivery-backend100.vercel.app/api/admin/refunds/${trackingId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('Detailed refund data:', data);
+                    alert('Detailed refund data logged to console. Check browser developer tools.');
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch (error) {
+                alert(`Network error: ${error.message}`);
+            }
+        }
+        
+        async function approveRefund(trackingId) {
+            const adminResponse = prompt('Enter admin response for approval:');
+            if (!adminResponse) return;
+            
+            const token = document.getElementById('adminToken').value;
+            
+            try {
+                const response = await fetch(`https://delivery-backend100.vercel.app/api/admin/refunds/${trackingId}/approve`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ adminResponse })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Refund approved successfully!');
+                    fetchRefunds(); // Refresh the list
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch (error) {
+                alert(`Network error: ${error.message}`);
+            }
+        }
+        
+        async function rejectRefund(trackingId) {
+            const adminResponse = prompt('Enter admin response for rejection:');
+            if (!adminResponse) return;
+            
+            const token = document.getElementById('adminToken').value;
+            
+            try {
+                const response = await fetch(`https://delivery-backend100.vercel.app/api/admin/refunds/${trackingId}/reject`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ adminResponse })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Refund rejected successfully!');
+                    fetchRefunds(); // Refresh the list
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch (error) {
+                alert(`Network error: ${error.message}`);
+            }
+        }
+        
+        function viewDetails(trackingId) {
+            fetchRefundDetails();
+        }
+    </script>
+</body>
+</html>

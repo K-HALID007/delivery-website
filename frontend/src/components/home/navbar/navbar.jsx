@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronRight, User, LogOut, Package, UserCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, LogOut, Package, UserCircle, Menu, X } from 'lucide-react';
 import LoginRegisterModal from './loginregistermodal';
 import { authService } from '@/services/auth.service';
 import { FaUser, FaSignOutAlt, FaBox, FaUserCircle } from 'react-icons/fa';
@@ -15,6 +15,7 @@ export default function Navbar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const userDropdownTimeout = useRef(null);
@@ -125,11 +126,11 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 shadow-md bg-slate-800 text-slate-300">
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-4 shadow-md bg-slate-800 text-slate-300">
         {/* Logo + Brand */}
-        <Link href="/" className="flex items-center space-x-3">
+        <Link href="/" className="flex items-center space-x-2 sm:space-x-3">
           <div className="logo-icon">
-            <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="32" height="32" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-[42px] sm:h-[42px]">
               <defs>
                 <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#fbbf24" />
@@ -148,11 +149,20 @@ export default function Navbar() {
               />
             </svg>
           </div>
-          <span className="text-xl font-bold text-amber-400">Prime Dispatcher</span>
+          <span className="text-lg sm:text-xl font-bold text-amber-400 hidden xs:block">Prime Dispatcher</span>
+          <span className="text-lg font-bold text-amber-400 block xs:hidden">PD</span>
         </Link>
 
-        {/* Nav Links */}
-        <ul className="hidden md:flex items-center space-x-6 font-medium relative">
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="md:hidden p-2 rounded-lg hover:bg-slate-700 transition-colors"
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+
+        {/* Desktop Nav Links */}
+        <ul className="hidden md:flex items-center space-x-4 lg:space-x-6 font-medium relative">
           <li>
             <Link 
               href="/" 
@@ -330,12 +340,195 @@ export default function Navbar() {
                   setShowModal(true);
                 }
               }}
-              className="bg-amber-500 text-white px-4 py-2 rounded hover:bg-amber-600 transition"
+              className="bg-amber-500 text-white px-3 lg:px-4 py-2 rounded hover:bg-amber-600 transition text-sm lg:text-base"
             >
               Track Package
             </button>
           </li>
         </ul>
+
+        {/* Mobile Menu */}
+        <div className={`md:hidden fixed inset-0 top-[72px] bg-slate-800 z-40 transform transition-transform duration-300 ease-in-out ${
+          mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}>
+          <div className="flex flex-col h-full">
+            <div className="flex-1 px-4 py-6 space-y-4 overflow-y-auto">
+              {/* Mobile Nav Links */}
+              <Link 
+                href="/" 
+                className="block text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Home
+              </Link>
+              
+              <Link 
+                href="/services" 
+                className="block text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Services
+              </Link>
+              
+              <Link 
+                href="/pricing" 
+                className="block text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Pricing
+              </Link>
+
+              {/* Mobile Countries Dropdown */}
+              <div className="space-y-2">
+                <button 
+                  onClick={() => setShowCountries(!showCountries)}
+                  className="flex items-center justify-between w-full text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+                >
+                  Countries
+                  <ChevronDown size={20} className={`transform transition-transform ${showCountries ? 'rotate-180' : ''}`} />
+                </button>
+                {showCountries && (
+                  <div className="pl-4 space-y-2">
+                    {countries.map((country) => (
+                      <Link
+                        key={country.name}
+                        href={country.path}
+                        className="block text-slate-400 hover:text-orange-400 px-4 py-2 rounded transition-colors duration-200"
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setShowCountries(false);
+                        }}
+                      >
+                        {country.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* My Shipments - visible only if logged in */}
+              {!isLoading && user && (
+                <Link 
+                  href="/my-shipments" 
+                  className="block text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  My Shipments
+                </Link>
+              )}
+              
+              <Link 
+                href="/contact" 
+                className="block text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Contact
+              </Link>
+
+              {/* Partner link - Enhanced visibility when user is not logged in */}
+              {!user && (
+                <Link 
+                  href="/partner" 
+                  className="block text-slate-300 hover:text-amber-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>Partner</span>
+                    <span className="text-xs bg-amber-500 text-white px-2 py-1 rounded-full">
+                      Join
+                    </span>
+                  </div>
+                </Link>
+              )}
+            </div>
+
+            {/* Mobile User Section */}
+            <div className="border-t border-slate-700 p-4">
+              {!isLoading && (
+                <>
+                  {user ? (
+                    <div className="space-y-3">
+                      {/* User Info */}
+                      <div className="flex items-center space-x-3 px-4 py-3 bg-slate-700 rounded-lg">
+                        <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center overflow-hidden">
+                          {user.name ? (
+                            <span className="text-white font-medium text-lg">
+                              {user.name.charAt(0).toUpperCase()}
+                            </span>
+                          ) : (
+                            <FaUserCircle className="w-6 h-6 text-white" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-white font-medium">{user.name}</div>
+                          <div className="text-slate-400 text-sm">{user.email}</div>
+                        </div>
+                      </div>
+
+                      {/* User Menu Items */}
+                      <Link
+                        href="/profile"
+                        className="flex items-center px-4 py-3 text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <UserCircle className="h-5 w-5 mr-3" />
+                        Profile
+                      </Link>
+                      
+                      <Link
+                        href="/my-shipments"
+                        className="flex items-center px-4 py-3 text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Package className="h-5 w-5 mr-3" />
+                        My Shipments
+                      </Link>
+                      
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="flex items-center w-full px-4 py-3 text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
+                      >
+                        <LogOut className="h-5 w-5 mr-3" />
+                        Logout
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => {
+                          setShowModal(true);
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                      >
+                        <User className="w-5 h-5" />
+                        <span>Login</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Track Package Button */}
+                  <button
+                    onClick={() => {
+                      if (authService.isAuthenticated()) {
+                        router.push('/track-package');
+                      } else {
+                        setShowModal(true);
+                      }
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full bg-amber-500 text-white px-6 py-3 rounded-lg hover:bg-amber-600 transition mt-3"
+                  >
+                    Track Package
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </nav>
 
       {/* Login/Register Modal */}
