@@ -122,11 +122,13 @@ export default function RefundModal({ isOpen, onClose, shipment, onRefundSubmit 
       });
 
       await onRefundSubmit(formData);
+      // Close confirmation dialog - parent component will handle modal closure
       setShowConfirmation(false);
-      onClose();
-      toast.success('Refund request submitted for review');
+      // Don't show success toast here as parent component handles it
     } catch (error) {
+      console.error('Refund submission error:', error);
       toast.error('Failed to submit refund request');
+      // Close confirmation dialog but keep main modal open so user can try again
       setShowConfirmation(false);
     }
   };

@@ -163,11 +163,16 @@ export default function MyShipments() {
         )
       );
       
+      // Close the modal after successful submission
+      setShowRefundModal(false);
+      setSelectedShipment(null);
+      
       toast.success('Refund request submitted successfully');
       toast.info('Your request is now under review. You will be notified once it is processed.');
     } catch (err) {
+      console.error('Refund submission error:', err);
       toast.error(err.message);
-      throw err;
+      throw err; // Re-throw to let modal handle the error state
     }
   };
 
