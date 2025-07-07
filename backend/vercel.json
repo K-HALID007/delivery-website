@@ -2,25 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "app-working.js",
+      "src": "index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/app-working.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "*",
-        "Access-Control-Allow-Headers": "*",
-        "Access-Control-Allow-Credentials": "true"
-      }
+      "dest": "/index.js"
     }
-  ],
-  "functions": {
-    "app-working.js": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }

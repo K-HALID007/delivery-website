@@ -1,12 +1,11 @@
 {
   "name": "courier-tracker-backend",
   "version": "1.0.0",
-  "type": "module",
   "description": "Backend for Courier Tracker application",
-  "main": "app.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
