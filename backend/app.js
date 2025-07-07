@@ -18,48 +18,77 @@ dotenv.config();
 
 const app = express();
 
-// Enhanced CORS configuration for production
-app.use(cors({
-  origin: [
+// AGGRESSIVE CORS FIX - Allow all origins temporarily to fix deployment issue
+app.use((req, res, next) => {
+  // Set CORS headers for all requests
+  const origin = req.headers.origin;
+  const allowedOrigins = [
     'https://primedispatcher.vercel.app',
     'https://delivery-backend100.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001',
-    'http://localhost:5000',
-    'https://localhost:3000',
-    'https://localhost:3001',
-    'https://localhost:5000'
-  ],
+    'http://localhost:5000'
+  ];
+  
+  // Allow the origin if it's in our list, or allow all for now
+  if (allowedOrigins.includes(origin) || !origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Temporary: allow all
+  }
+  
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,Cache-Control,Pragma,X-HTTP-Method-Override');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Length,X-JSON');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  
+  // Handle preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    console.log(`OPTIONS request from origin: ${origin} for path: ${req.path}`);
+    res.status(200).end();
+    return;
+  }
+  
+  console.log(`${req.method} request from origin: ${origin} for path: ${req.path}`);
+  next();
+});
+
+// Backup CORS using cors middleware
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://primedispatcher.vercel.app',
+      'https://delivery-backend100.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5000'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Temporarily allow all origins to fix deployment
+    return callback(null, true);
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'X-Requested-With',
-    'Accept',
     'Origin',
-    'Access-Control-Request-Method',
-    'Access-Control-Request-Headers'
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'Pragma',
+    'X-HTTP-Method-Override'
   ],
-  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
-  preflightContinue: false,
   optionsSuccessStatus: 200
 }));
-
-// Additional CORS headers for preflight requests
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,Cache-Control,Pragma');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
 
 app.use(express.json());
 
