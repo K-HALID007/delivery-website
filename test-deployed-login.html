@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Deployed Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Test Deployed Login</h1>
+        <p>Test login functionality on your deployed Vercel backend</p>
+        
+        <div class="form-group">
+            <label for="apiUrl">Backend API URL:</label>
+            <input type="text" id="apiUrl" value="https://your-app.vercel.app" placeholder="Enter your Vercel backend URL">
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" value="test@example.com" placeholder="Enter email">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" value="password123" placeholder="Enter password">
+        </div>
+
+        <div class="form-group">
+            <label for="loginType">Login Type:</label>
+            <select id="loginType">
+                <option value="user">User Login</option>
+                <option value="admin">Admin Login</option>
+            </select>
+        </div>
+
+        <button onclick="testHealth()">Test Health</button>
+        <button onclick="testCORS()">Test CORS</button>
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="testKnownCredentials()">Test Known Credentials</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        function showResult(message, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="container result ${type}">${message}</div>`;
+        }
+
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value.trim();
+        }
+
+        async function testHealth() {
+            const apiUrl = getApiUrl();
+            if (!apiUrl) {
+                showResult('Please enter your Vercel backend URL', 'error');
+                return;
+            }
+
+            try {
+                showResult('Testing health endpoint...', 'info');
+                
+                const response = await fetch(`${apiUrl}/api/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ Health Check Successful!\n\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ Health Check Failed!\n\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Health Check Error!\n\nError: ${error.message}\n\nThis might indicate:\n- Wrong URL\n- CORS issues\n- Backend not deployed`, 'error');
+            }
+        }
+
+        async function testCORS() {
+            const apiUrl = getApiUrl();
+            if (!apiUrl) {
+                showResult('Please enter your Vercel backend URL', 'error');
+                return;
+            }
+
+            try {
+                showResult('Testing CORS...', 'info');
+                
+                const response = await fetch(`${apiUrl}/api/cors-test`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ CORS Test Successful!\n\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ CORS Test Failed!\n\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ CORS Test Error!\n\nError: ${error.message}\n\nThis indicates CORS is not properly configured`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            const apiUrl = getApiUrl();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const loginType = document.getElementById('loginType').value;
+
+            if (!apiUrl || !email || !password) {
+                showResult('Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                showResult(`Testing ${loginType} login...`, 'info');
+                
+                const endpoint = loginType === 'admin' ? '/api/auth/admin/login' : '/api/auth/login';
+                
+                const response = await fetch(`${apiUrl}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ Login Successful!\n\nStatus: ${response.status}\nUser: ${data.user?.name} (${data.user?.email})\nRole: ${data.user?.role}\nToken: ${data.token ? 'Present' : 'Missing'}`, 'success');
+                } else {
+                    showResult(`❌ Login Failed!\n\nStatus: ${response.status}\nMessage: ${data.message}\nFull Response: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Login Error!\n\nError: ${error.message}`, 'error');
+            }
+        }
+
+        async function testKnownCredentials() {
+            const apiUrl = getApiUrl();
+            if (!apiUrl) {
+                showResult('Please enter your Vercel backend URL', 'error');
+                return;
+            }
+
+            const knownCredentials = [
+                { email: 'test@example.com', password: 'password123', type: 'user' },
+                { email: 'admin@gmail.com', password: 'password', type: 'admin' },
+                { email: 'admin@gmail.com', password: 'password123', type: 'admin' },
+                { email: 'admin@gmail.com', password: 'admin', type: 'admin' },
+                { email: 'admin@gmail.com', password: '123456', type: 'admin' },
+                { email: 'ks0903525@gmail.com', password: 'password', type: 'user' },
+                { email: 'ks0903525@gmail.com', password: 'password123', type: 'user' },
+                { email: 'ks0903525@gmail.com', password: '123456', type: 'user' }
+            ];
+
+            showResult('Testing known credentials...', 'info');
+            
+            for (const cred of knownCredentials) {
+                try {
+                    const endpoint = cred.type === 'admin' ? '/api/auth/admin/login' : '/api/auth/login';
+                    
+                    const response = await fetch(`${apiUrl}${endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            email: cred.email,
+                            password: cred.password
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showResult(`✅ SUCCESS! Found working credentials:\n\nEmail: ${cred.email}\nPassword: ${cred.password}\nType: ${cred.type}\nUser: ${data.user?.name}\nRole: ${data.user?.role}`, 'success');
+                        return;
+                    } else {
+                        console.log(`❌ Failed: ${cred.email} / ${cred.password} - ${data.message}`);
+                    }
+                } catch (error) {
+                    console.log(`❌ Error testing ${cred.email}: ${error.message}`);
+                }
+            }
+            
+            showResult('❌ No working credentials found!\n\nTried all known combinations. The passwords might be different or there might be other issues.', 'error');
+        }
+
+        // Auto-detect Vercel URL from common patterns
+        window.onload = function() {
+            const currentUrl = window.location.href;
+            if (currentUrl.includes('vercel.app')) {
+                // If this page is hosted on Vercel, try to guess the backend URL
+                const baseUrl = currentUrl.split('/')[0] + '//' + currentUrl.split('/')[2];
+                document.getElementById('apiUrl').value = baseUrl;
+            }
+        };
+    </script>
+</body>
+</html>
