@@ -5,9 +5,10 @@ export const getPendingRefunds = async (req, res) => {
   try {
     console.log('🔍 Admin fetching pending refunds...');
     
-    // Find all shipments with refund requests
+    // Find all shipments with refund requests - Exclude cancelled refund requests
     const refunds = await Tracking.find({
-      'payment.status': 'Refund Requested'
+      'payment.status': 'Refund Requested',
+      'payment.refundCancelledAt': { $exists: false }
     }).sort({ 'payment.refundRequestedAt': -1 });
 
     console.log(`✅ Found ${refunds.length} pending refunds`);
@@ -56,11 +57,13 @@ export const getRefundNotificationsCount = async (req, res) => {
     
     const newRefundsCount = await Tracking.countDocuments({
       'payment.status': 'Refund Requested',
-      'payment.refundRequestedAt': { $gte: yesterday }
+      'payment.refundRequestedAt': { $gte: yesterday },
+      'payment.refundCancelledAt': { $exists: false }
     });
 
     const totalPendingCount = await Tracking.countDocuments({
-      'payment.status': 'Refund Requested'
+      'payment.status': 'Refund Requested',
+      'payment.refundCancelledAt': { $exists: false }
     });
 
     res.json({

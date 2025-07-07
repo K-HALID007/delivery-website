@@ -9,21 +9,34 @@ export const getAdminDashboard = async (req, res) => {
     const startOfDay = new Date(today.setHours(0, 0, 0, 0));
     const endOfDay = new Date(today.setHours(23, 59, 59, 999));
     
-    // Refund Statistics
+    // Refund Statistics - Exclude cancelled refund requests
     const refundStats = {
-      pending: await Tracking.countDocuments({ 'payment.status': 'Refund Requested' }),
-      approved: await Tracking.countDocuments({ 'payment.status': 'Refunded' }),
-      rejected: await Tracking.countDocuments({ 'payment.status': 'Refund Rejected' }),
+      pending: await Tracking.countDocuments({ 
+        'payment.status': 'Refund Requested',
+        'payment.refundCancelledAt': { $exists: false }
+      }),
+      approved: await Tracking.countDocuments({ 
+        'payment.status': 'Refunded',
+        'payment.refundCancelledAt': { $exists: false }
+      }),
+      rejected: await Tracking.countDocuments({ 
+        'payment.status': 'Refund Rejected',
+        'payment.refundCancelledAt': { $exists: false }
+      }),
       todayRequests: await Tracking.countDocuments({
         'payment.status': 'Refund Requested',
-        'payment.refundRequestedAt': { $gte: startOfDay, $lte: endOfDay }
+        'payment.refundRequestedAt': { $gte: startOfDay, $lte: endOfDay },
+        'payment.refundCancelledAt': { $exists: false }
       })
     };
 
-    // Refund Amount Statistics
+    // Refund Amount Statistics - Exclude cancelled refund requests
     const refundAmounts = await Tracking.aggregate([
       {
-        $match: { 'payment.status': 'Refund Requested' }
+        $match: { 
+          'payment.status': 'Refund Requested',
+          'payment.refundCancelledAt': { $exists: false }
+        }
       },
       {
         $group: {
@@ -34,10 +47,13 @@ export const getAdminDashboard = async (req, res) => {
       }
     ]);
 
-    // Refund by Category
+    // Refund by Category - Exclude cancelled refund requests
     const refundByCategory = await Tracking.aggregate([
       {
-        $match: { 'payment.status': 'Refund Requested' }
+        $match: { 
+          'payment.status': 'Refund Requested',
+          'payment.refundCancelledAt': { $exists: false }
+        }
       },
       {
         $group: {
@@ -48,10 +64,13 @@ export const getAdminDashboard = async (req, res) => {
       }
     ]);
 
-    // Refund by Urgency
+    // Refund by Urgency - Exclude cancelled refund requests
     const refundByUrgency = await Tracking.aggregate([
       {
-        $match: { 'payment.status': 'Refund Requested' }
+        $match: { 
+          'payment.status': 'Refund Requested',
+          'payment.refundCancelledAt': { $exists: false }
+        }
       },
       {
         $group: {
@@ -61,9 +80,10 @@ export const getAdminDashboard = async (req, res) => {
       }
     ]);
 
-    // Recent Refund Requests (last 10)
+    // Recent Refund Requests (last 10) - Exclude cancelled refund requests
     const recentRefunds = await Tracking.find({
-      'payment.status': 'Refund Requested'
+      'payment.status': 'Refund Requested',
+      'payment.refundCancelledAt': { $exists: false }
     })
     .populate('assignedPartner', 'name email')
     .sort({ 'payment.refundRequestedAt': -1 })
@@ -71,12 +91,13 @@ export const getAdminDashboard = async (req, res) => {
     .select('trackingId sender payment assignedPartner')
     .lean();
 
-    // Partner Performance (partners with most refund requests)
+    // Partner Performance (partners with most refund requests) - Exclude cancelled refund requests
     const partnerRefundStats = await Tracking.aggregate([
       {
         $match: {
           'payment.status': { $in: ['Refund Requested', 'Refunded', 'Refund Rejected'] },
-          assignedPartner: { $exists: true }
+          assignedPartner: { $exists: true },
+          'payment.refundCancelledAt': { $exists: false }
         }
       },
       {
@@ -112,7 +133,8 @@ export const getAdminDashboard = async (req, res) => {
     const refundTrends = await Tracking.aggregate([
       {
         $match: {
-          'payment.refundRequestedAt': { $gte: thirtyDaysAgo }
+          'payment.refundRequestedAt': { $gte: thirtyDaysAgo },
+          'payment.refundCancelledAt': { $exists: false }
         }
       },
       {
@@ -196,13 +218,14 @@ export const getRefundAnalytics = async (req, res) => {
         break;
     }
 
-    // Refund resolution time analysis
+    // Refund resolution time analysis - Exclude cancelled refund requests
     const resolvedRefunds = await Tracking.find({
       $or: [
         { 'payment.status': 'Refunded' },
         { 'payment.status': 'Refund Rejected' }
       ],
-      'payment.refundRequestedAt': { $gte: startDate }
+      'payment.refundRequestedAt': { $gte: startDate },
+      'payment.refundCancelledAt': { $exists: false }
     }).select('payment').lean();
 
     const resolutionTimes = resolvedRefunds.map(refund => {

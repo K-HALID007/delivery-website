@@ -1102,12 +1102,21 @@ const generateCustomerReport = async (startDate, endDate) => {
   const avgOrderValue = await calculateAverageOrderValue(startDate, endDate);
 
   // Get detailed refund data for customer report with comprehensive information
+  // Exclude cancelled refund requests
   const refundData = await Tracking.find({
-    $or: [
-      { 'payment.refundRequestedAt': { $gte: startDate, $lte: endDate } },
-      { 'payment.refundedAt': { $gte: startDate, $lte: endDate } },
-      { 'payment.refundRejectedAt': { $gte: startDate, $lte: endDate } },
-      { 'payment.status': { $in: ['Refund Requested', 'Refunded', 'Refund Rejected'] } }
+    $and: [
+      {
+        $or: [
+          { 'payment.refundRequestedAt': { $gte: startDate, $lte: endDate } },
+          { 'payment.refundedAt': { $gte: startDate, $lte: endDate } },
+          { 'payment.refundRejectedAt': { $gte: startDate, $lte: endDate } },
+          { 'payment.status': { $in: ['Refund Requested', 'Refunded', 'Refund Rejected'] } }
+        ]
+      },
+      {
+        // Exclude cancelled refund requests
+        'payment.refundCancelledAt': { $exists: false }
+      }
     ]
   })
   .populate('assignedPartner', 'name email phone vehicleType vehicleNumber location')
@@ -1437,7 +1446,8 @@ const generateCustomerReport = async (startDate, endDate) => {
   const refundTrends = await Tracking.aggregate([
     {
       $match: {
-        'payment.refundRequestedAt': { $gte: startDate, $lte: endDate }
+        'payment.refundRequestedAt': { $gte: startDate, $lte: endDate },
+        'payment.refundCancelledAt': { $exists: false }
       }
     },
     {
@@ -1783,26 +1793,30 @@ const calculateAverageOrderValue = async (startDate, endDate) => {
 
 // Refund Report Generator
 const generateRefundReport = async (startDate, endDate) => {
-  // Get all refund requests in the date range
+  // Get all refund requests in the date range - Exclude cancelled refund requests
   const refundRequests = await Tracking.find({
-    'payment.refundRequestedAt': { $gte: startDate, $lte: endDate }
+    'payment.refundRequestedAt': { $gte: startDate, $lte: endDate },
+    'payment.refundCancelledAt': { $exists: false }
   }).populate('assignedPartner', 'name email vehicleType vehicleNumber');
 
-  // Get approved refunds
+  // Get approved refunds - Exclude cancelled refund requests
   const approvedRefunds = await Tracking.find({
     'payment.refundedAt': { $gte: startDate, $lte: endDate },
-    'payment.status': 'Refunded'
+    'payment.status': 'Refunded',
+    'payment.refundCancelledAt': { $exists: false }
   }).populate('assignedPartner', 'name email vehicleType vehicleNumber');
 
-  // Get rejected refunds
+  // Get rejected refunds - Exclude cancelled refund requests
   const rejectedRefunds = await Tracking.find({
     'payment.refundRejectedAt': { $gte: startDate, $lte: endDate },
-    'payment.status': 'Completed'
+    'payment.status': 'Completed',
+    'payment.refundCancelledAt': { $exists: false }
   }).populate('assignedPartner', 'name email vehicleType vehicleNumber');
 
-  // Get pending refunds
+  // Get pending refunds - Exclude cancelled refund requests
   const pendingRefunds = await Tracking.find({
-    'payment.status': 'Refund Requested'
+    'payment.status': 'Refund Requested',
+    'payment.refundCancelledAt': { $exists: false }
   }).populate('assignedPartner', 'name email vehicleType vehicleNumber');
 
   // Calculate refund statistics
@@ -1825,7 +1839,8 @@ const generateRefundReport = async (startDate, endDate) => {
   const refundReasons = await Tracking.aggregate([
     {
       $match: {
-        'payment.refundRequestedAt': { $gte: startDate, $lte: endDate }
+        'payment.refundRequestedAt': { $gte: startDate, $lte: endDate },
+        'payment.refundCancelledAt': { $exists: false }
       }
     },
     {
@@ -1844,7 +1859,8 @@ const generateRefundReport = async (startDate, endDate) => {
   const dailyTrends = await Tracking.aggregate([
     {
       $match: {
-        'payment.refundRequestedAt': { $gte: startDate, $lte: endDate }
+        'payment.refundRequestedAt': { $gte: startDate, $lte: endDate },
+        'payment.refundCancelledAt': { $exists: false }
       }
     },
     {
@@ -1866,7 +1882,8 @@ const generateRefundReport = async (startDate, endDate) => {
     {
       $match: {
         'payment.refundRequestedAt': { $gte: startDate, $lte: endDate },
-        assignedPartner: { $exists: true }
+        assignedPartner: { $exists: true },
+        'payment.refundCancelledAt': { $exists: false }
       }
     },
     {
