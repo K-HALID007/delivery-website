@@ -719,6 +719,200 @@ app.get('/api/tracking/:trackingId', async (req, res) => {
   }
 });
 
+// Admin Analytics - Real-time Data
+app.get('/api/admin/analytics/realtime', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    await connectDB();
+    
+    // Get today's data
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayShipments = await Tracking.countDocuments({ 
+      createdAt: { $gte: today } 
+    });
+    
+    const todayRevenue = await Tracking.aggregate([
+      { 
+        $match: { 
+          createdAt: { $gte: today },
+          'payment.status': 'Completed' 
+        } 
+      },
+      { $group: { _id: null, total: { $sum: '$payment.amount' } } }
+    ]);
+    
+    const todayDeliveries = await Tracking.countDocuments({
+      deliveredAt: { $gte: today }
+    });
+    
+    const activeUsers = await User.countDocuments({ 
+      lastLogin: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } 
+    });
+    
+    res.json({
+      success: true,
+      data: {
+        todayShipments,
+        todayRevenue: todayRevenue.length > 0 ? todayRevenue[0].total : 0,
+        todayDeliveries,
+        activeUsers,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Real-time analytics error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching real-time analytics', 
+      error: error.message 
+    });
+  }
+});
+
+// Admin Analytics - Revenue Data
+app.get('/api/admin/analytics/revenue', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    await connectDB();
+    
+    // Get last 7 days revenue
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+      
+      const dayRevenue = await Tracking.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: date, $lt: nextDate },
+            'payment.status': 'Completed'
+          }
+        },
+        { $group: { _id: null, total: { $sum: '$payment.amount' } } }
+      ]);
+      
+      last7Days.push({
+        date: date.toISOString().split('T')[0],
+        revenue: dayRevenue.length > 0 ? dayRevenue[0].total : 0
+      });
+    }
+    
+    // Get monthly revenue for current year
+    const currentYear = new Date().getFullYear();
+    const monthlyRevenue = [];
+    
+    for (let month = 0; month < 12; month++) {
+      const startDate = new Date(currentYear, month, 1);
+      const endDate = new Date(currentYear, month + 1, 1);
+      
+      const monthRevenue = await Tracking.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startDate, $lt: endDate },
+            'payment.status': 'Completed'
+          }
+        },
+        { $group: { _id: null, total: { $sum: '$payment.amount' } } }
+      ]);
+      
+      monthlyRevenue.push({
+        month: month + 1,
+        revenue: monthRevenue.length > 0 ? monthRevenue[0].total : 0
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        daily: last7Days,
+        monthly: monthlyRevenue
+      }
+    });
+  } catch (error) {
+    console.error('Revenue analytics error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching revenue analytics', 
+      error: error.message 
+    });
+  }
+});
+
+// Admin Analytics - Shipment Status Distribution
+app.get('/api/admin/analytics/shipments', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    await connectDB();
+    
+    const statusDistribution = await Tracking.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    
+    // Format for frontend - ensure it's always an array
+    const formattedData = statusDistribution.map(item => ({
+      status: item._id,
+      count: item.count
+    }));
+    
+    res.json({
+      success: true,
+      data: formattedData || [] // Always return an array
+    });
+  } catch (error) {
+    console.error('Shipment analytics error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching shipment analytics', 
+      error: error.message,
+      data: [] // Return empty array on error
+    });
+  }
+});
+
+// Admin Analytics - User Growth
+app.get('/api/admin/analytics/users', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    await connectDB();
+    
+    // Get user registrations for last 30 days
+    const last30Days = [];
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+      
+      const dayUsers = await User.countDocuments({
+        createdAt: { $gte: date, $lt: nextDate }
+      });
+      
+      last30Days.push({
+        date: date.toISOString().split('T')[0],
+        users: dayUsers
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: last30Days || [] // Always return an array
+    });
+  } catch (error) {
+    console.error('User analytics error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching user analytics', 
+      error: error.message,
+      data: [] // Return empty array on error
+    });
+  }
+});
+
 // Error handling
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);
