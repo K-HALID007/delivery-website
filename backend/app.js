@@ -16,6 +16,12 @@ import uploadsRoutes from './routes/uploads.routes.js';
 // Load environment variables
 dotenv.config();
 
+// Ensure critical environment variables
+if (!process.env.JWT_SECRET) {
+  console.log('⚠️ JWT_SECRET missing, using fallback');
+  process.env.JWT_SECRET = 'fallback-jwt-secret-for-development-only-not-secure';
+}
+
 const app = express();
 
 // EMERGENCY CORS FIX - Simplest possible approach
@@ -101,12 +107,23 @@ app.get('/', (req, res) => {
   });
 });
 
-// MongoDB connection
+// MongoDB connection with better error handling
 if (process.env.MONGODB_URI) {
   mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('✅ MongoDB connected'))
-    .catch(err => console.log('❌ MongoDB error:', err.message));
+    .catch(err => {
+      console.log('❌ MongoDB error:', err.message);
+      // Don't crash the app if MongoDB fails
+    });
+} else {
+  console.log('⚠️ MONGODB_URI not found in environment variables');
 }
+
+// Check critical environment variables
+console.log('🔍 Environment Check:');
+console.log('- MONGODB_URI:', process.env.MONGODB_URI ? 'Present' : 'Missing');
+console.log('- JWT_SECRET:', process.env.JWT_SECRET ? 'Present' : 'Missing');
+console.log('- NODE_ENV:', process.env.NODE_ENV || 'Not set');
 
 // Error handling
 app.use((err, req, res, next) => {
