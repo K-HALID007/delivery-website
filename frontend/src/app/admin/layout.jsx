@@ -8,16 +8,14 @@ import AdminErrorBoundary from '@/components/admin/AdminErrorBoundary';
 export default function AdminLayout({ children }) {
   return (
     <AdminErrorBoundary>
-      <AdminAuthGuard>
-        <SidebarProvider>
-          <div className="min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <AdminLayoutContent>
-              {children}
-            </AdminLayoutContent>
-          </div>
-        </SidebarProvider>
-      </AdminAuthGuard>
+      <SidebarProvider>
+        <div className="min-h-screen bg-gray-50">
+          <AdminSidebar />
+          <AdminLayoutContent>
+            {children}
+          </AdminLayoutContent>
+        </div>
+      </SidebarProvider>
     </AdminErrorBoundary>
   );
 } 
