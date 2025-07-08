@@ -97,10 +97,10 @@ export default function AdminTest() {
               Go to Dashboard
             </button>
             <button
-              onClick={() => window.location.href = '/admin/login'}
+              onClick={() => window.location.href = '/'}
               className="bg-amber-500 text-white px-4 py-2 rounded hover:bg-amber-600"
             >
-              Go to Login
+              Go to Home
             </button>
             <button
               onClick={() => {

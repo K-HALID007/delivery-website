@@ -46,10 +46,10 @@ class AdminErrorBoundary extends React.Component {
                   Reload Dashboard
                 </button>
                 <button
-                  onClick={() => window.location.href = '/admin/login'}
+                  onClick={() => window.location.href = '/'}
                   className="w-full bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-colors"
                 >
-                  Back to Login
+                  Back to Home
                 </button>
               </div>
               

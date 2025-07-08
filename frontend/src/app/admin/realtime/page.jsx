@@ -123,7 +123,7 @@ export default function RealTimeAdminDashboard() {
   // Check authentication
   useEffect(() => {
     if (!authService.isAuthenticated() || !authService.isAdmin()) {
-      window.location.href = '/admin/login';
+      window.location.href = '/';
     }
   }, []);
 

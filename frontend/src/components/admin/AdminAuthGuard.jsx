@@ -9,24 +9,42 @@ export default function AdminAuthGuard({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       try {
+        console.log('🔐 AdminAuthGuard: Checking authentication...');
+        
+        // Add a small delay to ensure session storage is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Check if user is authenticated and is admin
         const authenticated = authService.isAuthenticated();
         const isAdmin = authService.isAdmin();
+        const currentUser = authService.getCurrentUser();
         
-        console.log('Auth check:', { authenticated, isAdmin, user: authService.getCurrentUser() });
+        console.log('🔐 Auth check results:', { 
+          authenticated, 
+          isAdmin, 
+          user: currentUser,
+          hasToken: !!sessionStorage.getItem('admin_token') || !!sessionStorage.getItem('user_token')
+        });
         
-        if (!authenticated || !isAdmin) {
-          console.log('Not authenticated or not admin, redirecting to login');
-          router.push('/admin/login');
+        if (!authenticated) {
+          console.log('❌ Not authenticated, redirecting to home');
+          router.push('/');
           return;
         }
         
+        if (!isAdmin) {
+          console.log('❌ Not admin, redirecting to home');
+          router.push('/');
+          return;
+        }
+        
+        console.log('✅ Admin authentication successful');
         setIsAuthenticated(true);
       } catch (error) {
-        console.error('Auth check error:', error);
-        router.push('/admin/login');
+        console.error('❌ Auth check error:', error);
+        router.push('/');
       } finally {
         setIsLoading(false);
       }
@@ -37,8 +55,10 @@ export default function AdminAuthGuard({ children }) {
     // Listen for auth changes
     const handleAuthChange = (event) => {
       const { user, isAuthenticated } = event.detail;
+      console.log('🔄 Auth change event:', { user, isAuthenticated });
       if (!isAuthenticated || user?.role !== 'admin') {
-        router.push('/admin/login');
+        console.log('🔄 Auth changed - redirecting to home');
+        router.push('/');
       }
     };
 

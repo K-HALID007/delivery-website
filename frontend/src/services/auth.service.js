@@ -246,32 +246,59 @@ class AuthService {
     if (typeof window !== 'undefined') {
       if (sessionStorage.getItem(this.adminTokenKey)) {
         this.token = sessionStorage.getItem(this.adminTokenKey);
-        this.user = JSON.parse(sessionStorage.getItem(this.adminUserKey));
+        try {
+          this.user = JSON.parse(sessionStorage.getItem(this.adminUserKey));
+        } catch (e) {
+          console.error('Error parsing admin user data:', e);
+          this.user = null;
+        }
         this.isAdminSession = true;
       } else if (sessionStorage.getItem(this.userTokenKey)) {
         this.token = sessionStorage.getItem(this.userTokenKey);
-        this.user = JSON.parse(sessionStorage.getItem(this.userUserKey));
+        try {
+          this.user = JSON.parse(sessionStorage.getItem(this.userUserKey));
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+          this.user = null;
+        }
         this.isAdminSession = false;
       } else {
         // No valid session, clear everything
-        sessionStorage.removeItem(this.adminTokenKey);
-        sessionStorage.removeItem(this.adminUserKey);
-        sessionStorage.removeItem(this.userTokenKey);
-        sessionStorage.removeItem(this.userUserKey);
         this.token = null;
         this.user = null;
         this.isAdminSession = false;
+        return false;
       }
     }
-    if (!this.token || this._isTokenExpired(this.token)) {
-      this.logout();
+    
+    // Check if token exists and is valid
+    if (!this.token) {
       return false;
     }
+    
+    // Check token expiration (but be more lenient)
+    try {
+      if (this._isTokenExpired(this.token)) {
+        console.log('Token expired, clearing session');
+        this.logout();
+        return false;
+      }
+    } catch (e) {
+      console.error('Error checking token expiration:', e);
+      // If we can't check expiration, assume token is valid for now
+    }
+    
     return true;
   }
 
   isAdmin() {
-    return this.user?.role === 'admin' && this.isAdminSession;
+    // First check if authenticated
+    if (!this.isAuthenticated()) {
+      return false;
+    }
+    
+    // Check if user has admin role
+    return this.user?.role === 'admin';
   }
 
   async deleteAccount({ password, otp }) {
