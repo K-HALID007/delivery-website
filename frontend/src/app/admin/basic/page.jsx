@@ -14,6 +14,9 @@ export default function BasicAdminDashboard() {
   const [authStatus, setAuthStatus] = useState('checking');
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     async function initDashboard() {
       try {
         console.log('🚀 Basic Dashboard: Starting...');
@@ -133,7 +136,7 @@ export default function BasicAdminDashboard() {
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
           <h3 className="font-semibold text-green-800 mb-2">Authentication Status</h3>
           <p className="text-green-700">✅ Successfully authenticated as admin</p>
-          <p className="text-sm text-green-600 mt-1">User: {authService.getCurrentUser()?.name} ({authService.getCurrentUser()?.email})</p>
+          <p className="text-sm text-green-600 mt-1">User: {typeof window !== 'undefined' ? authService.getCurrentUser()?.name : 'Loading...'} ({typeof window !== 'undefined' ? authService.getCurrentUser()?.email : 'Loading...'})</p>
         </div>
 
         {/* Summary Cards */}

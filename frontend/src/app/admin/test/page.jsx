@@ -8,6 +8,9 @@ export default function AdminTest() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     try {
       console.log('Testing admin authentication...');
       
@@ -79,10 +82,10 @@ export default function AdminTest() {
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Session Storage</h2>
           <div className="space-y-2">
-            <div><strong>admin_token:</strong> {sessionStorage.getItem('admin_token') ? 'Present' : 'Not found'}</div>
-            <div><strong>admin_user:</strong> {sessionStorage.getItem('admin_user') ? 'Present' : 'Not found'}</div>
-            <div><strong>user_token:</strong> {sessionStorage.getItem('user_token') ? 'Present' : 'Not found'}</div>
-            <div><strong>user_user:</strong> {sessionStorage.getItem('user_user') ? 'Present' : 'Not found'}</div>
+            <div><strong>admin_token:</strong> {typeof window !== 'undefined' && sessionStorage.getItem('admin_token') ? 'Present' : 'Not found'}</div>
+            <div><strong>admin_user:</strong> {typeof window !== 'undefined' && sessionStorage.getItem('admin_user') ? 'Present' : 'Not found'}</div>
+            <div><strong>user_token:</strong> {typeof window !== 'undefined' && sessionStorage.getItem('user_token') ? 'Present' : 'Not found'}</div>
+            <div><strong>user_user:</strong> {typeof window !== 'undefined' && sessionStorage.getItem('user_user') ? 'Present' : 'Not found'}</div>
           </div>
         </div>
 

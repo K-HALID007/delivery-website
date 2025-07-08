@@ -7,6 +7,9 @@ export default function AdminDebug() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     try {
       console.log('🔍 Admin Debug: Starting...');
       
@@ -150,8 +153,10 @@ export default function AdminDebug() {
               </button>
               <button
                 onClick={() => {
-                  sessionStorage.clear();
-                  window.location.href = '/';
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.clear();
+                    window.location.href = '/';
+                  }
                 }}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
               >
