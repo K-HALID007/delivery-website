@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 
-export default function AdminDashboard() {
+export default function SimpleDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
