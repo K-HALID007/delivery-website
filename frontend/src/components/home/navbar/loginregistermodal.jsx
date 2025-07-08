@@ -123,6 +123,18 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
     });
   };
 
+  // Check if email is admin email
+  const isAdminEmail = (email) => {
+    const adminEmails = [
+      'admin@courier.com',
+      'admin@gmail.com',
+      'admin@primedispatcher.com',
+      'admin@example.com',
+      'admin@admin.com'
+    ];
+    return adminEmails.includes(email.toLowerCase().trim());
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -137,32 +149,42 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
 
         setLoading(true);
 
+        // Check if it's an admin email
+        const isAdmin = isAdminEmail(formData.email);
+        
         try {
-          // First try regular user login
           let response;
-          try {
-            response = await authService.login(formData.email, formData.password);
-          } catch (userLoginError) {
-            // If regular login fails, try admin login silently
-            console.log('Regular login failed, trying admin login...');
+          
+          if (isAdmin) {
+            // Try admin login first for admin emails
+            console.log('Admin email detected, trying admin login...');
             try {
               response = await authService.adminLogin(formData.email, formData.password);
               console.log('Admin login successful');
             } catch (adminLoginError) {
-              console.log('Both login attempts failed');
-              // Show simple user-friendly error message
-              throw new Error('Invalid email or password');
+              console.log('Admin login failed, trying regular login...');
+              response = await authService.login(formData.email, formData.password);
+            }
+          } else {
+            // Try regular login first for non-admin emails
+            try {
+              response = await authService.login(formData.email, formData.password);
+            } catch (userLoginError) {
+              // If regular login fails, try admin login as fallback
+              console.log('Regular login failed, trying admin login...');
+              response = await authService.adminLogin(formData.email, formData.password);
             }
           }
 
           if (response.user) {
             if (response.user.role === 'admin') {
-              setSuccess('Admin login successful!');
+              setSuccess('Admin login successful! Redirecting to dashboard...');
               setTimeout(() => {
+                onClose();
                 window.location.href = '/admin';
               }, 1000);
             } else {
-              setSuccess('Login successful!');
+              setSuccess('Login successful! Welcome back!');
               setTimeout(() => {
                 onClose();
                 window.location.href = '/';
@@ -172,9 +194,10 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
           }
         } catch (loginError) {
           console.error('Login error:', loginError);
-          setError(loginError.message || 'Login failed');
+          setError(loginError.message || 'Invalid email or password');
         }
       } else {
+        // Registration logic
         if (!isRegistrationFormComplete()) {
           setError('All fields are required and phone number must be 10-15 digits.');
           return;
@@ -188,6 +211,9 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
 
         setLoading(true);
 
+        // Check if registering with admin email
+        const isAdmin = isAdminEmail(formData.email);
+        
         const registrationData = {
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
@@ -197,16 +223,25 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
           city: formData.city.trim(),
           state: formData.state.trim(),
           postalCode: formData.postalCode.trim(),
-          country: formData.country.trim()
+          country: formData.country.trim(),
+          role: isAdmin ? 'admin' : 'user' // Set role based on email
         };
 
         const response = await authService.register(registrationData);
         if (response.user) {
-          setSuccess('Registration successful! Redirecting...');
-          setTimeout(() => {
-            onClose();
-            window.location.href = '/';
-          }, 1000);
+          if (response.user.role === 'admin') {
+            setSuccess('Admin account created successfully! Redirecting to dashboard...');
+            setTimeout(() => {
+              onClose();
+              window.location.href = '/admin';
+            }, 1000);
+          } else {
+            setSuccess('Registration successful! Welcome to Prime Dispatcher!');
+            setTimeout(() => {
+              onClose();
+              window.location.href = '/';
+            }, 1000);
+          }
         }
       }
     } catch (error) {

@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 // Register a new user with strict validation
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone, address, city, state, postalCode, country } = req.body;
+    const { name, email, password, phone, address, city, state, postalCode, country, role } = req.body;
 
     // Strict validation - check all required fields
     const requiredFields = {
@@ -84,6 +84,17 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists with this email address' });
     }
 
+    // Determine user role - check if email is admin email
+    const adminEmails = [
+      'admin@courier.com',
+      'admin@gmail.com', 
+      'admin@primedispatcher.com',
+      'admin@example.com',
+      'admin@admin.com'
+    ];
+    
+    const userRole = role || (adminEmails.includes(email.toLowerCase().trim()) ? 'admin' : 'user');
+
     // Create new user with trimmed data
     const user = new User({
       name: name.trim(),
@@ -97,7 +108,7 @@ export const register = async (req, res) => {
         postalCode: postalCode.trim(),
         country: country.trim()
       },
-      role: 'user' // Default role is user
+      role: userRole
     });
 
     await user.save();
