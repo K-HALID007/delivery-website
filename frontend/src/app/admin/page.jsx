@@ -219,16 +219,7 @@ export default function AdminDashboard() {
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
             <>
-              {/* Welcome Message */}
-              <div className="mb-8 bg-gradient-to-r from-amber-50 to-amber-100 rounded-lg p-6 border border-amber-200">
-                <h2 className="text-2xl font-bold text-amber-800 mb-2">
-                  Welcome back, {user?.name}! 👋
-                </h2>
-                <p className="text-amber-700">
-                  Here's what's happening with your courier service today.
-                </p>
-              </div>
-
+              
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div className="bg-white overflow-hidden shadow rounded-lg">
