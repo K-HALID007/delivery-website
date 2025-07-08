@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Endpoints</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .endpoint-group {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .endpoint-group h3 {
+            margin-top: 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test Admin Endpoints</h1>
+        <p>Test all admin endpoints to debug the frontend issues</p>
+        
+        <div class="form-group">
+            <label for="apiUrl">Backend API URL:</label>
+            <input type="text" id="apiUrl" value="https://delivery-backend100.vercel.app" placeholder="Enter your backend URL">
+        </div>
+
+        <div class="form-group">
+            <label for="adminEmail">Admin Email:</label>
+            <input type="email" id="adminEmail" value="admin@gmail.com" placeholder="Admin email">
+        </div>
+
+        <div class="form-group">
+            <label for="adminPassword">Admin Password:</label>
+            <input type="password" id="adminPassword" value="admin123" placeholder="Admin password">
+        </div>
+
+        <button onclick="loginAdmin()">1. Login as Admin</button>
+        <button onclick="testAllEndpoints()">2. Test All Endpoints</button>
+    </div>
+
+    <div class="endpoint-group">
+        <h3>Authentication</h3>
+        <button onclick="testHealth()">Health Check</button>
+        <button onclick="loginAdmin()">Admin Login</button>
+    </div>
+
+    <div class="endpoint-group">
+        <h3>Dashboard & Analytics</h3>
+        <button onclick="testDashboard()">Dashboard</button>
+        <button onclick="testRealtimeAnalytics()">Realtime Analytics</button>
+        <button onclick="testRevenueAnalytics()">Revenue Analytics</button>
+        <button onclick="testShipmentAnalytics()">Shipment Analytics</button>
+        <button onclick="testUserAnalytics()">User Analytics</button>
+    </div>
+
+    <div class="endpoint-group">
+        <h3>Data Management</h3>
+        <button onclick="testUsers()">Get Users</button>
+        <button onclick="testShipments()">Get Shipments</button>
+        <button onclick="testPartners()">Get Partners</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        let authToken = '';
+
+        function showResult(message, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="container result ${type}">${message}</div>`;
+        }
+
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value.trim();
+        }
+
+        async function testHealth() {
+            const apiUrl = getApiUrl();
+            try {
+                showResult('Testing health endpoint...', 'info');
+                
+                const response = await fetch(`${apiUrl}/api/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ Health Check Success!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ Health Check Failed!\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Health Check Error!\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function loginAdmin() {
+            const apiUrl = getApiUrl();
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+
+            try {
+                showResult('Logging in as admin...', 'info');
+                
+                const response = await fetch(`${apiUrl}/api/auth/admin/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    showResult(`✅ Admin Login Success!\n\nToken: ${authToken.substring(0, 50)}...\nUser: ${data.user.name} (${data.user.email})\nRole: ${data.user.role}`, 'success');
+                } else {
+                    showResult(`❌ Admin Login Failed!\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Admin Login Error!\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function makeAuthenticatedRequest(endpoint, method = 'GET', body = null) {
+            const apiUrl = getApiUrl();
+            
+            if (!authToken) {
+                throw new Error('No auth token. Please login first.');
+            }
+
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            };
+
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+
+            const response = await fetch(`${apiUrl}${endpoint}`, options);
+            const data = await response.json();
+
+            return { response, data };
+        }
+
+        async function testDashboard() {
+            try {
+                showResult('Testing dashboard endpoint...', 'info');
+                const { response, data } = await makeAuthenticatedRequest('/api/admin/dashboard');
+                
+                if (response.ok) {
+                    showResult(`✅ Dashboard Success!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ Dashboard Failed!\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Dashboard Error!\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function testRealtimeAnalytics() {
+            try {
+                showResult('Testing realtime analytics...', 'info');
+                const { response, data } = await makeAuthenticatedRequest('/api/admin/analytics/realtime');
+                
+                if (response.ok) {
+                    showResult(`✅ Realtime Analytics Success!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ Realtime Analytics Failed!\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Realtime Analytics Error!\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function testRevenueAnalytics() {
+            try {
+                showResult('Testing revenue analytics...', 'info');
+                const { response, data } = await makeAuthenticatedRequest('/api/admin/analytics/revenue');
+                
+                if (response.ok) {
+                    showResult(`✅ Revenue Analytics Success!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ Revenue Analytics Failed!\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Revenue Analytics Error!\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function testShipmentAnalytics() {
+            try {
+                showResult('Testing shipment analytics...', 'info');
+                const { response, data } = await makeAuthenticatedRequest('/api/admin/analytics/shipments');
+                
+                if (response.ok) {
+                    showResult(`✅ Shipment Analytics Success!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ Shipment Analytics Failed!\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Shipment Analytics Error!\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function testUserAnalytics() {
+            try {
+                showResult('Testing user analytics...', 'info');
+                const { response, data } = await makeAuthenticatedRequest('/api/admin/analytics/users');
+                
+                if (response.ok) {
+                    showResult(`✅ User Analytics Success!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ User Analytics Failed!\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ User Analytics Error!\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function testUsers() {
+            try {
+                showResult('Testing users endpoint...', 'info');
+                const { response, data } = await makeAuthenticatedRequest('/api/admin/users');
+                
+                if (response.ok) {
+                    showResult(`✅ Users Success!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ Users Failed!\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Users Error!\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function testShipments() {
+            try {
+                showResult('Testing shipments endpoint...', 'info');
+                const { response, data } = await makeAuthenticatedRequest('/api/admin/shipments');
+                
+                if (response.ok) {
+                    showResult(`✅ Shipments Success!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ Shipments Failed!\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Shipments Error!\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function testPartners() {
+            try {
+                showResult('Testing partners endpoint...', 'info');
+                const { response, data } = await makeAuthenticatedRequest('/api/admin/partners');
+                
+                if (response.ok) {
+                    showResult(`✅ Partners Success!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ Partners Failed!\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Partners Error!\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function testAllEndpoints() {
+            if (!authToken) {
+                showResult('Please login first!', 'error');
+                return;
+            }
+
+            showResult('Testing all endpoints...', 'info');
+            
+            const tests = [
+                { name: 'Dashboard', func: testDashboard },
+                { name: 'Realtime Analytics', func: testRealtimeAnalytics },
+                { name: 'Revenue Analytics', func: testRevenueAnalytics },
+                { name: 'Shipment Analytics', func: testShipmentAnalytics },
+                { name: 'User Analytics', func: testUserAnalytics },
+                { name: 'Users', func: testUsers },
+                { name: 'Shipments', func: testShipments },
+                { name: 'Partners', func: testPartners }
+            ];
+
+            let results = 'Testing All Endpoints:\n\n';
+            
+            for (const test of tests) {
+                try {
+                    await test.func();
+                    results += `✅ ${test.name}: PASS\n`;
+                } catch (error) {
+                    results += `❌ ${test.name}: FAIL - ${error.message}\n`;
+                }
+                await new Promise(resolve => setTimeout(resolve, 500)); // Small delay
+            }
+
+            showResult(results, 'info');
+        }
+    </script>
+</body>
+</html>

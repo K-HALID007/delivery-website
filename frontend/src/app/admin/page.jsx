@@ -1,17 +1,29 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import { Bar, Line, Doughnut } from 'react-chartjs-2';
-import 'chart.js/auto';
-import ChartsRow from '@/components/admin/charts/ChartsRow';
+import dynamic from 'next/dynamic';
 import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
-import AdminDashboardSkeleton from '@/components/admin/AdminDashboardSkeleton';
 import { API_URL } from '../../services/api.config.js';
-import { 
-  useRealTimeDashboard, 
-  useRealTimeShipments, 
-  useRealTimeAnalytics, 
-  useRealTimeNotifications 
-} from '@/hooks/useRealTimeData';
+import { authService } from '@/services/auth.service';
+
+// Dynamically import Chart.js components to avoid SSR issues
+const Bar = dynamic(() => import('react-chartjs-2').then(mod => mod.Bar), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-gray-100 rounded animate-pulse"></div>
+});
+
+// Dynamically import other components that might cause issues
+const ChartsRow = dynamic(() => import('@/components/admin/charts/ChartsRow'), {
+  ssr: false,
+  loading: () => <div className="h-32 bg-gray-100 rounded animate-pulse"></div>
+});
+
+const AdminDashboardSkeleton = dynamic(() => import('@/components/admin/AdminDashboardSkeleton'), {
+  ssr: false,
+  loading: () => <div className="h-screen bg-gray-100 animate-pulse"></div>
+});
+
+// Import Chart.js auto registration in useEffect to avoid SSR issues
+let chartJsLoaded = false;
 
 export default function AdminDashboard() {
   const [summary, setSummary] = useState(null);
@@ -135,15 +147,44 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
+    // Load Chart.js dynamically to avoid SSR issues
+    if (!chartJsLoaded && typeof window !== 'undefined') {
+      import('chart.js/auto').then(() => {
+        chartJsLoaded = true;
+        console.log('Chart.js loaded successfully');
+      }).catch(err => {
+        console.error('Failed to load Chart.js:', err);
+      });
+    }
+
     async function fetchData() {
       console.log('🚀 Starting fast parallel data loading...');
       const startTime = Date.now();
       
       try {
+        // Check authentication first
+        if (!authService.isAuthenticated() || !authService.isAdmin()) {
+          console.error('❌ Not authenticated or not admin');
+          setNotifications([
+            { id: 1, message: 'Authentication required', type: 'error' }
+          ]);
+          setLoading(false);
+          return;
+        }
+
         const token = sessionStorage.getItem('admin_token') || sessionStorage.getItem('user_token');
+        if (!token) {
+          console.error('❌ No token found');
+          setNotifications([
+            { id: 1, message: 'No authentication token found', type: 'error' }
+          ]);
+          setLoading(false);
+          return;
+        }
+
         const headers = {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          'Authorization': `Bearer ${token}`
         };
         
         // Show loading immediately with default data
@@ -152,56 +193,80 @@ export default function AdminDashboard() {
           { id: 1, message: 'Loading dashboard data...', type: 'info' }
         ]);
         
-        // Parallel API calls for faster loading
+        // Parallel API calls for faster loading with better error handling
         console.log('⚡ Making parallel API calls...');
         const [summaryRes, shipmentsRes, usersRes] = await Promise.allSettled([
           fetch(`${API_URL}/admin/summary`, { 
             headers,
             signal: AbortSignal.timeout(10000) // 10 second timeout
+          }).catch(err => {
+            console.error('Summary API error:', err);
+            return { ok: false, error: err.message };
           }),
           fetch(`${API_URL}/admin/shipments/recent`, { 
             headers,
             signal: AbortSignal.timeout(8000) // 8 second timeout
+          }).catch(err => {
+            console.error('Shipments API error:', err);
+            return { ok: false, error: err.message };
           }),
           fetch(`${API_URL}/admin/users`, { 
             headers,
             signal: AbortSignal.timeout(8000) // 8 second timeout
+          }).catch(err => {
+            console.error('Users API error:', err);
+            return { ok: false, error: err.message };
           })
         ]);
         
         const loadTime = Date.now() - startTime;
         console.log(`⚡ Parallel API calls completed in ${loadTime}ms`);
         
-        // Process Summary Data
+        // Process Summary Data with better error handling
         if (summaryRes.status === 'fulfilled' && summaryRes.value.ok) {
-          const summaryData = await summaryRes.value.json();
-          console.log('✅ Summary loaded:', summaryData);
-          setSummary({
-            totalShipments: summaryData.activeShipments || summaryData.totalShipments || 0,
-            activeUsers: summaryData.totalUsers || summaryData.activeUsers || 0,
-            revenue: summaryData.totalRevenue || summaryData.revenue || 0,
-            pendingDeliveries: summaryData.pendingDeliveries || 0,
-          });
+          try {
+            const summaryData = await summaryRes.value.json();
+            console.log('✅ Summary loaded:', summaryData);
+            setSummary({
+              totalShipments: summaryData.activeShipments || summaryData.totalShipments || 0,
+              activeUsers: summaryData.totalUsers || summaryData.activeUsers || 0,
+              revenue: summaryData.totalRevenue || summaryData.revenue || 0,
+              pendingDeliveries: summaryData.pendingDeliveries || 0,
+            });
+          } catch (parseError) {
+            console.error('Error parsing summary data:', parseError);
+            setSummary({ totalShipments: 0, activeUsers: 0, revenue: 0, pendingDeliveries: 0 });
+          }
         } else {
           console.log('⚠️ Summary failed, using defaults');
           setSummary({ totalShipments: 0, activeUsers: 0, revenue: 0, pendingDeliveries: 0 });
         }
         
-        // Process Shipments Data
+        // Process Shipments Data with better error handling
         if (shipmentsRes.status === 'fulfilled' && shipmentsRes.value.ok) {
-          const shipmentsData = await shipmentsRes.value.json();
-          console.log('✅ Shipments loaded:', shipmentsData.length);
-          setRecentShipments(shipmentsData);
+          try {
+            const shipmentsData = await shipmentsRes.value.json();
+            console.log('✅ Shipments loaded:', shipmentsData.length);
+            setRecentShipments(Array.isArray(shipmentsData) ? shipmentsData : []);
+          } catch (parseError) {
+            console.error('Error parsing shipments data:', parseError);
+            setRecentShipments([]);
+          }
         } else {
           console.log('⚠️ Shipments failed, using empty array');
           setRecentShipments([]);
         }
         
-        // Process Users Data
+        // Process Users Data with better error handling
         if (usersRes.status === 'fulfilled' && usersRes.value.ok) {
-          const usersData = await usersRes.value.json();
-          console.log('✅ Users loaded:', usersData.length);
-          setUsers(usersData);
+          try {
+            const usersData = await usersRes.value.json();
+            console.log('✅ Users loaded:', usersData.length);
+            setUsers(Array.isArray(usersData) ? usersData : []);
+          } catch (parseError) {
+            console.error('Error parsing users data:', parseError);
+            setUsers([]);
+          }
         } else {
           console.log('⚠️ Users failed, using empty array');
           setUsers([]);
@@ -213,11 +278,23 @@ export default function AdminDashboard() {
           { id: 2, message: 'Real-time updates active', type: 'info' },
         ]);
         
-        // Load analytics in background (non-blocking)
+        // Load analytics in background (non-blocking) with error handling
         setTimeout(() => {
           console.log('🔄 Loading analytics in background...');
-          fetchRealTimeAnalytics().catch(err => console.log('Analytics failed:', err));
-          fetchRevenueAnalytics().catch(err => console.log('Revenue failed:', err));
+          fetchRealTimeAnalytics().catch(err => {
+            console.log('Analytics failed:', err);
+            setNotifications(prev => [
+              { id: Date.now(), message: 'Analytics data unavailable', type: 'warning' },
+              ...prev.slice(0, 4)
+            ]);
+          });
+          fetchRevenueAnalytics().catch(err => {
+            console.log('Revenue failed:', err);
+            setNotifications(prev => [
+              { id: Date.now(), message: 'Revenue data unavailable', type: 'warning' },
+              ...prev.slice(0, 4)
+            ]);
+          });
         }, 100);
         
       } catch (e) {
@@ -226,7 +303,8 @@ export default function AdminDashboard() {
         setUsers([]);
         setRecentShipments([]);
         setNotifications([
-          { id: 1, message: 'Dashboard loaded with limited data', type: 'warning' }
+          { id: 1, message: `Dashboard error: ${e.message}`, type: 'error' },
+          { id: 2, message: 'Dashboard loaded with limited data', type: 'warning' }
         ]);
       } finally {
         setLoading(false);
@@ -239,7 +317,7 @@ export default function AdminDashboard() {
     
     // Set up periodic refresh for real-time data (less frequent to reduce load)
     const interval = setInterval(() => {
-      console.log('🔄 Background refresh...');
+      console.log('���� Background refresh...');
       fetchRealTimeAnalytics().catch(err => console.log('Background analytics failed:', err));
       fetchRevenueAnalytics().catch(err => console.log('Background revenue failed:', err));
     }, 60000); // Refresh every 60 seconds instead of 30
