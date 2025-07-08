@@ -1,9 +1,15 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff, Activity } from 'lucide-react';
 import { API_URL } from '../../services/api.config.js';
 import { authService } from '@/services/auth.service';
+import { 
+  useRealTimeDashboard, 
+  useRealTimeShipments, 
+  useRealTimeAnalytics, 
+  useRealTimeNotifications 
+} from '@/hooks/useRealTimeData';
 
 // Dynamically import Chart.js components to avoid SSR issues
 const Bar = dynamic(() => import('react-chartjs-2').then(mod => mod.Bar), {
@@ -29,8 +35,6 @@ export default function AdminDashboard() {
   const [summary, setSummary] = useState(null);
   const [chartData, setChartData] = useState(null);
   const [users, setUsers] = useState([]);
-  const [recentShipments, setRecentShipments] = useState([]);
-  const [notifications, setNotifications] = useState([]);
   const [auditLog, setAuditLog] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [settings, setSettings] = useState(null);
@@ -39,27 +43,54 @@ export default function AdminDashboard() {
   const [shipmentHeatmap, setShipmentHeatmap] = useState(null);
   const [loading, setLoading] = useState(true);
   const [realTimeData, setRealTimeData] = useState(null);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
-  const [connectionStatus, setConnectionStatus] = useState('Connecting...');
 
-  // Connection status for compatibility
-  useEffect(() => {
-    setConnectionStatus('Polling Mode');
-    console.log('Dashboard: Using polling mode for real-time updates');
-  }, []);
+  // Real-time data hooks
+  const {
+    data: dashboardData,
+    loading: dashboardLoading,
+    error: dashboardError,
+    lastUpdate: dashboardLastUpdate,
+    isConnected: dashboardConnected,
+    refresh: refreshDashboard
+  } = useRealTimeDashboard({
+    enabled: true,
+    onUpdate: (data) => {
+      console.log('📊 Real-time dashboard update:', data);
+      setSummary({
+        totalShipments: data.activeShipments || data.totalShipments || 0,
+        activeUsers: data.totalUsers || data.activeUsers || 0,
+        revenue: data.totalRevenue || data.revenue || 0,
+        pendingDeliveries: data.pendingDeliveries || 0,
+      });
+    }
+  });
 
-  // Fetch real-time analytics data
-  const fetchRealTimeAnalytics = useCallback(async () => {
-    try {
-      const token = sessionStorage.getItem('admin_token') || sessionStorage.getItem('user_token');
-      const headers = {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      };
-      
-      const response = await fetch(`${API_URL}/admin/analytics/realtime`, { headers });
-      const data = await response.json();
-      console.log('Fetched real-time analytics data:', data);
+  const {
+    data: shipmentsData,
+    loading: shipmentsLoading,
+    error: shipmentsError,
+    lastUpdate: shipmentsLastUpdate,
+    isConnected: shipmentsConnected,
+    refresh: refreshShipments
+  } = useRealTimeShipments({
+    enabled: true,
+    onUpdate: (data) => {
+      console.log('🚚 Real-time shipments update:', data);
+      setRecentShipments(Array.isArray(data) ? data : []);
+    }
+  });
+
+  const {
+    data: analyticsData,
+    loading: analyticsLoading,
+    error: analyticsError,
+    lastUpdate: analyticsLastUpdate,
+    isConnected: analyticsConnected,
+    refresh: refreshAnalytics
+  } = useRealTimeAnalytics({
+    enabled: true,
+    onUpdate: (data) => {
+      console.log('📈 Real-time analytics update:', data);
       setRealTimeData(data);
       
       // Update charts with real data
@@ -86,14 +117,6 @@ export default function AdminDashboard() {
         });
       }
 
-      if (data.userGrowth && data.userGrowth.length > 0) {
-        setUserGrowth({
-          labels: data.userGrowth.map(item => item._id),
-          monthly: data.userGrowth.map(item => item.count)
-        });
-      }
-
-      // Update regional heatmap
       if (data.regionalData && data.regionalData.length > 0) {
         setShipmentHeatmap({
           regions: data.regionalData.map(item => ({
@@ -102,12 +125,58 @@ export default function AdminDashboard() {
           }))
         });
       }
-    } catch (error) {
-      console.error('Error fetching real-time analytics:', error);
     }
-  }, []);
+  });
 
-  // Fetch revenue analytics
+  const {
+    data: notificationsData,
+    loading: notificationsLoading,
+    error: notificationsError,
+    lastUpdate: notificationsLastUpdate,
+    isConnected: notificationsConnected,
+    refresh: refreshNotifications
+  } = useRealTimeNotifications({
+    enabled: true,
+    onUpdate: (data) => {
+      console.log('🔔 Real-time notifications update:', data);
+      const notifications = Array.isArray(data) ? data : [];
+      setNotifications([
+        ...notifications.slice(0, 5),
+        { 
+          id: Date.now(), 
+          message: `Last updated: ${new Date().toLocaleTimeString()}`, 
+          type: 'info' 
+        }
+      ]);
+    }
+  });
+
+  // State variables for real-time data
+  const [recentShipments, setRecentShipments] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+
+  // Overall connection status
+  const isRealTimeConnected = dashboardConnected || shipmentsConnected || analyticsConnected || notificationsConnected;
+  const lastUpdate = new Date(Math.max(
+    dashboardLastUpdate?.getTime() || 0,
+    shipmentsLastUpdate?.getTime() || 0,
+    analyticsLastUpdate?.getTime() || 0,
+    notificationsLastUpdate?.getTime() || 0
+  ));
+
+  // Connection status
+  const connectionStatus = isRealTimeConnected ? 'Real-time Connected' : 'Connecting...';
+
+  // Manual refresh all data
+  const refreshAllData = useCallback(() => {
+    console.log('🔄 Refreshing all real-time data...');
+    refreshDashboard();
+    refreshShipments();
+    refreshAnalytics();
+    refreshNotifications();
+  }, [refreshDashboard, refreshShipments, refreshAnalytics, refreshNotifications]);
+
+  // Fetch revenue analytics (keeping this for additional revenue data)
   const fetchRevenueAnalytics = useCallback(async () => {
     try {
       const token = sessionStorage.getItem('admin_token') || sessionStorage.getItem('user_token');
@@ -364,21 +433,49 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-white">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-black">Admin Dashboard</h1>
-        <div className="flex items-center space-x-4">
-          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-            connectionStatus === 'Polling Mode' 
-              ? 'bg-blue-100 text-blue-800' 
-              : connectionStatus === 'Connected'
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
-          }`}>
-            {connectionStatus}
-          </div>
-          <div className="text-sm text-gray-600">
-            Last updated: {lastUpdate.toLocaleTimeString()}
-          </div>
-        </div>
+      <h1 className="text-3xl font-bold text-black">Admin Dashboard</h1>
+      <div className="flex items-center space-x-4">
+      {/* Real-time Status */}
+      <div className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+      isRealTimeConnected 
+      ? 'bg-green-100 text-green-800' 
+      : 'bg-red-100 text-red-800'
+      }`}>
+      {isRealTimeConnected ? (
+      <>
+      <Wifi className="w-4 h-4 mr-1" />
+      Real-time Active
+      </>
+      ) : (
+      <>
+      <WifiOff className="w-4 h-4 mr-1" />
+      Offline Mode
+      </>
+      )}
+      </div>
+      
+      {/* Manual Refresh */}
+      <button
+      onClick={refreshAllData}
+      className="flex items-center px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors text-sm"
+      >
+      <RefreshCw className="w-4 h-4 mr-1" />
+      Refresh
+      </button>
+      
+      {/* Last Update */}
+      <div className="text-sm text-gray-600">
+      Last update: {lastUpdate.toLocaleTimeString()}
+      </div>
+      
+      {/* Real-time Dashboard Link */}
+      <a 
+      href="/admin/realtime"
+      className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
+      >
+      Real-time View
+      </a>
+      </div>
       </div>
 
       {/* Summary Cards */}
