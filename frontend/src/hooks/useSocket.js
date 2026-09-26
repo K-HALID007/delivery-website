@@ -2,8 +2,8 @@
 import { useEffect, useRef } from 'react';
 import { API_URL } from '../services/api.config.js';
 
-// Disabled WebSocket for Vercel deployment - using polling instead
-export const useSocket = (serverPath = process.env.NEXT_PUBLIC_API_URL || 'https://delivery-backend100.vercel.app') => {
+// Polling-based socket compatibility hook
+export const useSocket = (serverPath = API_URL) => {
   const mockSocketRef = useRef({
     connected: false,
     id: 'polling-socket-' + Math.random().toString(36).substr(2, 9)

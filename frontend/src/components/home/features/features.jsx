@@ -1,53 +1,90 @@
-import { Truck, Timer, Globe, ShieldCheck } from "lucide-react";
+'use client';
+
+import { 
+  Zap, 
+  MapPin, 
+  ShieldCheck, 
+  Bot, 
+  ArrowRight 
+} from 'lucide-react';
+import Link from 'next/link';
+
+const features = [
+  {
+    title: 'Smart Route Optimization',
+    desc: 'Machine learning dispatcher continuously calculates optimal transit routes around traffic, congestion, and delays.',
+    icon: Zap,
+    metric: '35% Faster Transit'
+  },
+  {
+    title: 'Pinpoint GPS Telemetry',
+    desc: 'Automated satellite coordinates updated every 15 seconds. Know the exact corridor your driver is navigating.',
+    icon: MapPin,
+    metric: '15-sec GPS Ping'
+  },
+  {
+    title: 'Full Transit Insurance',
+    desc: 'Tamper-proof physical security seals and digital verification checks ensure zero lost parcels and safe handling.',
+    icon: ShieldCheck,
+    metric: '100% Value Insured'
+  },
+  {
+    title: '24/7 AI Delivery Assistant',
+    desc: 'Check live status, reschedule delivery windows, or resolve inquiries instantly using our smart AI assistant.',
+    icon: Bot,
+    metric: 'Instant Response'
+  },
+];
 
 export default function Features() {
   return (
-    <section className="bg-white py-16">
-      <div className="max-w-7xl mx-auto px-6 md:px-12 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-800">
-          Why Choose Prime Dispatcher?
-        </h2>
-        <p className="text-gray-600 max-w-2xl mx-auto mb-12">
-          We provide cutting-edge logistics solutions to ensure your packages reach their destinations swiftly, safely, and transparently.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-          {/* Feature 1 */}
-          <div className="flex flex-col items-center text-center">
-            <Truck className="w-12 h-12 text-yellow-500 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800">Fast Delivery</h3>
-            <p className="text-gray-600 mt-2">
-              Same-day and next-day delivery options with optimized routing.
-            </p>
-          </div>
-
-          {/* Feature 2 */}
-          <div className="flex flex-col items-center text-center">
-            <Timer className="w-12 h-12 text-yellow-500 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800">Real-Time Tracking</h3>
-            <p className="text-gray-600 mt-2">
-              Know exactly where your package is at every moment.
-            </p>
-          </div>
-
-          {/* Feature 3 */}
-          <div className="flex flex-col items-center text-center">
-            <Globe className="w-12 h-12 text-yellow-500 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800">Global Reach</h3>
-            <p className="text-gray-600 mt-2">
-              We deliver locally and internationally through reliable partners.
-            </p>
-          </div>
-
-          {/* Feature 4 */}
-          <div className="flex flex-col items-center text-center">
-            <ShieldCheck className="w-12 h-12 text-yellow-500 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800">Secure & Insured</h3>
-            <p className="text-gray-600 mt-2">
-              Your shipments are protected with top-tier safety protocols.
-            </p>
-          </div>
+    <section id="features" className="py-20 bg-white border-b border-slate-200 text-slate-900">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+        
+        {/* Header */}
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+            Technology Advantage
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight mt-3">
+            Built for Reliability and Speed
+          </h2>
+          <p className="text-slate-600 text-sm sm:text-base mt-2.5">
+            Modern logistics software powering reliable, on-time deliveries at national scale.
+          </p>
         </div>
+
+        {/* Feature Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {features.map((feat, idx) => {
+            const Icon = feat.icon;
+            return (
+              <div 
+                key={idx}
+                className="bg-slate-50/50 border border-slate-200 rounded-xl p-6 hover:bg-white hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-800 mb-4 shadow-sm">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-base font-semibold text-slate-900">
+                    {feat.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+                    {feat.desc}
+                  </p>
+                </div>
+
+                <div className="pt-4 mt-5 border-t border-slate-200/60">
+                  <span className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-md">
+                    {feat.metric}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
       </div>
     </section>
   );

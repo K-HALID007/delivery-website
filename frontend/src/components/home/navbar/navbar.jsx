@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronRight, User, LogOut, Package, UserCircle, Menu, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, LogOut, Package, UserCircle, Menu, X, Truck } from 'lucide-react';
 import LoginRegisterModal from './loginregistermodal';
 import { authService } from '@/services/auth.service';
 import { FaUser, FaSignOutAlt, FaBox, FaUserCircle } from 'react-icons/fa';
 import { useRouter, usePathname } from 'next/navigation';
+import { toast } from 'react-toastify';
 
 export default function Navbar() {
   const [activeCountry, setActiveCountry] = useState(null);
@@ -76,9 +77,11 @@ export default function Navbar() {
       await authService.logout();
       setUser(null);
       setShowUserMenu(false);
+      toast.info('Logged out successfully');
       router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
+      toast.error('Error logging out');
     }
   };
 
@@ -126,145 +129,85 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-4 shadow-md bg-slate-800 text-slate-300">
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-8 lg:px-12 py-3.5 bg-white/90 backdrop-blur-md border-b border-slate-200/80 text-slate-800">
         {/* Logo + Brand */}
-        <Link href="/" className="flex items-center space-x-2 sm:space-x-3">
-          <div className="logo-icon">
-            <svg width="32" height="32" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-[42px] sm:h-[42px]">
-              <defs>
-                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#fbbf24" />
-                  <stop offset="30%" stopColor="#f59e0b" />
-                  <stop offset="70%" stopColor="#d97706" />
-                  <stop offset="100%" stopColor="#b45309" />
-                </linearGradient>
-              </defs>
-              <rect width="42" height="42" rx="8" fill="url(#logoGradient)" />
-              <path
-                d="M12 28h1.5a2 2 0 104 0h7a2 2 0 104 0H30v-7l-2-3h-4v-2h-5v5h-7v7z"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+        <Link href="/" className="flex items-center space-x-2.5">
+          <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-base shadow-sm">
+            <Package className="w-4 h-4 text-amber-400" />
           </div>
-          <span className="text-lg sm:text-xl font-bold text-amber-400 hidden xs:block">Prime Dispatcher</span>
-          <span className="text-lg font-bold text-amber-400 block xs:hidden">PD</span>
+          <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Prime Dispatcher</span>
         </Link>
 
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 rounded-lg hover:bg-slate-700 transition-colors"
+          className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
         >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
 
         {/* Desktop Nav Links */}
-        <ul className="hidden md:flex items-center space-x-4 lg:space-x-6 font-medium relative">
+        <ul className="hidden md:flex items-center space-x-1 lg:space-x-2 font-medium relative">
           <li>
             <Link 
-              href="/" 
-              className="text-slate-300 hover:text-orange-400 px-4 py-2 rounded transition-colors duration-200"
+              href="/#hero" 
+              className="text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-3 py-1.5 rounded-md transition-colors text-sm font-medium"
             >
               Home
             </Link>
           </li>
           <li>
             <Link 
-              href="/services" 
-              className="text-slate-300 hover:text-orange-400 px-4 py-2 rounded transition-colors duration-200"
+              href="/#tracking" 
+              className="text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-3 py-1.5 rounded-md transition-colors text-sm font-medium"
+            >
+              Tracking
+            </Link>
+          </li>
+          <li>
+            <Link 
+              href="/#services" 
+              className="text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-3 py-1.5 rounded-md transition-colors text-sm font-medium"
             >
               Services
             </Link>
           </li>
           <li>
             <Link 
-              href="/pricing" 
-              className="text-slate-300 hover:text-orange-400 px-4 py-2 rounded transition-colors duration-200"
+              href="/#pricing" 
+              className="text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-3 py-1.5 rounded-md transition-colors text-sm font-medium"
             >
               Pricing
             </Link>
           </li>
-          {/* Countries Dropdown */}
-          <li
-            className="relative"
-            onMouseEnter={() => setShowCountries(true)}
-            onMouseLeave={() => {
-              setShowCountries(false);
-              setActiveCountry(null);
-            }}
-          >
-            <button className="flex items-center gap-1 text-slate-300 hover:text-orange-400 px-4 py-2 rounded transition-colors duration-200 border-none bg-transparent cursor-pointer">
-              Countries
-              <ChevronDown size={16} />
-            </button>
-            {showCountries && (
-              <ul className="absolute top-8 left-0 w-48 bg-slate-700 text-slate-200 rounded shadow-lg py-2 z-50">
-                {countries.map((country) => (
-                  <li
-                    key={country.name}
-                    className="relative group"
-                    onMouseEnter={() => setActiveCountry(country.name)}
-                    onMouseLeave={() => setActiveCountry(null)}
-                  >
-                    <Link
-                      href={country.path}
-                      className="flex justify-between items-center px-4 py-2 hover:bg-slate-600 whitespace-nowrap"
-                    >
-                      {country.name}
-                      <ChevronRight size={16} />
-                    </Link>
-                    {activeCountry === country.name && (
-                      <ul className="absolute top-0 left-full w-56 bg-slate-600 text-white rounded shadow-md z-50">
-                        {country.states.map((state) => (
-                          <li key={state}>
-                            <Link
-                              href={`${country.path}/${state.toLowerCase().replace(/\s+/g, '-')}`}
-                              className="block px-4 py-2 hover:bg-slate-500 whitespace-nowrap"
-                            >
-                              {state}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+          <li>
+            <Link 
+              href="/#partner" 
+              className="text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-3 py-1.5 rounded-md transition-colors flex items-center space-x-1.5 text-sm font-medium"
+            >
+              <span>Partner</span>
+              <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200/80 px-1.5 py-0.2 rounded font-semibold">
+                Earn
+              </span>
+            </Link>
           </li>
+          <li>
+            <Link 
+              href="/#contact" 
+              className="text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-3 py-1.5 rounded-md transition-colors text-sm font-medium"
+            >
+              Contact
+            </Link>
+          </li>
+
           {/* My Shipments - visible only if logged in */}
           {!isLoading && user && (
             <li>
               <Link 
                 href="/my-shipments" 
-                className="text-slate-300 hover:text-orange-400 px-4 py-2 rounded transition-colors duration-200"
+                className="text-slate-700 hover:text-slate-900 hover:bg-slate-50 px-3 py-1.5 rounded-md transition-colors text-sm font-semibold"
               >
                 My Shipments
-              </Link>
-            </li>
-          )}
-          <li>
-            <Link 
-              href="/contact" 
-              className="text-slate-300 hover:text-orange-400 px-4 py-2 rounded transition-colors duration-200"
-            >
-              Contact
-            </Link>
-          </li>
-          {/* Partner link - Enhanced visibility when user is not logged in */}
-          {!user && (
-            <li>
-              <Link 
-                href="/partner" 
-                className="text-slate-300 hover:text-amber-400 px-4 py-2 rounded transition-colors duration-200 flex items-center space-x-2 group"
-              >
-                <span>Partner</span>
-                <span className="text-xs bg-amber-500 group-hover:bg-amber-400 text-white px-2 py-0.5 rounded-full transition-colors duration-200">
-                  Join
-                </span>
               </Link>
             </li>
           )}
@@ -272,49 +215,59 @@ export default function Navbar() {
           {/* User Profile or Login Button */}
           {!isLoading && (
             <li
-              className="relative"
+              className="relative ml-2"
               onMouseEnter={handleUserMouseEnter}
               onMouseLeave={handleUserMouseLeave}
             >
               {user ? (
                 <div className="relative">
                   <button
-                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-slate-700 transition-colors"
+                    className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
                   >
-                    <div className="h-8 w-8 rounded-full bg-amber-500 flex items-center justify-center overflow-hidden">
-                      {user.name ? (
-                        <span className="text-white font-medium">
-                          {user.name.charAt(0).toUpperCase()}
-                        </span>
-                      ) : (
-                        <FaUserCircle className="w-5 h-5 text-white" />
-                      )}
+                    <div className="h-7 w-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-semibold">
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                     </div>
-                    <span className="text-sm font-medium text-white">{user.name}</span>
-                    <ChevronDown size={16} className="text-gray-400" />
+                    <span className="text-sm font-medium text-slate-800">{user.name}</span>
+                    <ChevronDown size={14} className="text-slate-600" />
                   </button>
-                  {/* User Dropdown Menu - open on hover with delay */}
-                  <div className={`absolute right-0 mt-2 w-48 bg-slate-700 rounded-lg shadow-lg py-2 z-50 transition-opacity duration-200 ${userDropdownOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+                  {/* User Dropdown Menu */}
+                  <div className={`absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-50 transition-opacity duration-200 ${userDropdownOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
                   >
+                    {user.role === 'admin' && (
+                      <Link
+                        href="/admin"
+                        className="flex items-center px-4 py-2 text-slate-900 hover:bg-slate-50 font-semibold text-sm border-b border-slate-100"
+                      >
+                        <Package className="h-4 w-4 mr-2 text-amber-600" />
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <Link
                       href="/profile"
-                      className="flex items-center px-4 py-2 text-slate-200 hover:bg-slate-600"
+                      className="flex items-center px-4 py-2 text-slate-800 hover:bg-slate-50 font-medium text-sm"
                     >
-                      <UserCircle className="h-5 w-5 mr-2" />
+                      <UserCircle className="h-4 w-4 mr-2 text-slate-600" />
                       Profile
                     </Link>
                     <Link
                       href="/my-shipments"
-                      className="flex items-center px-4 py-2 text-slate-200 hover:bg-slate-600"
+                      className="flex items-center px-4 py-2 text-slate-800 hover:bg-slate-50 font-medium text-sm"
                     >
-                      <Package className="h-5 w-5 mr-2" />
+                      <Package className="h-4 w-4 mr-2 text-slate-600" />
                       My Shipments
+                    </Link>
+                    <Link
+                      href="/partner/dashboard"
+                      className="flex items-center px-4 py-2 text-slate-800 hover:bg-slate-50 font-medium text-sm border-t border-slate-100"
+                    >
+                      <Truck className="h-4 w-4 mr-2 text-amber-600" />
+                      Partner Fleet Console
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="flex items-center w-full px-4 py-2 text-slate-200 hover:bg-slate-600"
+                      className="flex items-center w-full px-4 py-2 text-rose-600 hover:bg-rose-50 text-left text-sm"
                     >
-                      <LogOut className="h-5 w-5 mr-2" />
+                      <LogOut className="h-4 w-4 mr-2 text-rose-500" />
                       Logout
                     </button>
                   </div>
@@ -322,210 +275,162 @@ export default function Navbar() {
               ) : (
                 <button
                   onClick={() => setShowModal(true)}
-                  className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-lg transition-colors flex items-center space-x-2"
+                  className="border border-slate-200 hover:bg-slate-50 text-slate-700 px-3.5 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 text-sm font-medium"
                 >
-                  <User className="w-5 h-5" />
-                  <span>Login</span>
+                  <User className="w-4 h-4 text-slate-500" />
+                  <span>Sign In</span>
                 </button>
               )}
             </li>
           )}
 
-          <li>
-            <button
-              onClick={() => {
-                if (authService.isAuthenticated()) {
-                  router.push('/track-package');
-                } else {
-                  setShowModal(true);
-                }
-              }}
-              className="bg-amber-500 text-white px-3 lg:px-4 py-2 rounded hover:bg-amber-600 transition text-sm lg:text-base"
+          <li className="ml-1">
+            <Link
+              href="/create-shipment"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-1.5 rounded-lg transition text-sm shadow-sm whitespace-nowrap block"
             >
-              Track Package
-            </button>
+              Book Courier
+            </Link>
           </li>
         </ul>
 
         {/* Mobile Menu */}
-        <div className={`md:hidden fixed inset-0 top-[72px] bg-slate-800 z-40 transform transition-transform duration-300 ease-in-out ${
+        <div className={`md:hidden fixed inset-0 top-[65px] bg-white border-b border-slate-200 z-40 transform transition-transform duration-300 ease-in-out ${
           mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}>
-          <div className="flex flex-col h-full">
-            <div className="flex-1 px-4 py-6 space-y-4 overflow-y-auto">
-              {/* Mobile Nav Links */}
+          <div className="flex flex-col h-full bg-white">
+            <div className="flex-1 px-5 py-6 space-y-3 overflow-y-auto">
               <Link 
-                href="/" 
-                className="block text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+                href="/#hero" 
+                className="block text-slate-700 hover:text-slate-950 font-medium py-2.5 text-base border-b border-slate-100"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Home
               </Link>
-              
               <Link 
-                href="/services" 
-                className="block text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+                href="/#tracking" 
+                className="block text-slate-700 hover:text-slate-950 font-medium py-2.5 text-base border-b border-slate-100"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Tracking
+              </Link>
+              <Link 
+                href="/#services" 
+                className="block text-slate-700 hover:text-slate-950 font-medium py-2.5 text-base border-b border-slate-100"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Services
               </Link>
-              
               <Link 
-                href="/pricing" 
-                className="block text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+                href="/#pricing" 
+                className="block text-slate-700 hover:text-slate-950 font-medium py-2.5 text-base border-b border-slate-100"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Pricing
               </Link>
-
-              {/* Mobile Countries Dropdown */}
-              <div className="space-y-2">
-                <button 
-                  onClick={() => setShowCountries(!showCountries)}
-                  className="flex items-center justify-between w-full text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
-                >
-                  Countries
-                  <ChevronDown size={20} className={`transform transition-transform ${showCountries ? 'rotate-180' : ''}`} />
-                </button>
-                {showCountries && (
-                  <div className="pl-4 space-y-2">
-                    {countries.map((country) => (
-                      <Link
-                        key={country.name}
-                        href={country.path}
-                        className="block text-slate-400 hover:text-orange-400 px-4 py-2 rounded transition-colors duration-200"
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          setShowCountries(false);
-                        }}
-                      >
-                        {country.name}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* My Shipments - visible only if logged in */}
-              {!isLoading && user && (
-                <Link 
-                  href="/my-shipments" 
-                  className="block text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  My Shipments
-                </Link>
-              )}
-              
               <Link 
-                href="/contact" 
-                className="block text-slate-300 hover:text-orange-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+                href="/#partner" 
+                className="block text-slate-700 hover:text-slate-950 font-medium py-2.5 text-base border-b border-slate-100"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Contact
+                Partner Network
               </Link>
-
-              {/* Partner link - Enhanced visibility when user is not logged in */}
-              {!user && (
-                <Link 
-                  href="/partner" 
-                  className="block text-slate-300 hover:text-amber-400 px-4 py-3 rounded transition-colors duration-200 text-lg"
+              <Link 
+                href="/#contact" 
+                className="block text-slate-700 hover:text-slate-950 font-medium py-2.5 text-base border-b border-slate-100"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Contact & Support
+              </Link>
+              <div className="pt-4">
+                <Link
+                  href="/create-shipment"
+                  className="w-full bg-slate-900 text-white font-medium py-2.5 rounded-lg text-center block shadow-sm"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <div className="flex items-center justify-between">
-                    <span>Partner</span>
-                    <span className="text-xs bg-amber-500 text-white px-2 py-1 rounded-full">
-                      Join
-                    </span>
-                  </div>
+                  Book Courier
                 </Link>
-              )}
-            </div>
+              </div>
 
-            {/* Mobile User Section */}
-            <div className="border-t border-slate-700 p-4">
-              {!isLoading && (
-                <>
-                  {user ? (
-                    <div className="space-y-3">
-                      {/* User Info */}
-                      <div className="flex items-center space-x-3 px-4 py-3 bg-slate-700 rounded-lg">
-                        <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center overflow-hidden">
-                          {user.name ? (
-                            <span className="text-white font-medium text-lg">
-                              {user.name.charAt(0).toUpperCase()}
-                            </span>
-                          ) : (
-                            <FaUserCircle className="w-6 h-6 text-white" />
-                          )}
+              {/* Mobile User Section */}
+              <div className="pt-4 border-t border-slate-100">
+                {!isLoading && (
+                  <>
+                    {user ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-3 px-3 py-2 bg-slate-50 rounded-lg">
+                          <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
+                            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                          <div className="truncate">
+                            <div className="text-slate-900 font-semibold text-sm">{user.name}</div>
+                            <div className="text-slate-600 font-medium text-xs truncate">{user.email}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="text-white font-medium">{user.name}</div>
-                          <div className="text-slate-400 text-sm">{user.email}</div>
-                        </div>
+
+                        {user.role === 'admin' && (
+                          <Link
+                            href="/admin"
+                            className="flex items-center px-3 py-2 text-slate-800 hover:bg-slate-50 rounded-lg text-sm font-semibold"
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <Package className="h-4 w-4 mr-2 text-amber-600" />
+                            Admin Console
+                          </Link>
+                        )}
+
+                        <Link
+                          href="/profile"
+                          className="flex items-center px-3 py-2 text-slate-800 hover:bg-slate-50 rounded-lg text-sm font-medium"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <UserCircle className="h-4 w-4 mr-2 text-slate-600" />
+                          Profile
+                        </Link>
+                        
+                        <Link
+                          href="/my-shipments"
+                          className="flex items-center px-3 py-2 text-slate-800 hover:bg-slate-50 rounded-lg text-sm font-medium"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Package className="h-4 w-4 mr-2 text-slate-600" />
+                          My Shipments
+                        </Link>
+                        
+                        <Link
+                          href="/partner/dashboard"
+                          className="flex items-center px-3 py-2 text-slate-800 hover:bg-slate-50 rounded-lg text-sm font-medium border-t border-slate-100 pt-2"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Truck className="h-4 w-4 mr-2 text-amber-600" />
+                          Partner Fleet Console
+                        </Link>
+                        
+                        <button
+                          onClick={() => {
+                            handleLogout();
+                            setMobileMenuOpen(false);
+                          }}
+                          className="flex items-center w-full px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-lg text-left text-sm"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Logout
+                        </button>
                       </div>
-
-                      {/* User Menu Items */}
-                      <Link
-                        href="/profile"
-                        className="flex items-center px-4 py-3 text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <UserCircle className="h-5 w-5 mr-3" />
-                        Profile
-                      </Link>
-                      
-                      <Link
-                        href="/my-shipments"
-                        className="flex items-center px-4 py-3 text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <Package className="h-5 w-5 mr-3" />
-                        My Shipments
-                      </Link>
-                      
-                      <button
-                        onClick={() => {
-                          handleLogout();
-                          setMobileMenuOpen(false);
-                        }}
-                        className="flex items-center w-full px-4 py-3 text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
-                      >
-                        <LogOut className="h-5 w-5 mr-3" />
-                        Logout
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
+                    ) : (
                       <button
                         onClick={() => {
                           setShowModal(true);
                           setMobileMenuOpen(false);
                         }}
-                        className="w-full bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                        className="w-full border border-slate-200 hover:bg-slate-50 text-slate-800 font-medium px-4 py-2.5 rounded-lg text-sm transition"
                       >
-                        <User className="w-5 h-5" />
-                        <span>Login</span>
+                        Sign In / Register
                       </button>
-                    </div>
-                  )}
-
-                  {/* Track Package Button */}
-                  <button
-                    onClick={() => {
-                      if (authService.isAuthenticated()) {
-                        router.push('/track-package');
-                      } else {
-                        setShowModal(true);
-                      }
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full bg-amber-500 text-white px-6 py-3 rounded-lg hover:bg-amber-600 transition mt-3"
-                  >
-                    Track Package
-                  </button>
-                </>
-              )}
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

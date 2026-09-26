@@ -6,7 +6,7 @@ export default function AdminLayoutContent({ children }) {
 
   return (
     <main className={`
-      transition-all duration-300 ease-in-out min-h-screen
+      transition-all duration-300 ease-in-out min-h-screen flex-1 w-full min-w-0
       ${isCollapsed ? 'lg:ml-16' : 'lg:ml-64'}
       pt-16 lg:pt-0
     `}>

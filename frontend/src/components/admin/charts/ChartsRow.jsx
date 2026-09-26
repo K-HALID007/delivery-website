@@ -1,5 +1,6 @@
 "use client";
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
+import 'chart.js/auto';
 
 export default function ChartsRow({ chartData, revenueAnalytics, userGrowth, realTimeData }) {
   return (
@@ -17,7 +18,7 @@ export default function ChartsRow({ chartData, revenueAnalytics, userGrowth, rea
                 labels: revenueAnalytics.labels,
                 datasets: [
                   {
-                    label: 'Monthly Revenue ($)',
+                    label: 'Monthly Revenue (₹)',
                     data: revenueAnalytics.monthly,
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',

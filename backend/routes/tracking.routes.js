@@ -14,8 +14,6 @@ import {
   deleteTracking
 } from '../controllers/tracking.controller.js';
 
-import { requestRefundSimple } from '../controllers/tracking-simple.controller.js';
-
 const router = express.Router();
 
 // Public routes

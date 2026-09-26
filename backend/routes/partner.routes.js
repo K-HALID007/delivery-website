@@ -12,12 +12,10 @@ import {
   toggleOnlineStatus,
   getPartnerEarnings
 } from '../controllers/partner.controller.js';
-import { registerPartnerSimple } from '../controllers/partner.controller.simple.js';
-
 const router = express.Router();
 
 // Public routes
-router.post('/register', registerPartnerSimple);
+router.post('/register', registerPartner);
 router.post('/login', loginPartner);
 
 // Protected routes (require partner authentication)

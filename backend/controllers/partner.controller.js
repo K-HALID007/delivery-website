@@ -45,25 +45,41 @@ export const registerPartner = async (req, res) => {
       });
     }
 
+    // Sanitize enum fields with valid fallbacks
+    const validExperiences = ['0-1', '1-3', '3-5', '5+'];
+    const sanitizedExperience = (experience && validExperiences.includes(String(experience).trim()))
+      ? String(experience).trim()
+      : '0-1';
+
+    const validWorkingHours = ['morning', 'afternoon', 'evening', 'flexible'];
+    const sanitizedWorkingHours = (workingHours && validWorkingHours.includes(String(workingHours).trim()))
+      ? String(workingHours).trim()
+      : 'morning';
+
+    const validVehicleTypes = ['bike', 'scooter', 'car', 'van', 'truck'];
+    const sanitizedVehicleType = (vehicleType && validVehicleTypes.includes(String(vehicleType).toLowerCase().trim()))
+      ? String(vehicleType).toLowerCase().trim()
+      : 'bike';
+
     // Create new partner
     const partner = new Partner({
-      name,
-      email,
+      name: name?.trim(),
+      email: email?.toLowerCase().trim(),
       password,
-      phone,
+      phone: phone?.trim(),
       address: {
-        street: address,
-        city,
-        state,
-        postalCode,
-        country: country || 'India'
+        street: address?.trim(),
+        city: city?.trim(),
+        state: state?.trim(),
+        postalCode: postalCode?.trim(),
+        country: country?.trim() || 'India'
       },
-      vehicleType,
-      vehicleNumber: vehicleNumber.toUpperCase(),
-      licenseNumber,
-      experience,
-      workingHours,
-      preferredZones,
+      vehicleType: sanitizedVehicleType,
+      vehicleNumber: vehicleNumber ? vehicleNumber.toUpperCase().trim() : '',
+      licenseNumber: licenseNumber?.trim(),
+      experience: sanitizedExperience,
+      workingHours: sanitizedWorkingHours,
+      preferredZones: preferredZones?.trim() || '',
       status: 'pending'
     });
 
@@ -118,8 +134,17 @@ export const loginPartner = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
     // Find partner by email
-    const partner = await Partner.findOne({ email });
+    const partner = await Partner.findOne({ email: cleanEmail });
     if (!partner) {
       return res.status(401).json({
         success: false,

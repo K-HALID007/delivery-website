@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { usePartner } from '../../../contexts/PartnerContext.js';
 import { useToast } from '../../../contexts/ToastContext.js';
 import partnerService from '../../../services/partner.service.js';
+import { Package, CheckCircle2, TrendingUp, Zap, RefreshCw, ArrowRight, MapPin } from 'lucide-react';
 
 export default function PartnerDashboard() {
   const { partner, stats, onlineStatus, toggleOnlineStatus, setStats } = usePartner();
@@ -15,258 +16,226 @@ export default function PartnerDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if partner is logged in
-    if (!partnerService.isLoggedIn()) {
-      router.push('/partner');
-      return;
-    }
-
+    if (!partnerService.isLoggedIn()) { router.push('/partner'); return; }
     loadDashboardData();
   }, []);
 
-  // Listen for partner online event to refresh dashboard
   useEffect(() => {
-    const handlePartnerOnline = (event) => {
-      console.log('🟢 Partner came online event received, refreshing dashboard...');
-      showInfo('🔄 Checking for new deliveries...', 4000);
+    const handleOnline = () => {
+      showInfo('Checking for new deliveries...', 3000);
       loadDashboardData();
-      
-      // Show success message after data loads
-      setTimeout(() => {
-        showSuccess('✅ You\'re online! Ready to receive new deliveries.', 5000);
-      }, 2000);
+      setTimeout(() => showSuccess('You\'re online! Ready to receive deliveries.', 4000), 2000);
     };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('partnerOnline', handlePartnerOnline);
-    }
-
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('partnerOnline', handlePartnerOnline);
-      }
-    };
-  }, [showInfo, showSuccess]);
+    window.addEventListener('partnerOnline', handleOnline);
+    return () => window.removeEventListener('partnerOnline', handleOnline);
+  }, []);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const dashboardResponse = await partnerService.getDashboard();
-
-      if (dashboardResponse.success) {
-        setStats(dashboardResponse.stats);
-        setActiveDeliveries(dashboardResponse.activeDeliveries || []);
+      const res = await partnerService.getDashboard();
+      if (res.success) {
+        setStats(res.stats);
+        setActiveDeliveries(res.activeDeliveries || []);
       }
-    } catch (error) {
-      setError(error.message);
-      if (error.message.includes('unauthorized') || error.message.includes('token')) {
-        partnerService.logout();
-        router.push('/partner');
+    } catch (err) {
+      setError(err.message);
+      if (err.message.includes('unauthorized') || err.message.includes('token')) {
+        partnerService.logout(); router.push('/partner');
       }
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  const handleToggleOnline = async () => {
-    try {
-      await toggleOnlineStatus();
-    } catch (error) {
-      setError(error.message);
-    }
+  const handleToggle = async () => { try { await toggleOnlineStatus(); } catch (e) { setError(e.message); } };
+
+  const getStatusColor = (status) => {
+    const map = {
+      assigned: 'bg-blue-50 text-blue-700 border-blue-200',
+      picked_up: 'bg-purple-50 text-purple-700 border-purple-200',
+      in_transit: 'bg-amber-50 text-amber-700 border-amber-200',
+      out_for_delivery: 'bg-orange-50 text-orange-700 border-orange-200',
+      delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    };
+    return map[status] || 'bg-slate-50 text-slate-700 border-slate-200';
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-800 to-slate-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-yellow-400 mx-auto"></div>
-          <p className="mt-6 text-lg text-white font-medium">Loading your dashboard...</p>
-          <p className="mt-2 text-sm text-slate-300">Please wait while we fetch your data</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !stats) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-800 to-slate-900">
-        <div className="text-center max-w-md">
-          <div className="bg-red-900/20 border border-red-400/30 text-red-300 px-8 py-6 rounded-xl shadow-lg backdrop-blur-sm">
-            <div className="w-16 h-16 bg-red-500/20 border border-red-400/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="font-semibold text-lg mb-2 text-white">Error loading dashboard</p>
-            <p className="text-sm mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-800 px-6 py-2 rounded-lg text-sm font-medium hover:from-yellow-600 hover:to-amber-700 transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-900 rounded-full animate-spin"></div>
+          <p className="text-slate-500 text-sm">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-800 to-slate-900">
-      {/* Page Header */}
-      <div className="bg-gradient-to-r from-slate-800 to-slate-700 shadow-lg border-b border-yellow-400/20">
-        <div className="px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                <span className="text-yellow-400">Partner</span> Dashboard
-              </h1>
-              <p className="text-slate-300 flex items-center">
-                <span className="mr-2">👋</span>
-                Welcome back, <span className="font-semibold ml-1 text-yellow-400">{partner?.name || 'Partner'}!</span>
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              {/* Current Time */}
-              <div className="text-right bg-yellow-400/10 rounded-lg p-3 border border-yellow-400/20">
-                <p className="text-sm text-yellow-400">Current Time</p>
-                <p className="text-lg font-semibold text-white">
-                  {new Date().toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    hour12: true 
-                  })}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto space-y-6">
 
-      {/* Error Alert */}
-      {error && (
-        <div className="px-6 pt-4">
-          <div className="bg-red-900/20 border border-red-400/30 text-red-300 px-4 py-3 rounded-lg shadow-sm backdrop-blur-sm">
-            <div className="flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {error}
+        {/* ── Header ─────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-600 mb-2">
+              <span className={`w-2 h-2 rounded-full ${onlineStatus ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
+              {onlineStatus ? 'Online · Accepting deliveries' : 'Currently offline'}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="px-6 py-6">
-        {/* Simplified Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Today's Deliveries Card */}
-          <div className="bg-white/10 backdrop-blur-sm border border-yellow-400/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-3xl font-bold text-yellow-400">{stats?.todayDeliveries || 0}</span>
-                <p className="text-slate-300 mt-1 text-sm">Today's Deliveries</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </div>
-            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+              Welcome back, {partner?.name?.split(' ')[0] || 'Partner'}
+            </h1>
+            <p className="text-sm text-slate-500 mt-0.5">Here's your delivery overview for today.</p>
           </div>
 
-          {/* Total Completed Card */}
-          <div className="bg-white/10 backdrop-blur-sm border border-yellow-400/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-3xl font-bold text-yellow-400">{stats?.completedDeliveries || 0}</span>
-                <p className="text-slate-300 mt-1 text-sm">Total Completed</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-green-500 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Monthly Earnings Card */}
-          <div className="bg-gradient-to-br from-yellow-400/20 to-amber-500/20 backdrop-blur-sm border border-yellow-400/30 rounded-xl p-6 hover:from-yellow-400/25 hover:to-amber-500/25 transition-all duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-3xl font-bold text-yellow-400">₹{stats?.monthlyEarnings || 0}</span>
-                <p className="text-white mt-1 text-sm font-medium">This Month</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl shadow-lg border border-yellow-400/20 p-6 mb-8">
-          <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
-            <svg className="w-6 h-6 mr-3 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            Quick Actions
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => router.push('/partner/deliveries')}
-              className="bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-800 px-6 py-4 rounded-lg font-medium hover:from-yellow-600 hover:to-amber-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-3"
+              onClick={loadDashboardData}
+              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition shadow-sm"
+              title="Refresh"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-              <span>View Deliveries</span>
+              <RefreshCw className="w-4 h-4" />
             </button>
             <button
-              onClick={() => router.push('/partner/profile')}
-              className="bg-white/20 backdrop-blur-sm border border-yellow-400/30 text-white px-6 py-4 rounded-lg font-medium hover:bg-white/30 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-3"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span>Update Profile</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Status Section */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl shadow-lg border border-yellow-400/20 p-6">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-yellow-400/20 to-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">
-              {onlineStatus ? 'You\'re Online!' : 'You\'re Offline'}
-            </h3>
-            <p className="text-slate-300 mb-6">
-              {onlineStatus 
-                ? 'Ready to receive new delivery assignments' 
-                : 'Go online to start receiving deliveries'
-              }
-            </p>
-            <button
-              onClick={handleToggleOnline}
-              className={`px-8 py-3 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg ${
+              onClick={handleToggle}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold border transition shadow-sm ${
                 onlineStatus
-                  ? 'bg-red-500 hover:bg-red-600 text-white'
-                  : 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-slate-800'
+                  ? 'bg-white border-slate-200 text-slate-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
+                  : 'bg-slate-900 border-slate-900 text-white hover:bg-slate-800'
               }`}
             >
               {onlineStatus ? 'Go Offline' : 'Go Online'}
             </button>
           </div>
         </div>
+
+        {/* ── Error ───────────────────────────────── */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{error}</div>
+        )}
+
+        {/* ── KPI Cards ───────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { label: "Today's Deliveries", value: stats?.todayDeliveries ?? 0, icon: Package, badge: 'Today', badgeStyle: 'text-slate-700 bg-slate-100 border-slate-200' },
+            { label: 'Total Completed', value: stats?.completedDeliveries ?? 0, icon: CheckCircle2, badge: 'All time', badgeStyle: 'text-emerald-800 bg-emerald-50 border-emerald-200' },
+            { label: 'Monthly Earnings', value: `₹${(stats?.monthlyEarnings || 0).toLocaleString('en-IN')}`, icon: TrendingUp, badge: 'This month', badgeStyle: 'text-amber-900 bg-amber-50 border-amber-200' },
+          ].map((card) => (
+            <div key={card.label} className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 hover:shadow-md transition">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{card.label}</span>
+                <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center">
+                  <card.icon className="w-4 h-4 text-slate-700" />
+                </div>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-3xl font-extrabold text-slate-900 tracking-tight">{card.value}</span>
+                <span className={`inline-flex items-center text-xs font-bold px-2 py-0.5 rounded-full border ${card.badgeStyle}`}>{card.badge}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Active Deliveries ───────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">Active Deliveries</h2>
+              <p className="text-xs text-slate-500 mt-0.5">{activeDeliveries.length} ongoing right now</p>
+            </div>
+            <button
+              onClick={() => router.push('/partner/deliveries')}
+              className="flex items-center gap-1 text-xs font-semibold text-slate-700 hover:text-slate-900 transition"
+            >
+              View all <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          {activeDeliveries.length === 0 ? (
+            <div className="py-12 text-center">
+              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                <Package className="w-6 h-6 text-slate-400" />
+              </div>
+              <p className="text-sm font-semibold text-slate-700">No active deliveries</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {onlineStatus ? 'Waiting for new assignments' : 'Go online to start receiving orders'}
+              </p>
+              {!onlineStatus && (
+                <button
+                  onClick={handleToggle}
+                  className="mt-4 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition"
+                >
+                  Go Online
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {activeDeliveries.map((d) => (
+                <div key={d._id} className="px-5 py-4 hover:bg-slate-50 transition">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-sm font-bold text-slate-900">#{d.trackingId}</span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(d.status)}`}>
+                          {d.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-xs text-slate-500">
+                        <div className="flex items-start gap-1.5">
+                          <MapPin className="w-3 h-3 text-slate-400 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium text-slate-700 truncate">{d.sender?.name}</p>
+                            <p className="truncate">{d.sender?.address}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <MapPin className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium text-slate-700 truncate">{d.receiver?.name}</p>
+                            <p className="truncate">{d.receiver?.address}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-base font-bold text-slate-900">₹{d.partnerEarnings || 0}</p>
+                      <button
+                        onClick={() => router.push(`/partner/deliveries/${d.trackingId}`)}
+                        className="mt-2 px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-semibold hover:bg-slate-800 transition"
+                      >
+                        Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Quick Links ─────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'All Deliveries', href: '/partner/deliveries', icon: Package },
+            { label: 'Earnings', href: '/partner/earnings', icon: TrendingUp },
+            { label: 'Analytics', href: '/partner/analytics', icon: Zap },
+            { label: 'Profile', href: '/partner/profile', icon: 'user' },
+          ].map((item) => (
+            <button
+              key={item.label}
+              onClick={() => router.push(item.href)}
+              className="flex items-center gap-2 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition shadow-sm"
+            >
+              {item.icon !== 'user' ? <item.icon className="w-4 h-4 text-slate-500" /> : (
+                <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              )}
+              {item.label}
+            </button>
+          ))}
+        </div>
+
       </div>
     </div>
   );

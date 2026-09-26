@@ -34,7 +34,9 @@ import {
 } from 'lucide-react';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import 'chart.js/auto';
-import { API_URL } from '../../services/api.config.js';
+import { API_URL } from '@/services/api.config';
+
+const BACKEND_BASE = API_URL.replace(/\/api$/, '');
 
 export default function AdminReports() {
   const [selectedReport, setSelectedReport] = useState('performance');
@@ -134,7 +136,7 @@ export default function AdminReports() {
       // Fix the image URL to use correct backend URL
       const imageUrl = image.imageUrl.startsWith('http') 
         ? image.imageUrl 
-        : `https://delivery-backend100.vercel.app${image.imageUrl}`;
+        : `${BACKEND_BASE}${image.imageUrl}`;
       
       const response = await fetch(imageUrl);
       const blob = await response.blob();
@@ -868,7 +870,7 @@ export default function AdminReports() {
                                         // Fix image URL
                                         const imageUrl = image.imageUrl.startsWith('http') 
                                           ? image.imageUrl 
-                                          : `${process.env.NEXT_PUBLIC_API_URL || 'https://delivery-backend100.vercel.app'}${image.imageUrl}`;
+                                          : `${BACKEND_BASE}${image.imageUrl}`;
                                         
                                         // Debug log
                                         console.log('Image URL:', imageUrl, 'Original:', image.imageUrl);
@@ -1105,7 +1107,7 @@ export default function AdminReports() {
                     {selectedRefund.images && selectedRefund.images.slice(0, 8).map((image, index) => {
                       const imageUrl = image.imageUrl.startsWith('http') 
                         ? image.imageUrl 
-                        : `${process.env.NEXT_PUBLIC_API_URL || 'https://delivery-backend100.vercel.app'}${image.imageUrl}`;
+                        : `${BACKEND_BASE}${image.imageUrl}`;
                       
                       return (
                         <div key={index} className="relative group">

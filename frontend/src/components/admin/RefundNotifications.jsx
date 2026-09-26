@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { Bell, AlertCircle, DollarSign, Clock, User } from 'lucide-react';
+import { API_URL } from '@/services/api.config';
 
 export default function RefundNotifications() {
   const [notifications, setNotifications] = useState([]);
@@ -16,7 +17,7 @@ export default function RefundNotifications() {
       
       if (!token) return;
 
-      const response = await fetch('https://delivery-backend100.vercel.app/api/admin/refunds', {
+      const response = await fetch(`${API_URL}/admin/refunds`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

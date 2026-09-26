@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Package, Truck, MapPin, Calendar, Clock } from 'lucide-react';
 import Navbar from '@/components/home/navbar/navbar';
+import Footer from '@/components/home/footer/footer';
 import { authService } from '@/services/auth.service';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import RefundModal from '@/components/modals/RefundModal';
 import ComplaintModal from '@/components/modals/ComplaintModal';
+import { API_URL } from '@/services/api.config';
 
 export default function MyShipments() {
   const [shipments, setShipments] = useState([]);
@@ -27,13 +29,13 @@ export default function MyShipments() {
         console.log('Token length:', token ? token.length : 0);
         
         if (!token) {
-          console.log('No token found, redirecting to login');
-          router.push('/login');
+          console.log('No token found, redirecting to home');
+          router.push('/');
           return;
         }
 
         console.log('Making request to fetch shipments...');
-        const response = await fetch('https://delivery-backend100.vercel.app/api/tracking/user', {
+        const response = await fetch(`${API_URL}/tracking/user`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -90,7 +92,7 @@ export default function MyShipments() {
     
     try {
       const token = sessionStorage.getItem('user_token');
-      const response = await fetch(`https://delivery-backend100.vercel.app/api/tracking/cancel/${trackingId}`, {
+      const response = await fetch(`${API_URL}/tracking/cancel/${trackingId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -140,7 +142,7 @@ export default function MyShipments() {
   const submitRefund = async (formData) => {
     try {
       const token = sessionStorage.getItem('user_token');
-      const response = await fetch(`https://delivery-backend100.vercel.app/api/tracking/refund/${selectedShipment.trackingId}`, {
+      const response = await fetch(`${API_URL}/tracking/refund/${selectedShipment.trackingId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -179,7 +181,7 @@ export default function MyShipments() {
   const submitComplaint = async (complaintData) => {
     try {
       const token = sessionStorage.getItem('user_token');
-      const response = await fetch(`https://delivery-backend100.vercel.app/api/tracking/complaint/${selectedShipment.trackingId}`, {
+      const response = await fetch(`${API_URL}/tracking/complaint/${selectedShipment.trackingId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -207,7 +209,7 @@ export default function MyShipments() {
     
     try {
       const token = sessionStorage.getItem('user_token');
-      const response = await fetch(`https://delivery-backend100.vercel.app/api/tracking/refund/cancel/${trackingId}`, {
+      const response = await fetch(`${API_URL}/tracking/refund/cancel/${trackingId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -374,43 +376,43 @@ export default function MyShipments() {
                     <div className="p-8">
                       <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center space-x-4">
-                          <div className="flex-shrink-0">
-                            <Package className="h-8 w-8 text-yellow-500" />
+                          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                            <Package className="h-5 w-5 text-slate-800" />
                           </div>
                           <div>
-                            <h3 className="text-lg font-bold text-black">
+                            <h3 className="text-lg font-bold text-slate-900">
                               Tracking ID: {shipment.trackingId}
                             </h3>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-xs text-slate-600 font-medium">
                               Created {new Date(shipment.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(shipment.status)}`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(shipment.status)}`}>
                           {shipment.status}
                         </span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div className="flex items-start">
-                          <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
+                          <MapPin className="h-5 w-5 text-slate-500 mt-0.5" />
                           <div className="ml-3">
-                            <p className="text-sm text-gray-500">Current Location</p>
-                            <p className="text-base font-medium text-black">{shipment.currentLocation}</p>
+                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-0.5">Current Location</p>
+                            <p className="text-sm font-bold text-slate-900">{shipment.currentLocation}</p>
                           </div>
                         </div>
                         <div className="flex items-start">
-                          <Truck className="h-5 w-5 text-gray-400 mt-0.5" />
+                          <Truck className="h-5 w-5 text-slate-500 mt-0.5" />
                           <div className="ml-3">
-                            <p className="text-sm text-gray-500">Destination</p>
-                            <p className="text-base font-medium text-black">{shipment.destination}</p>
+                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-0.5">Destination</p>
+                            <p className="text-sm font-bold text-slate-900">{shipment.destination}</p>
                           </div>
                         </div>
                         {shipment.packageDetails && (
                           <div className="flex items-start">
-                            <Package className="h-5 w-5 text-gray-400 mt-0.5" />
+                            <Package className="h-5 w-5 text-slate-500 mt-0.5" />
                             <div className="ml-3">
-                              <p className="text-sm text-gray-500">Package Details</p>
-                              <p className="text-base font-medium text-black">
+                              <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-0.5">Package Details</p>
+                              <p className="text-sm font-bold text-slate-900 capitalize">
                                 {shipment.packageDetails.type} • {shipment.packageDetails.weight}kg
                               </p>
                             </div>
@@ -420,20 +422,20 @@ export default function MyShipments() {
                       
                       {/* Payment Status for delivered orders */}
                       {shipment.status.toLowerCase() === 'delivered' && shipment.payment && (
-                        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="mb-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-gray-500">Payment Status</p>
-                              <p className="text-base font-medium text-black">
+                              <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-0.5">Payment Status</p>
+                              <p className="text-sm font-extrabold text-slate-900">
                                 ₹{shipment.payment.amount} • {shipment.payment.method}
                               </p>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                              shipment.payment.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                              shipment.payment.status === 'Refunded' ? 'bg-blue-100 text-blue-800' :
-                              shipment.payment.status === 'Refund Requested' ? 'bg-yellow-100 text-yellow-800' :
-                              shipment.payment.status === 'Refund Rejected' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              shipment.payment.status === 'Completed' ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' :
+                              shipment.payment.status === 'Refunded' ? 'bg-blue-50 text-blue-800 border border-blue-300' :
+                              shipment.payment.status === 'Refund Requested' ? 'bg-amber-50 text-amber-900 border border-amber-300' :
+                              shipment.payment.status === 'Refund Rejected' ? 'bg-red-50 text-red-800 border border-red-300' :
+                              'bg-slate-100 text-slate-800 border border-slate-200'
                             }`}>
                               {shipment.payment.status === 'Refund Requested' ? 'Under Review' : 
                                shipment.payment.status === 'Refunded' ? 'Refund Approved' : 
@@ -458,7 +460,7 @@ export default function MyShipments() {
                          shipment.sender?.email === user?.email && (
                           <button
                             onClick={() => handleCancel(shipment.trackingId)}
-                            className="px-6 py-2.5 bg-orange-500 text-white rounded-md text-sm font-medium hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                            className="px-4 py-2 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-semibold transition"
                           >
                             Cancel Order
                           </button>
@@ -472,7 +474,7 @@ export default function MyShipments() {
                          shipment.payment?.status !== 'Refund Rejected' && (
                           <button
                             onClick={() => handleRefund(shipment)}
-                            className="px-6 py-2.5 bg-green-500 text-white rounded-md text-sm font-medium hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                            className="px-4 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 rounded-lg text-xs font-semibold transition"
                           >
                             Request Refund
                           </button>
@@ -482,7 +484,7 @@ export default function MyShipments() {
                         {shipment.status.toLowerCase() === 'delivered' && (
                           <button
                             onClick={() => handleComplaint(shipment)}
-                            className="px-6 py-2.5 bg-red-500 text-white rounded-md text-sm font-medium hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                            className="px-4 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 rounded-lg text-xs font-semibold transition"
                           >
                             Report Issue
                           </button>
@@ -490,13 +492,13 @@ export default function MyShipments() {
 
                         {/* Show refund status for refund requested orders with cancel option */}
                         {shipment.payment?.status === 'Refund Requested' && (
-                          <div className="flex space-x-2">
-                            <span className="px-6 py-2.5 bg-yellow-100 text-yellow-800 rounded-md text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            <span className="px-3.5 py-1.5 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-full text-xs font-medium">
                               Under Review
                             </span>
                             <button
                               onClick={() => handleCancelRefund(shipment.trackingId)}
-                              className="px-4 py-2.5 bg-gray-500 text-white rounded-md text-sm font-medium hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                              className="px-3.5 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition"
                               title="Cancel your refund request"
                             >
                               Cancel Refund
@@ -506,14 +508,14 @@ export default function MyShipments() {
 
                         {/* Show refunded status */}
                         {shipment.payment?.status === 'Refunded' && (
-                          <span className="px-6 py-2.5 bg-green-100 text-green-800 rounded-md text-sm font-medium">
+                          <span className="px-3.5 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/80 rounded-full text-xs font-medium">
                             Refund Approved
                           </span>
                         )}
 
                         {/* Show rejected refund status */}
                         {shipment.payment?.status === 'Refund Rejected' && (
-                          <span className="px-6 py-2.5 bg-red-100 text-red-800 rounded-md text-sm font-medium">
+                          <span className="px-3.5 py-1.5 bg-rose-50 text-rose-800 border border-rose-200/80 rounded-full text-xs font-medium">
                             Refund Rejected
                           </span>
                         )}
@@ -526,6 +528,7 @@ export default function MyShipments() {
           )}
         </div>
       </main>
+      <Footer />
 
       {/* Modals */}
       <RefundModal

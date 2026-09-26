@@ -1,4 +1,4 @@
-import { Toaster } from "react-hot-toast";
+import ToastContainerWrapper from "@/components/common/ToastContainerWrapper";
 import UserComplaintBot from "@/components/chatbot/user-complaint-bot";
 import "./globals.css";
 
@@ -20,30 +20,7 @@ export default function RootLayout({ children }) {
       <body className="antialiased">
         {children}
         <UserComplaintBot />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              duration: 3000,
-              style: {
-                background: '#10b981',
-                color: '#fff',
-              },
-            },
-            error: {
-              duration: 5000,
-              style: {
-                background: '#ef4444',
-                color: '#fff',
-              },
-            },
-          }}
-        />
+        <ToastContainerWrapper />
       </body>
     </html>
   );

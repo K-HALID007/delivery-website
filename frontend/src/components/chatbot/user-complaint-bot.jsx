@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User, AlertTriangle, Package, Phone, Mail, Clock, CheckCircle, XCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { complaintService } from '@/services/complaint.service';
 import { chatbotService } from '@/services/chatbot.service';
 import { API_URL } from '../../services/api.config.js';

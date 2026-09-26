@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AlertTriangle, Clock, CheckCircle, XCircle, User, Phone, Mail, Package, Calendar, Filter, Search, Download, Eye, MessageSquare } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 export default function ComplaintDashboard() {
   const [complaints, setComplaints] = useState([]);

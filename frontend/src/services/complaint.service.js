@@ -56,34 +56,40 @@ class ComplaintService {
   // Get all complaints for admin dashboard
   async getComplaints(filters = {}) {
     try {
-      // In a real app, this would be an API call with filters
-      // const response = await fetch(`${this.baseURL}/admin/complaints?${new URLSearchParams(filters)}`);
-      // return await response.json();
-
-      // For demo, return stored complaints
-      let filteredComplaints = [...this.complaints];
-
-      if (filters.status && filters.status !== 'all') {
-        filteredComplaints = filteredComplaints.filter(c => c.status === filters.status);
+      const response = await fetch(`${this.baseURL}/complaint/all`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.complaints)) {
+          let list = data.complaints;
+          if (filters.status && filters.status !== 'all') {
+            list = list.filter(c => c.status === filters.status);
+          }
+          if (filters.priority && filters.priority !== 'all') {
+            list = list.filter(c => c.priority === filters.priority);
+          }
+          return { success: true, complaints: list, total: list.length };
+        }
       }
-
-      if (filters.priority && filters.priority !== 'all') {
-        filteredComplaints = filteredComplaints.filter(c => c.priority === filters.priority);
-      }
-
-      return {
-        success: true,
-        complaints: filteredComplaints,
-        total: filteredComplaints.length
-      };
-    } catch (error) {
-      console.error('Error fetching complaints:', error);
-      return {
-        success: false,
-        complaints: [],
-        total: 0
-      };
+    } catch (err) {
+      console.warn('Backend complaints fetch failed, falling back to local store:', err.message);
     }
+
+    // Fallback: return stored complaints
+    let filteredComplaints = [...this.complaints];
+
+    if (filters.status && filters.status !== 'all') {
+      filteredComplaints = filteredComplaints.filter(c => c.status === filters.status);
+    }
+
+    if (filters.priority && filters.priority !== 'all') {
+      filteredComplaints = filteredComplaints.filter(c => c.priority === filters.priority);
+    }
+
+    return {
+      success: true,
+      complaints: filteredComplaints,
+      total: filteredComplaints.length
+    };
   }
 
   // Update complaint status

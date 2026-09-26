@@ -5,38 +5,72 @@ dotenv.config();
 
 class GeminiService {
     constructor() {
-        this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        this.apiKey = process.env.GEMINI_API_KEY;
+        this.genAI = null;
+        this.model = null;
+    }
+
+    getModel() {
+        const key = process.env.GEMINI_API_KEY || this.apiKey;
+        if (!key) {
+            return null;
+        }
+        if (!this.model) {
+            try {
+                this.genAI = new GoogleGenerativeAI(key);
+                this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            } catch (err) {
+                console.warn('⚠️ Gemini AI initialization error:', err.message);
+                return null;
+            }
+        }
+        return this.model;
+    }
+
+    async testConnection() {
+        try {
+            const model = this.getModel();
+            if (!model) return false;
+            const result = await model.generateContent("ping");
+            const response = await result.response;
+            return !!response.text();
+        } catch (error) {
+            console.warn('⚠️ Gemini test connection failed:', error.message);
+            return false;
+        }
     }
 
     /**
      * Generate text using Gemini AI
-     * @param {string} prompt - The prompt to send to Gemini
-     * @param {Object} options - Additional options for generation
-     * @returns {Promise<string>} - Generated text response
      */
     async generateText(prompt, options = {}) {
         try {
-            const result = await this.model.generateContent(prompt);
+            const model = this.getModel();
+            if (!model) {
+                return "Gemini AI is not configured on this server. Please set GEMINI_API_KEY in backend/.env.";
+            }
+            const result = await model.generateContent(prompt);
             const response = await result.response;
             return response.text();
         } catch (error) {
-            console.error('Error generating text with Gemini:', error);
-            throw new Error('Failed to generate text with Gemini AI');
+            console.error('Error generating text with Gemini:', error.message);
+            return "I apologize, but I am currently unable to process your request. Please try again shortly.";
         }
     }
 
     /**
      * Generate chat response for customer support
-     * @param {string} userMessage - User's message
-     * @param {Object} context - Additional context (order info, delivery status, etc.)
-     * @returns {Promise<string>} - AI response
      */
     async generateChatResponse(userMessage, context = {}) {
         try {
-            const systemPrompt = `You are a helpful customer support assistant for a courier tracking service. 
+            const model = this.getModel();
+            if (!model) {
+                return "Hello! I am your automated assistant. Our AI services are currently operating in offline mode. Please feel free to track your shipment using your Tracking ID or submit a complaint form.";
+            }
+
+            const systemPrompt = `You are a helpful customer support assistant for a courier tracking service called Prime Dispatcher. 
             You help customers with delivery inquiries, order tracking, and general support questions.
-            Be polite, professional, and provide accurate information based on the context provided.
+            Be polite, professional, and provide concise, accurate information based on the context provided.
             
             Context: ${JSON.stringify(context)}
             
@@ -47,87 +81,62 @@ class GeminiService {
             return await this.generateText(systemPrompt);
         } catch (error) {
             console.error('Error generating chat response:', error);
-            throw new Error('Failed to generate chat response');
+            return "I am having trouble processing that right now. Please check your tracking number or reach out to human support.";
         }
     }
 
     /**
      * Analyze delivery issues and suggest solutions
-     * @param {Object} deliveryData - Delivery information
-     * @returns {Promise<string>} - Analysis and suggestions
      */
     async analyzeDeliveryIssue(deliveryData) {
         try {
-            const prompt = `Analyze this delivery issue and provide suggestions for resolution:
+            const prompt = `Analyze this delivery issue and provide recommendations:
+            ${JSON.stringify(deliveryData, null, 2)}
             
-            Delivery Data: ${JSON.stringify(deliveryData)}
-            
-            Please provide:
-            1. Issue analysis
-            2. Possible causes
-            3. Recommended actions
-            4. Customer communication suggestions`;
+            Provide:
+            1. Root cause analysis
+            2. Recommended next steps
+            3. Customer communication message`;
 
             return await this.generateText(prompt);
         } catch (error) {
             console.error('Error analyzing delivery issue:', error);
-            throw new Error('Failed to analyze delivery issue');
+            return "Unable to analyze delivery issue at this time.";
         }
     }
 
     /**
-     * Generate automated email responses
-     * @param {string} emailType - Type of email (complaint, inquiry, update, etc.)
-     * @param {Object} data - Relevant data for the email
-     * @returns {Promise<string>} - Generated email content
+     * Generate response for email inquiries
      */
-    async generateEmailResponse(emailType, data) {
+    async generateEmailResponse(customerEmail, inquiryType) {
         try {
-            const prompt = `Generate a professional email response for a courier service:
+            const prompt = `Write a professional email response for:
+            Type: ${inquiryType}
+            Customer: ${customerEmail}
             
-            Email Type: ${emailType}
-            Data: ${JSON.stringify(data)}
-            
-            Please create a professional, empathetic, and helpful email response that addresses the customer's needs.`;
+            Include greeting, answer, and professional sign-off.`;
 
             return await this.generateText(prompt);
         } catch (error) {
             console.error('Error generating email response:', error);
-            throw new Error('Failed to generate email response');
+            return "Thank you for contacting us. We have received your inquiry and will respond shortly.";
         }
     }
 
     /**
-     * Generate delivery status updates with natural language
-     * @param {Object} deliveryStatus - Current delivery status
-     * @returns {Promise<string>} - Human-friendly status update
+     * Generate status update messages
      */
-    async generateStatusUpdate(deliveryStatus) {
+    async generateStatusUpdate(trackingNumber, currentStatus, location) {
         try {
-            const prompt = `Convert this delivery status into a friendly, informative message for the customer:
-            
-            Status Data: ${JSON.stringify(deliveryStatus)}
-            
-            Create a clear, reassuring message that explains the current status and what to expect next.`;
+            const prompt = `Write a clear status update SMS/message:
+            Tracking: ${trackingNumber}
+            Status: ${currentStatus}
+            Location: ${location}`;
 
             return await this.generateText(prompt);
         } catch (error) {
             console.error('Error generating status update:', error);
-            throw new Error('Failed to generate status update');
-        }
-    }
-
-    /**
-     * Test the Gemini API connection
-     * @returns {Promise<boolean>} - True if connection is successful
-     */
-    async testConnection() {
-        try {
-            const result = await this.generateText("Hello, this is a test message. Please respond with 'Connection successful'.");
-            return result.includes('Connection successful') || result.length > 0;
-        } catch (error) {
-            console.error('Gemini API connection test failed:', error);
-            return false;
+            return `Shipment ${trackingNumber} update: Status is ${currentStatus} at ${location}.`;
         }
     }
 }
