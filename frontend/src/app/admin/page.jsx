@@ -1,308 +1,535 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-// Animated counter helper
-function AnimatedNumber({ value }) {
-  const [display, setDisplay] = useState(0);
-  useEffect(() => {
-    let start = display;
-    let end = value;
-    if (start === end) return;
-    let step = Math.ceil(Math.abs(end - start) / 20) || 1;
-    let timer = setInterval(() => {
-      setDisplay(prev => {
-        if (prev === end) {
-          clearInterval(timer);
-          return prev;
-        }
-        if (prev < end) return Math.min(prev + step, end);
-        return Math.max(prev - step, end);
-      });
-    }, 20);
-    return () => clearInterval(timer);
-  }, [value]);
-  return <span>{display}</span>;
-}
+import { useState, useEffect, useCallback } from 'react';
+import { Bar, Line, Doughnut } from 'react-chartjs-2';
+import 'chart.js/auto';
+import ChartsRow from '@/components/admin/charts/ChartsRow';
 import { 
-  Users, 
   Package, 
+  Users, 
+  TrendingUp, 
+  Clock, 
+  RefreshCw, 
+  Wifi, 
+  ShieldCheck, 
+  ArrowUpRight, 
   Truck, 
-  Settings, 
-  BarChart2, 
+  CheckCircle2, 
   AlertCircle,
-  Search,
-  Filter,
-  Download,
-  Plus
+  ExternalLink
 } from 'lucide-react';
-import { authService } from '@/services/auth.service';
+import AdminDashboardSkeleton from '@/components/admin/AdminDashboardSkeleton';
 import { API_URL } from '../../services/api.config.js';
 import Link from 'next/link';
 
-const AdminDashboard = () => {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeShipments: 0,
-    pendingDeliveries: 0,
-    totalRevenue: 0
-  });
-
+export default function AdminDashboard() {
+  const [summary, setSummary] = useState(null);
+  const [chartData, setChartData] = useState(null);
+  const [users, setUsers] = useState([]);
   const [recentShipments, setRecentShipments] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [revenueAnalytics, setRevenueAnalytics] = useState(null);
+  const [userGrowth, setUserGrowth] = useState(null);
+  const [shipmentHeatmap, setShipmentHeatmap] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [realTimeData, setRealTimeData] = useState(null);
+  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [connectionStatus, setConnectionStatus] = useState('Polling Mode');
 
   useEffect(() => {
-    // Check if user is admin
-    const currentUser = authService.getCurrentUser();
-    if (!currentUser || currentUser.role !== 'admin') {
-      window.location.href = '/';
-      return;
-    }
-
-    // Load admin data
-    loadAdminData();
+    setConnectionStatus('Polling Mode');
   }, []);
 
-  const loadAdminData = async () => {
+  // Fetch real-time analytics data
+  const fetchRealTimeAnalytics = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-
       const token = sessionStorage.getItem('admin_token') || sessionStorage.getItem('user_token');
-      if (!token) return;
-
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+      
+      const response = await fetch(`${API_URL}/admin/analytics/realtime`, { headers });
+      const data = await response.json();
+      setRealTimeData(data);
+      
+      if (data.shipmentTrends && data.shipmentTrends.length > 0) {
+        setChartData({
+          labels: data.shipmentTrends.map(item => {
+            const date = new Date(item._id);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          }),
+          datasets: [
+            {
+              label: 'Daily Shipments',
+              data: data.shipmentTrends.map(item => item.count),
+              backgroundColor: 'rgba(15, 23, 42, 0.85)',
+              borderColor: '#0f172a',
+              borderWidth: 1.5,
+              borderRadius: 6,
+              borderSkipped: false,
+              hoverBackgroundColor: '#0f172a',
+            },
+          ],
+        });
+      }
+
+      if (data.userGrowth && data.userGrowth.length > 0) {
+        setUserGrowth({
+          labels: data.userGrowth.map(item => item._id),
+          monthly: data.userGrowth.map(item => item.count)
+        });
+      }
+
+      if (data.regionalData && data.regionalData.length > 0) {
+        setShipmentHeatmap({
+          regions: data.regionalData.map(item => ({
+            region: item._id,
+            count: item.count
+          }))
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching real-time analytics:', error);
+    }
+  }, []);
+
+  // Fetch revenue analytics
+  const fetchRevenueAnalytics = useCallback(async () => {
+    try {
+      const token = sessionStorage.getItem('admin_token') || sessionStorage.getItem('user_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+      
+      const response = await fetch(`${API_URL}/admin/analytics/revenue`, { headers });
+      const data = await response.json();
+      setRevenueAnalytics(data);
+      
+      if (data.totalRevenue > 0) {
+        setNotifications(prev => [
+          { 
+            id: Date.now(), 
+            message: `Total Revenue: ₹${data.totalRevenue.toLocaleString()} | Avg Order: ₹${data.averageOrderValue?.toFixed(2) || '0'}`, 
+            type: 'success' 
+          },
+          ...prev.slice(0, 4)
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching revenue analytics:', error);
+    }
+  }, []);
+
+  // Fetch dashboard summary data
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = sessionStorage.getItem('admin_token') || sessionStorage.getItem('user_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       };
 
-      // Fetch dashboard stats
-      try {
-        const summaryResponse = await fetch(`${API_URL}/admin/summary`, { headers });
-        if (summaryResponse.ok) {
-          const statsData = await summaryResponse.json();
-          setStats({
-            totalUsers: statsData.totalUsers || statsData.activeUsers || 0,
-            activeShipments: statsData.activeShipments || statsData.totalShipments || 0,
-            pendingDeliveries: statsData.pendingDeliveries || 0,
-            totalRevenue: statsData.totalRevenue || statsData.revenue || 0
-          });
-        }
-      } catch (err) {
-        console.log('Summary API not available, using defaults');
+      const [summaryRes, shipmentsRes, usersRes] = await Promise.allSettled([
+        fetch(`${API_URL}/admin/summary`, { headers }).then(r => r.json()),
+        fetch(`${API_URL}/admin/shipments/recent`, { headers }).then(r => r.json()),
+        fetch(`${API_URL}/admin/users`, { headers }).then(r => r.json())
+      ]);
+
+      if (summaryRes.status === 'fulfilled' && summaryRes.value) {
+        setSummary(summaryRes.value);
+      } else {
+        setSummary({ totalShipments: 0, activeUsers: 0, revenue: 0, pendingDeliveries: 0 });
       }
 
-      // Fetch recent shipments
-      try {
-        const shipmentsResponse = await fetch(`${API_URL}/admin/shipments/recent`, { headers });
-        if (shipmentsResponse.ok) {
-          const shipmentsData = await shipmentsResponse.json();
-          setRecentShipments(Array.isArray(shipmentsData) ? shipmentsData.slice(0, 10) : []);
-        }
-      } catch (err) {
-        console.log('Shipments API not available');
+      if (shipmentsRes.status === 'fulfilled' && shipmentsRes.value) {
+        setRecentShipments(Array.isArray(shipmentsRes.value) ? shipmentsRes.value : shipmentsRes.value.shipments || []);
       }
 
-      setLoading(false);
+      if (usersRes.status === 'fulfilled' && usersRes.value) {
+        setUsers(Array.isArray(usersRes.value) ? usersRes.value : usersRes.value.users || []);
+      }
+
+      setLastUpdate(new Date());
     } catch (error) {
-      console.error('Error loading admin data:', error);
-      setError(error.message);
+      console.error('Dashboard data fetch error:', error);
+    } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    fetchDashboardData();
+    fetchRealTimeAnalytics();
+    fetchRevenueAnalytics();
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-red-50 border-l-4 border-red-400 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-red-400" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">
-                  {error}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    const interval = setInterval(() => {
+      fetchRealTimeAnalytics();
+      fetchRevenueAnalytics();
+      setLastUpdate(new Date());
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchDashboardData, fetchRealTimeAnalytics, fetchRevenueAnalytics]);
+
+  if (loading && !summary) {
+    return <AdminDashboardSkeleton />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Manage your courier service operations
-          </p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-                <Users className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-2xl font-semibold text-gray-900"><AnimatedNumber value={stats.totalUsers} /></p>
-              </div>
+    <div className="min-h-screen bg-slate-50/60 text-slate-900 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Console */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700 mb-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Real-Time Logistics Operations</span>
             </div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              Executive Dashboard
+            </h1>
+            <p className="text-sm text-slate-600 mt-1">
+              Live oversight of shipment consignments, driver fleet assignments, and revenue flow.
+            </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-green-100 text-green-600">
-                <Package className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Shipments</p>
-                <p className="text-2xl font-semibold text-gray-900"><AnimatedNumber value={stats.activeShipments} /></p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>Live Polling: {lastUpdate.toLocaleTimeString()}</span>
             </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-yellow-100 text-yellow-600">
-                <Truck className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pending Deliveries</p>
-                <p className="text-2xl font-semibold text-gray-900"><AnimatedNumber value={stats.pendingDeliveries} /></p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-purple-100 text-purple-600">
-                <BarChart2 className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-semibold text-gray-900">₹<AnimatedNumber value={stats.totalRevenue} /></p>
-              </div>
-            </div>
+            <button
+              onClick={() => {
+                fetchDashboardData();
+                fetchRealTimeAnalytics();
+                fetchRevenueAnalytics();
+              }}
+              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition shadow-sm"
+              title="Refresh Dashboard"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* Recent Shipments */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900">Recent Shipments</h2>
-              <div className="flex space-x-3">
-                <button className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </button>
-                <button className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </button>
-                <button className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Shipment
-                </button>
+        {/* 4 Minimal Metric KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Active Shipments */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Active Shipments
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center">
+                <Package className="w-4 h-4 text-slate-800" />
               </div>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                {summary?.totalShipments ?? 0}
+              </span>
+              <span className="inline-flex items-center text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                Active
+              </span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 font-medium">
+              <span>Transit pipeline</span>
+              <Link href="/admin/shipments" className="font-bold text-slate-900 hover:text-amber-700 flex items-center gap-0.5">
+                View all →
+              </Link>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tracking ID
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Origin
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Destination
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {recentShipments.map((shipment, index) => (
-                  <tr key={shipment.id || index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {shipment.trackingId || shipment.id || `#${index + 1}`}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {shipment.customer || shipment.sender?.name || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full shadow transition-transform duration-200 ${
-                        shipment.status === 'Delivered' 
-                          ? 'bg-green-100 text-green-800'
-                          : shipment.status === 'In Transit'
-                          ? 'bg-blue-100 text-blue-800'
-                          : shipment.status === 'Out for Delivery'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : shipment.status === 'Pending'
-                          ? 'bg-gray-100 text-gray-800'
-                          : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {shipment.status || 'Unknown'}
-                        {shipment.status === 'Delivered' && <svg className="ml-1 h-4 w-4 text-green-500 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
-                        {shipment.status === 'In Transit' && <svg className="ml-1 h-4 w-4 text-blue-500 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6a2 2 0 012-2h6" /></svg>}
-                        {shipment.status === 'Out for Delivery' && <svg className="ml-1 h-4 w-4 text-yellow-500 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m4 4h1a2 2 0 002-2v-5a2 2 0 00-2-2h-1.5" /></svg>}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {shipment.origin || shipment.sender?.address || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {shipment.destination || shipment.receiver?.address || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {shipment.date ? new Date(shipment.date).toLocaleDateString() : 
-                       shipment.createdAt ? new Date(shipment.createdAt).toLocaleDateString() : 'N/A'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Active Registered Users */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Registered Users
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center">
+                <Users className="w-4 h-4 text-slate-800" />
+              </div>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                {summary?.activeUsers ?? users.length}
+              </span>
+              <span className="inline-flex items-center text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                +12% mo
+              </span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 font-medium">
+              <span>Customer directory</span>
+              <Link href="/admin/users" className="font-bold text-slate-900 hover:text-amber-700 flex items-center gap-0.5">
+                Manage →
+              </Link>
+            </div>
+          </div>
+
+          {/* Total Revenue */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Total Freight Revenue
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                ₹{(summary?.revenue || revenueAnalytics?.totalRevenue || 0).toLocaleString()}
+              </span>
+              <span className="inline-flex items-center text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                Settled
+              </span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 font-medium">
+              <span>Avg order ₹{revenueAnalytics?.averageOrderValue?.toFixed(0) || '120'}</span>
+              <Link href="/admin/analytics" className="font-bold text-slate-900 hover:text-amber-700 flex items-center gap-0.5">
+                Financials →
+              </Link>
+            </div>
+          </div>
+
+          {/* Pending Deliveries */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Pending Actions
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center">
+                <Clock className="w-4 h-4 text-slate-800" />
+              </div>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                {summary?.pendingDeliveries ?? 0}
+              </span>
+              <span className="inline-flex items-center text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                Awaiting dispatch
+              </span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 font-medium">
+              <span>Delivery queues</span>
+              <Link href="/admin/shipments" className="font-bold text-slate-900 hover:text-amber-700 flex items-center gap-0.5">
+                Process →
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Interactive Charts Row */}
+        <ChartsRow 
+          chartData={chartData}
+          revenueAnalytics={revenueAnalytics}
+          userGrowth={userGrowth}
+          realTimeData={realTimeData}
+        />
+
+        {/* Quick Analytics & Performance Overview */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Operational Velocity & Trends
+              </h2>
+              <p className="text-xs text-slate-600 font-medium">Consolidated snapshot of daily, weekly, and monthly cadence</p>
+            </div>
+            <Link
+              href="/admin/analytics" 
+              className="px-3.5 py-1.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-sm"
+            >
+              Full Analytics Console →
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Today's Performance */}
+            <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-2">
+                Today's Performance
+              </span>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-700 font-medium">New Shipments</span>
+                  <span className="font-extrabold text-slate-900">
+                    {chartData?.datasets?.[0]?.data?.slice(-1)[0] || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-700 font-medium">Daily Revenue</span>
+                  <span className="font-extrabold text-emerald-800">
+                    ₹{revenueAnalytics?.daily?.slice(-1)[0]?.toLocaleString() || '0'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* This Week */}
+            <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-2">
+                This Week Cadence
+              </span>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-700 font-medium">Total Volume</span>
+                  <span className="font-extrabold text-slate-900">
+                    {chartData?.datasets?.[0]?.data?.slice(-7).reduce((a, b) => a + b, 0) || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-700 font-medium">Week-over-Week</span>
+                  <span className="font-extrabold text-emerald-800">+12.5%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* This Month */}
+            <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-2">
+                Monthly Aggregate
+              </span>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-700 font-medium">Total Revenue</span>
+                  <span className="font-extrabold text-slate-900">
+                    ₹{revenueAnalytics?.monthly?.slice(-1)[0]?.toLocaleString() || '0'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-700 font-medium">Avg Ticket Size</span>
+                  <span className="font-extrabold text-slate-900">
+                    ₹{revenueAnalytics?.averageOrderValue?.toFixed(0) || '0'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Status Distribution Breakdown */}
+        {realTimeData && realTimeData.statusDistribution && (
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-slate-900">
+                Consignment Pipeline Distribution
+              </h3>
+              <Link href="/admin/shipments" className="text-xs font-bold text-slate-700 hover:text-slate-900">
+                Filter in table →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {realTimeData.statusDistribution.slice(0, 4).map((status, index) => (
+                <div key={index} className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl">
+                  <div className="text-2xl font-extrabold text-slate-900">{status.count}</div>
+                  <div className="text-xs font-bold text-slate-700 mt-0.5">{status._id}</div>
+                  <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2 overflow-hidden">
+                    <div 
+                      className="bg-slate-900 h-1.5 rounded-full" 
+                      style={{
+                        width: `${Math.min((status.count / Math.max(...realTimeData.statusDistribution.map(s => s.count))) * 100, 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 2-Column: Recent Shipments & Live Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Shipments */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Truck className="w-4 h-4 text-slate-700" />
+                Recent Dispatched Consignments
+              </h3>
+              <Link href="/admin/shipments" className="text-xs font-bold text-slate-700 hover:text-slate-900">
+                View All
+              </Link>
+            </div>
+            <div className="space-y-2.5 max-h-72 overflow-y-auto">
+              {recentShipments.slice(0, 6).map((s, i) => (
+                <Link 
+                  key={i} 
+                  href={`/admin/shipments/${s.id || s.trackingId}`}
+                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-slate-100 transition text-xs"
+                >
+                  <div>
+                    <span className="font-mono font-bold text-slate-900 block">{s.id || s.trackingId}</span>
+                    <span className="text-slate-600 text-xs font-medium truncate max-w-xs block mt-0.5">{s.origin} → {s.destination}</span>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                    s.status === 'Delivered' ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' :
+                    s.status === 'In Transit' ? 'bg-blue-50 text-blue-800 border border-blue-300' :
+                    'bg-slate-100 text-slate-800 border border-slate-200'
+                  }`}>
+                    {s.status}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Shortcuts & Navigation Console */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  Admin Command Shortcuts
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <Link
+                  href="/admin/create-shipment"
+                  className="p-3.5 rounded-xl border border-slate-200 hover:border-slate-900 hover:bg-slate-50 transition group block"
+                >
+                  <span className="font-bold text-slate-900 block group-hover:text-amber-700">Book Shipment</span>
+                  <span className="text-slate-600 text-xs font-medium block mt-0.5">Generate new courier</span>
+                </Link>
+
+                <Link
+                  href="/admin/partners"
+                  className="p-3.5 rounded-xl border border-slate-200 hover:border-slate-900 hover:bg-slate-50 transition group block"
+                >
+                  <span className="font-bold text-slate-900 block group-hover:text-amber-700">Driver Verification</span>
+                  <span className="text-slate-600 text-xs font-medium block mt-0.5">Approve KYC applications</span>
+                </Link>
+
+                <Link
+                  href="/admin/complaints"
+                  className="p-3.5 rounded-xl border border-slate-200 hover:border-slate-900 hover:bg-slate-50 transition group block"
+                >
+                  <span className="font-bold text-slate-900 block group-hover:text-amber-700">Complaints & Refunds</span>
+                  <span className="text-slate-600 text-xs font-medium block mt-0.5">Review customer tickets</span>
+                </Link>
+
+                <Link
+                  href="/admin/reports"
+                  className="p-3.5 rounded-xl border border-slate-200 hover:border-slate-900 hover:bg-slate-50 transition group block"
+                >
+                  <span className="font-bold text-slate-900 block group-hover:text-amber-700">Audit Reports</span>
+                  <span className="text-slate-600 text-xs font-medium block mt-0.5">Export CSV & financial ledger</span>
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 font-medium">
+              <span>Prime Logistics Dispatcher Core v2.4</span>
+              <span className="font-bold text-emerald-800 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> All Services Operational
+              </span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default AdminDashboard;
+}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Package, AlertTriangle, Clock, User, Star, CreditCard, Truck } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { API_URL } from '../../services/api.config.js';
 
 export default function RefundComplaintDashboard() {

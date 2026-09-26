@@ -1,30 +1,55 @@
 "use client";
 
 import React, { useState } from 'react';
-import { X, User, Mail, Lock, Phone, MapPin, Building, Globe, Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { X, User, Mail, Lock, Phone, MapPin, Building, Globe, Loader2, Eye, EyeOff, AlertCircle, Truck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/auth.service';
+import partnerService from '@/services/partner.service';
+import { toast } from 'react-toastify';
 
-const LoginRegisterModal = ({ isOpen, onClose }) => {
+const LoginRegisterModal = ({ isOpen, onClose, onLoginSuccess, initialData = {}, initialMode = 'login' }) => {
   const router = useRouter();
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
+  const [accountType, setAccountType] = useState('user'); // 'user' or 'partner'
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    name: initialData.name || '',
+    email: initialData.email || '',
     password: '',
     confirmPassword: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: ''
+    phone: initialData.phone || '',
+    address: initialData.address || '',
+    city: initialData.city || '',
+    state: initialData.state || '',
+    postalCode: initialData.postalCode || '',
+    country: initialData.country || ''
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Sync initialData and initialMode if provided when opening
+  React.useEffect(() => {
+    if (isOpen) {
+      if (initialMode) {
+        setIsLogin(initialMode === 'login');
+      }
+      if (initialData && Object.keys(initialData).length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          name: initialData.name || prev.name,
+          email: initialData.email || prev.email,
+          phone: initialData.phone || prev.phone,
+          address: initialData.address || prev.address,
+          city: initialData.city || prev.city,
+          state: initialData.state || prev.state,
+          postalCode: initialData.postalCode || prev.postalCode,
+          country: initialData.country || prev.country
+        }));
+      }
+    }
+  }, [isOpen, initialMode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -143,11 +168,42 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
     try {
       if (isLogin) {
         if (!formData.email.trim() || !formData.password) {
-          setError('Email and password are required');
+          const msg = 'Email and password are required';
+          setError(msg);
+          toast.error(msg);
           return;
         }
 
         setLoading(true);
+
+        // Partner login mode
+        if (accountType === 'partner') {
+          try {
+            const res = await partnerService.login({
+              email: formData.email.trim(),
+              password: formData.password
+            });
+            if (res.success) {
+              const successMsg = `Welcome ${res.partner?.name || 'Partner'}! Redirecting to Fleet Dashboard...`;
+              setSuccess(successMsg);
+              toast.success(successMsg);
+              setTimeout(() => {
+                onClose();
+                window.location.href = '/partner/dashboard';
+              }, 700);
+              return;
+            }
+          } catch (partnerErr) {
+            console.error('Partner login error:', partnerErr);
+            const errText = partnerErr.message || 'Partner login failed. Make sure your account is approved by admin.';
+            setError(errText);
+            toast.error(errText);
+            return;
+          } finally {
+            setLoading(false);
+          }
+          return;
+        }
 
         // Check if it's an admin email
         const isAdmin = isAdminEmail(formData.email);
@@ -179,33 +235,48 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
           if (response.user) {
             if (response.user.role === 'admin') {
               setSuccess('Admin login successful! Redirecting to dashboard...');
+              toast.success('Admin login verified! Welcome to Control Console');
               setTimeout(() => {
                 onClose();
                 window.location.href = '/admin';
-              }, 1000);
-            } else {
-              setSuccess('Login successful! Welcome back!');
+              }, 800);
+            } else if (onLoginSuccess) {
+              setSuccess('Login successful! Proceeding...');
+              toast.success(`Welcome back, ${response.user.name || 'User'}!`);
               setTimeout(() => {
                 onClose();
-                window.location.href = '/';
-              }, 1000);
+                onLoginSuccess(response.user);
+              }, 400);
+            } else {
+              setSuccess('Login successful! Welcome back!');
+              toast.success(`Welcome back, ${response.user.name || 'User'}!`);
+              setTimeout(() => {
+                onClose();
+                window.location.reload();
+              }, 800);
             }
             return;
           }
         } catch (loginError) {
           console.error('Login error:', loginError);
-          setError(loginError.message || 'Invalid email or password');
+          const errText = loginError.message || 'Invalid email or password';
+          setError(errText);
+          toast.error(errText);
         }
       } else {
         // Registration logic
         if (!isRegistrationFormComplete()) {
-          setError('All fields are required and phone number must be 10-15 digits.');
+          const msg = 'All fields are required and phone number must be 10-15 digits.';
+          setError(msg);
+          toast.error(msg);
           return;
         }
 
         const validationErrors = validateRegistrationForm();
         if (validationErrors.length > 0) {
-          setError(validationErrors.join(', '));
+          const msg = validationErrors.join(', ');
+          setError(msg);
+          toast.error(msg);
           return;
         }
 
@@ -231,21 +302,32 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
         if (response.user) {
           if (response.user.role === 'admin') {
             setSuccess('Admin account created successfully! Redirecting to dashboard...');
+            toast.success('Admin account created! Redirecting...');
             setTimeout(() => {
               onClose();
               window.location.href = '/admin';
             }, 1000);
-          } else {
-            setSuccess('Registration successful! Welcome to Prime Dispatcher!');
+          } else if (onLoginSuccess) {
+            setSuccess('Registration successful! Proceeding...');
+            toast.success('Account created successfully! Welcome!');
             setTimeout(() => {
               onClose();
-              window.location.href = '/';
-            }, 1000);
+              onLoginSuccess(response.user);
+            }, 400);
+          } else {
+            setSuccess('Registration successful! Welcome to Prime Dispatcher!');
+            toast.success('Account created successfully! Welcome!');
+            setTimeout(() => {
+              onClose();
+              window.location.reload();
+            }, 800);
           }
         }
       }
     } catch (error) {
-      setError(error.message || 'An error occurred');
+      const errText = error.message || 'An error occurred';
+      setError(errText);
+      toast.error(errText);
     } finally {
       setLoading(false);
     }
@@ -254,10 +336,10 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   // Common input classes for consistent styling
-  const inputClasses = "w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500 bg-white font-medium";
-  const inputClassesWithIcon = "w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500 bg-white font-medium";
-  const loginInputClasses = "w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500 bg-white font-medium";
-  const loginInputClassesWithIcon = "w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-500 bg-white font-medium";
+  const inputClasses = "w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
+  const inputClassesWithIcon = "w-full pl-9 pr-10 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
+  const loginInputClasses = "w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
+  const loginInputClassesWithIcon = "w-full pl-10 pr-12 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
 
   // Get phone digit count for display
   const phoneDigitCount = formData.phone.replace(/\D/g, '').length;
@@ -267,23 +349,23 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
       <div className="flex min-h-screen items-center justify-center p-4">
         {/* Backdrop */}
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
+          className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm transition-opacity" 
           onClick={onClose}
         />
 
         {/* Modal - Responsive and Professional */}
-        <div className={`relative transform overflow-hidden rounded-xl bg-white shadow-2xl transition-all w-full ${
+        <div className={`relative transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all w-full border border-slate-200 ${
           isLogin ? 'max-w-md' : 'max-w-2xl'
         }`}>
           {/* Header */}
-          <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-4">
+          <div className="bg-white px-6 py-4 border-b border-slate-100">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">
-                {isLogin ? 'Welcome Back' : 'Create Your Account'}
+              <h2 className="text-lg font-bold text-slate-900">
+                {isLogin ? 'Sign In to Prime Dispatcher' : 'Create an Account'}
               </h2>
               <button
                 onClick={onClose}
-                className="text-white/80 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+                className="text-slate-400 hover:text-slate-700 transition-colors p-1 rounded-md hover:bg-slate-100"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -315,6 +397,39 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
               {/* Login Form */}
               {isLogin ? (
                 <>
+                  {/* Account Role Selector */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                      Sign In As
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200 mb-4">
+                      <button
+                        type="button"
+                        onClick={() => { setAccountType('user'); setError(''); }}
+                        className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                          accountType === 'user'
+                            ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <User className="w-3.5 h-3.5 text-amber-500" />
+                        Customer / Public
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setAccountType('partner'); setError(''); }}
+                        className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                          accountType === 'partner'
+                            ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <Truck className="w-3.5 h-3.5 text-amber-500" />
+                        Delivery Partner
+                      </button>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Email Address
@@ -587,19 +702,23 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
                 <button
                   type="submit"
                   disabled={loading || (!isLogin && !isRegistrationFormComplete())}
-                  className={`w-full flex items-center justify-center px-6 py-3 text-base font-medium rounded-lg text-white transition-all ${
+                  className={`w-full flex items-center justify-center px-6 py-3 text-sm font-medium rounded-xl text-white transition-all shadow-sm ${
                     loading || (!isLogin && !isRegistrationFormComplete())
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transform hover:scale-[1.02]'
+                      ? 'bg-slate-300 cursor-not-allowed text-slate-500' 
+                      : 'bg-slate-900 hover:bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900'
                   }`}
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      {isLogin ? 'Signing in...' : 'Creating account...'}
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {isLogin 
+                        ? (accountType === 'partner' ? 'Verifying partner credentials...' : 'Signing in...') 
+                        : 'Creating account...'}
                     </>
                   ) : (
-                    isLogin ? 'Sign In' : 'Create Account'
+                    isLogin 
+                      ? (accountType === 'partner' ? 'Sign In to Partner Fleet →' : 'Sign In') 
+                      : 'Create Account'
                   )}
                 </button>
               </div>
@@ -612,20 +731,13 @@ const LoginRegisterModal = ({ isOpen, onClose }) => {
                   setIsLogin(!isLogin);
                   setError('');
                   setSuccess('');
-                  setFormData({
-                    name: '',
-                    email: '',
+                  setFormData(prev => ({
+                    ...prev,
                     password: '',
-                    confirmPassword: '',
-                    phone: '',
-                    address: '',
-                    city: '',
-                    state: '',
-                    postalCode: '',
-                    country: ''
-                  });
+                    confirmPassword: ''
+                  }));
                 }}
-                className="text-amber-600 hover:text-amber-700 font-medium transition-colors"
+                className="text-slate-900 hover:underline font-semibold text-sm transition-colors"
               >
                 {isLogin ? "Don't have an account? Create one" : "Already have an account? Sign in"}
               </button>

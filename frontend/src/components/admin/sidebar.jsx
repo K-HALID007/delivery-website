@@ -12,11 +12,13 @@ import {
   TrendingUp,
   FileText,
   Bell,
-  ChevronLeft,
-  ChevronRight,
-  Menu,
-  X,
-  Truck
+  ChevronLeft, 
+  ChevronRight, 
+  Menu, 
+  X, 
+  Truck,
+  MessageSquare,
+  PlusCircle
 } from 'lucide-react';
 import { authService } from '@/services/auth.service';
 import { useSidebar } from '@/hooks/useSidebar';
@@ -24,7 +26,12 @@ import { useSidebar } from '@/hooks/useSidebar';
 export default function AdminSidebar() {
   const { isCollapsed, isMobileOpen, toggleCollapse, toggleMobile, closeMobile } = useSidebar();
   const [scrollY, setScrollY] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setCurrentUser(authService.getCurrentUser());
+  }, []);
 
   // Optimized scroll handler with throttling
   useEffect(() => {
@@ -49,8 +56,10 @@ export default function AdminSidebar() {
     if (pathname === '/admin') return 'dashboard';
     if (pathname.includes('/analytics')) return 'analytics';
     if (pathname.includes('/shipments')) return 'shipments';
+    if (pathname.includes('/create-shipment')) return 'create-shipment';
     if (pathname.includes('/users')) return 'users';
     if (pathname.includes('/partners')) return 'partners';
+    if (pathname.includes('/complaints')) return 'complaints';
     if (pathname.includes('/reports')) return 'reports';
     if (pathname.includes('/notifications')) return 'notifications';
     if (pathname.includes('/settings')) return 'settings';
@@ -66,12 +75,14 @@ export default function AdminSidebar() {
   // Memoized menu items
   const menuItems = useMemo(() => [
     { href: '/admin', icon: BarChart2, label: 'Dashboard', key: 'dashboard' },
-    { href: '/admin/analytics', icon: TrendingUp, label: 'Analytics', key: 'analytics' },
     { href: '/admin/shipments', icon: Package, label: 'Shipments', key: 'shipments' },
-    { href: '/admin/users', icon: Users, label: 'Users', key: 'users' },
-    { href: '/admin/partners', icon: Truck, label: 'Partners', key: 'partners' },
-    { href: '/admin/reports', icon: FileText, label: 'Reports', key: 'reports' },
-    { href: '/admin/notifications', icon: Bell, label: 'Notifications', key: 'notifications' },
+    { href: '/admin/create-shipment', icon: PlusCircle, label: 'Book Courier', key: 'create-shipment' },
+    { href: '/admin/partners', icon: Truck, label: 'Partners Fleet', key: 'partners' },
+    { href: '/admin/users', icon: Users, label: 'User Directory', key: 'users' },
+    { href: '/admin/complaints', icon: MessageSquare, label: 'Complaints', key: 'complaints' },
+    { href: '/admin/analytics', icon: TrendingUp, label: 'Analytics', key: 'analytics' },
+    { href: '/admin/reports', icon: FileText, label: 'Audit Reports', key: 'reports' },
+    { href: '/admin/notifications', icon: Bell, label: 'Alerts', key: 'notifications' },
     { href: '/admin/settings', icon: Settings, label: 'Settings', key: 'settings' },
   ], []);
 
@@ -80,16 +91,16 @@ export default function AdminSidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={toggleMobile}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 text-white rounded-md shadow-lg hover:bg-slate-700 transition-colors duration-150 will-change-transform"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition-colors"
         aria-label={isMobileOpen ? 'Close menu' : 'Open menu'}
       >
-        {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div 
-          className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm transition-opacity duration-200"
+          className="lg:hidden fixed inset-0 bg-slate-950/60 z-40 backdrop-blur-sm transition-opacity"
           onClick={closeMobile}
         />
       )}
@@ -97,66 +108,60 @@ export default function AdminSidebar() {
       {/* Sidebar */}
       <aside 
         className={`
-          fixed top-0 left-0 h-full bg-slate-800 text-white z-40 
-          transition-all duration-300 ease-out will-change-transform
+          fixed top-0 left-0 h-full bg-slate-900 text-slate-300 z-40 
+          transition-all duration-300 ease-out border-r border-slate-800
           ${isCollapsed ? 'w-16' : 'w-64'}
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          flex flex-col shadow-xl
+          flex flex-col shadow-2xl
         `}
       >
         {/* Header */}
         <div className={`
-          border-b border-slate-700 transition-all duration-300 ease-out relative
-          ${isCollapsed ? 'p-0' : 'p-4 px-6'}
+          border-b border-slate-800/80 transition-all duration-300 relative
+          ${isCollapsed ? 'p-0 h-16' : 'p-4 px-5 h-16'}
+          flex items-center
         `}>
-          {/* Collapsed State - Clean Empty Header (No Logo) */}
-          {isCollapsed && (
-            <div className="h-12 w-full"></div>
-          )}
-
-          {/* Expanded State - Logo + Title + Button */}
+          {/* Expanded State */}
           {!isCollapsed && (
-            <div className="flex items-center justify-between">
-              {/* Logo/Title Section */}
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                {/* Logo Icon */}
-                <div className="w-8 h-8 bg-gradient-to-r from-amber-400 to-amber-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <BarChart2 className="w-5 h-5 text-white" />
+            <div className="flex items-center justify-between w-full">
+              <Link href="/admin" className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0 text-slate-950 font-extrabold shadow-sm">
+                  <Package className="w-4 h-4" />
                 </div>
-                
-                {/* Title Text */}
-                <h1 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent whitespace-nowrap">
-                  Admin Panel
-                </h1>
-              </div>
+                <div>
+                  <span className="text-sm font-extrabold text-white tracking-tight block">
+                    Prime Dispatcher
+                  </span>
+                  <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block">
+                    Command Console
+                  </span>
+                </div>
+              </Link>
               
-              {/* Enhanced Collapse Button */}
               <button
                 onClick={toggleCollapse}
-                className="hidden lg:block p-2 rounded-lg hover:bg-slate-700/50 transition-all duration-200 will-change-transform flex-shrink-0 group"
+                className="hidden lg:block p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition"
                 aria-label="Collapse sidebar"
               >
-                <ChevronLeft className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+                <ChevronLeft className="w-4 h-4" />
               </button>
             </div>
           )}
 
-          {/* Clean Expand Button - Top Position */}
+          {/* Collapsed Expand Button */}
           {isCollapsed && (
-            <div className="hidden lg:block absolute -right-0 top-4 z-50">
-              <button
-                onClick={toggleCollapse}
-                className="w-6 h-6 bg-slate-700 hover:bg-slate-600 rounded-r-md flex items-center justify-center transition-colors duration-200 shadow-lg border-r border-slate-600"
-                aria-label="Expand sidebar"
-              >
-                <ChevronRight className="w-3 h-3 text-slate-300 hover:text-white transition-colors duration-200" />
-              </button>
-            </div>
+            <button
+              onClick={toggleCollapse}
+              className="w-full h-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              aria-label="Expand sidebar"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           )}
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
+        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeKey === item.key;
@@ -167,36 +172,24 @@ export default function AdminSidebar() {
                 href={item.href}
                 onClick={closeMobile}
                 className={`
-                  group flex items-center rounded-lg 
-                  transition-all duration-200 ease-out will-change-transform
+                  group flex items-center rounded-xl text-xs font-semibold
+                  transition-all duration-150
                   ${isActive 
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg transform scale-[1.02]' 
-                    : 'hover:bg-slate-700 hover:text-amber-400 hover:transform hover:scale-[1.01]'
+                    ? 'bg-slate-800 text-white border-l-2 border-amber-400 shadow-sm' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                   }
-                  ${isCollapsed ? 'justify-center py-3 px-3' : 'gap-3 py-3 px-3'}
+                  ${isCollapsed ? 'justify-center py-3 px-2' : 'gap-3 py-2.5 px-3.5'}
                 `}
                 title={isCollapsed ? item.label : ''}
               >
-                {/* Icon - Always visible and properly positioned */}
                 <div className="flex items-center justify-center flex-shrink-0">
-                  <Icon className={`
-                    w-5 h-5 transition-transform duration-200 ease-out will-change-transform
-                    ${isActive ? 'scale-110' : 'group-hover:scale-105'}
-                  `} />
+                  <Icon className={`w-4 h-4 transition-transform ${isActive ? 'text-amber-400' : 'text-slate-400 group-hover:text-white'}`} />
                 </div>
                 
-                {/* Label Text - Only visible when expanded */}
                 {!isCollapsed && (
-                  <div className="flex items-center justify-between flex-1 min-w-0">
-                    <span className="font-medium whitespace-nowrap">
-                      {item.label}
-                    </span>
-                    
-                    {/* Active indicator */}
-                    {isActive && (
-                      <div className="w-2 h-2 bg-white rounded-full animate-pulse ml-2" />
-                    )}
-                  </div>
+                  <span className="truncate">
+                    {item.label}
+                  </span>
                 )}
               </Link>
             );
@@ -216,8 +209,8 @@ export default function AdminSidebar() {
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate whitespace-nowrap">Admin User</p>
-                <p className="text-xs text-slate-400 truncate whitespace-nowrap">admin@courier.com</p>
+                <p className="text-sm font-medium text-white truncate whitespace-nowrap">{currentUser?.name || 'Admin User'}</p>
+                <p className="text-xs text-slate-400 truncate whitespace-nowrap">{currentUser?.email || 'admin@gmail.com'}</p>
               </div>
             )}
           </div>

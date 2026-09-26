@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, AlertTriangle, Package, Truck, User, Calendar, CreditCard, Camera, Upload } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 export default function RefundModal({ isOpen, onClose, shipment, onRefundSubmit }) {
   const [step, setStep] = useState(1);

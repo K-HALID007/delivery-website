@@ -1,139 +1,117 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import jwt from 'jsonwebtoken';
-
-// Import routes
-import trackingRoutes from './routes/tracking.routes.js';
-import authRoutes from './routes/auth.routes.js';
-import adminRoutes from './routes/admin.routes.js';
-import partnerRoutes from './routes/partner.routes.js';
-import paymentRoutes from './routes/payment.routes.js';
-import fixRoutes from './routes/fix.routes.js';
-import uploadsRoutes from './routes/uploads.routes.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Load environment variables
 dotenv.config();
 
-// Ensure critical environment variables
-if (!process.env.JWT_SECRET) {
-  console.log('⚠️ JWT_SECRET missing, using fallback');
-  process.env.JWT_SECRET = 'fallback-jwt-secret-for-development-only-not-secure';
-}
+// Resolve paths for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Import routes
+import authRoutes from './routes/auth.routes.js';
+import trackingRoutes from './routes/tracking.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import partnerRoutes from './routes/partner.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
+import complaintRoutes from './routes/complaint.routes.js';
+import geminiRoutes from './routes/gemini.routes.js';
+import uploadsRoutes from './routes/uploads.routes.js';
+import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 
 const app = express();
 
-// EMERGENCY CORS FIX - Simplest possible approach
+// Fallback JWT Secret for development
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'courier-tracker-fallback-secret-2025';
+}
+
+// 🛡️ Robust & Standards-Compliant CORS Configuration
+// Reflects origin dynamically to satisfy W3C spec with credentials: true
 app.use((req, res, next) => {
-  // Log for debugging
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} from ${req.headers.origin || 'no-origin'}`);
+  const origin = req.headers.origin;
   
-  // Set the most permissive CORS headers possible
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', '*');
-  res.header('Access-Control-Allow-Headers', '*');
-  res.header('Access-Control-Expose-Headers', '*');
-  res.header('Access-Control-Max-Age', '3600');
-  
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+
+  res.header(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, PATCH, OPTIONS'
+  );
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma, X-Client-Version'
+  );
+  res.header('Access-Control-Max-Age', '86400');
+
   // Handle preflight immediately
   if (req.method === 'OPTIONS') {
-    console.log(`✅ OPTIONS preflight handled for ${req.path}`);
-    return res.status(200).json({
-      message: 'CORS preflight OK',
-      timestamp: new Date().toISOString()
-    });
+    return res.status(204).end();
   }
-  
+
   next();
 });
 
-// Simple backup CORS
+// Standard CORS middleware as second layer
 app.use(cors({
   origin: true,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
-  allowedHeaders: ['*']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Cache-Control', 'Pragma']
 }));
 
-app.use(express.json());
+// Body parsers
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Routes
-app.use('/api/tracking', trackingRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/partner', partnerRoutes);
-app.use('/api/payment', paymentRoutes);
-app.use('/api/fix', fixRoutes);
-app.use('/api/uploads', uploadsRoutes);
+// Static uploads serving with permissive CORS
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
 
-// Health check
+// Root & Health check
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Prime Dispatcher API is active and running',
+    version: '2.0.0',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
-    message: 'Backend is working!',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// CORS test endpoint
-app.get('/api/cors-test', (req, res) => {
-  res.json({
-    success: true,
-    message: 'CORS is working!',
-    origin: req.headers.origin,
-    userAgent: req.headers['user-agent'],
+    status: 'healthy',
+    message: 'Backend server is operational',
     timestamp: new Date().toISOString(),
-    headers: req.headers
+    uptime: process.uptime()
   });
 });
 
-// OPTIONS handler for all routes
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,Cache-Control,Pragma');
-  res.sendStatus(200);
-});
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/tracking', trackingRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/partner', partnerRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/complaint', complaintRoutes);
+app.use('/api/gemini', geminiRoutes);
+app.use('/api/uploads', uploadsRoutes);
 
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Courier Tracker API is running',
-    status: 'OK',
-    cors: 'enabled',
-    timestamp: new Date().toISOString()
-  });
-});
+// 404 for undefined routes under /api
+app.use('/api/*', notFoundHandler);
 
-// MongoDB connection with better error handling
-if (process.env.MONGODB_URI) {
-  mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ MongoDB connected'))
-    .catch(err => {
-      console.log('❌ MongoDB error:', err.message);
-      // Don't crash the app if MongoDB fails
-    });
-} else {
-  console.log('⚠️ MONGODB_URI not found in environment variables');
-}
-
-// Check critical environment variables
-console.log('🔍 Environment Check:');
-console.log('- MONGODB_URI:', process.env.MONGODB_URI ? 'Present' : 'Missing');
-console.log('- JWT_SECRET:', process.env.JWT_SECRET ? 'Present' : 'Missing');
-console.log('- NODE_ENV:', process.env.NODE_ENV || 'Not set');
-
-// Error handling
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Global Error Handler
+app.use(errorHandler);
 
 export default app;

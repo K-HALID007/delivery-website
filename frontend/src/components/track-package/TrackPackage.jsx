@@ -11,8 +11,8 @@ export default function TrackPackage() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    setIsLoggedIn(!!token);
+    const isAuth = authService.isAuthenticated();
+    setIsLoggedIn(isAuth);
   }, []);
 
   return (

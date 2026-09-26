@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { X, User, FileText, CheckCircle, Eye, EyeOff, Truck, Mail, Phone, MapPin, CreditCard, Award } from 'lucide-react';
+import { X, User, CheckCircle, Eye, EyeOff, Truck, Mail, Phone, MapPin, CreditCard, Award, Loader2 } from 'lucide-react';
+import partnerService from '../../services/partner.service.js';
+import { toast } from 'react-toastify';
 
 export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defaultTab = 'login' }) {
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -36,7 +38,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
     vehicleType: '',
     vehicleNumber: '',
     licenseNumber: '',
-    experience: '',
+    experience: '0-1',
     workingHours: '',
     bankAccount: '',
     ifscCode: ''
@@ -50,14 +52,25 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
     setError('');
 
     try {
-      const partnerService = (await import('../../services/partner.service.js')).default;
-      const response = await partnerService.login(loginData);
+      const cleanData = {
+        email: loginData.email.trim(),
+        password: loginData.password
+      };
+      const response = await partnerService.login(cleanData);
       
       if (response.success) {
-        onLoginSuccess();
+        toast.success(`Welcome back, ${response.partner?.name || 'Driver'}! Redirecting to fleet console...`);
+        if (onLoginSuccess) {
+          onLoginSuccess(response.partner);
+        } else {
+          window.location.href = '/partner/dashboard';
+        }
+        onClose();
       }
     } catch (error) {
-      setError(error.message);
+      const errText = error.message || 'Login failed. Please check your credentials.';
+      setError(errText);
+      toast.error(errText);
     } finally {
       setLoading(false);
     }
@@ -71,6 +84,10 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
       if (registrationStep === 1) {
         if (!registerData.name || !registerData.email || !registerData.password || !registerData.phone) {
           setError('Please fill in all required fields');
+          return;
+        }
+        if (registerData.phone.includes('@') || registerData.phone.replace(/\D/g, '').length < 10) {
+          setError('Please enter a valid 10-digit phone number (digits only, e.g. 9876543210)');
           return;
         }
         if (registerData.password !== registerData.confirmPassword) {
@@ -106,12 +123,17 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
     setSuccess('');
 
     try {
-      const partnerService = (await import('../../services/partner.service.js')).default;
-      const response = await partnerService.register(registerData);
+      const payload = {
+        ...registerData,
+        email: registerData.email.trim(),
+        experience: registerData.experience || '0-1'
+      };
+      const response = await partnerService.register(payload);
       
       if (response.success) {
-        setSuccess('Registration successful! Please wait for admin approval. You will receive an email confirmation shortly.');
-        // Reset form after successful registration
+        const succMsg = 'Registration submitted! Please wait for admin verification. You will receive an email confirmation shortly.';
+        setSuccess(succMsg);
+        toast.success(succMsg);
         setTimeout(() => {
           setRegisterData({
             name: '', email: '', password: '', confirmPassword: '', phone: '',
@@ -124,7 +146,9 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
         }, 3000);
       }
     } catch (error) {
-      setError(error.message);
+      const errText = error.message || 'Registration failed';
+      setError(errText);
+      toast.error(errText);
     } finally {
       setLoading(false);
     }
@@ -151,176 +175,62 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
     }
   };
 
-  // Skeleton Components
-  const SkeletonInput = () => (
-    <div className="space-y-2">
-      <div className="h-4 bg-slate-600 rounded w-24 animate-pulse"></div>
-      <div className="h-12 bg-slate-700 rounded-lg animate-pulse"></div>
-    </div>
-  );
-
-  const SkeletonTextarea = () => (
-    <div className="space-y-2">
-      <div className="h-4 bg-slate-600 rounded w-32 animate-pulse"></div>
-      <div className="h-20 bg-slate-700 rounded-lg animate-pulse"></div>
-    </div>
-  );
-
-  const SkeletonSelect = () => (
-    <div className="space-y-2">
-      <div className="h-4 bg-slate-600 rounded w-28 animate-pulse"></div>
-      <div className="h-12 bg-slate-700 rounded-lg animate-pulse"></div>
-    </div>
-  );
-
-  const LoginSkeleton = () => (
-    <div className="space-y-4">
-      <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-slate-600 rounded-full mx-auto mb-4 animate-pulse"></div>
-        <div className="h-4 bg-slate-600 rounded w-48 mx-auto animate-pulse"></div>
-      </div>
-      <SkeletonInput />
-      <SkeletonInput />
-      <div className="h-12 bg-slate-600 rounded-lg animate-pulse"></div>
-      <div className="text-center mt-4">
-        <div className="h-4 bg-slate-600 rounded w-40 mx-auto animate-pulse"></div>
-      </div>
-    </div>
-  );
-
-  const RegistrationSkeleton = () => (
-    <div className="space-y-4">
-      <div className="text-center mb-6">
-        <div className="h-4 bg-slate-600 rounded w-24 mx-auto mb-4 animate-pulse"></div>
-      </div>
-
-      <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-slate-600 rounded-full mx-auto mb-4 animate-pulse"></div>
-        <div className="h-6 bg-slate-600 rounded w-48 mx-auto mb-2 animate-pulse"></div>
-        <div className="h-4 bg-slate-600 rounded w-32 mx-auto animate-pulse"></div>
-      </div>
-
-      {registrationStep === 1 && (
-        <>
-          <SkeletonInput />
-          <SkeletonInput />
-          <SkeletonInput />
-          <SkeletonInput />
-          <SkeletonInput />
-        </>
-      )}
-
-      {registrationStep === 2 && (
-        <>
-          <SkeletonTextarea />
-          <div className="grid grid-cols-2 gap-4">
-            <SkeletonInput />
-            <SkeletonInput />
-          </div>
-          <SkeletonInput />
-        </>
-      )}
-
-      {registrationStep === 3 && (
-        <>
-          <SkeletonSelect />
-          <div className="grid grid-cols-2 gap-4">
-            <SkeletonInput />
-            <SkeletonInput />
-          </div>
-          <SkeletonInput />
-          <div className="grid grid-cols-2 gap-4">
-            <SkeletonInput />
-            <SkeletonInput />
-          </div>
-        </>
-      )}
-
-      <div className="flex gap-3 mt-8">
-        {registrationStep > 1 && (
-          <div className="flex-1 h-12 bg-slate-600 rounded-lg animate-pulse"></div>
-        )}
-        <div className="flex-1 h-12 bg-slate-600 rounded-lg animate-pulse"></div>
-      </div>
-
-      {registrationStep === 1 && (
-        <div className="text-center mt-4">
-          <div className="h-4 bg-slate-600 rounded w-40 mx-auto animate-pulse"></div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderStepIndicator = () => (
-    <div className="text-center mb-6">
-      <span className="text-sm text-slate-400">
-        Step {registrationStep} of 3
-      </span>
-    </div>
-  );
+  const inputStyle = "w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition";
 
   const renderRegistrationStep = () => {
     switch (registrationStep) {
       case 1:
         return (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <User className="w-8 h-8 text-slate-900" />
+          <div className="space-y-3.5">
+            <div className="text-center mb-4">
+              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-800">
+                <User className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Personal Information</h3>
-              <p className="text-slate-300">Tell us about yourself</p>
+              <h3 className="text-base font-semibold text-slate-900">Personal Information</h3>
+              <p className="text-xs text-slate-500">Provide your basic contact and identity details</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Full Name *
-              </label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Full Name *</label>
               <input
                 type="text"
                 name="name"
                 value={registerData.name}
                 onChange={handleRegisterChange}
                 required
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
-                placeholder="Enter your full name"
+                className={inputStyle}
+                placeholder="Enter your full legal name"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Email Address *
-              </label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Email Address *</label>
               <input
                 type="email"
                 name="email"
                 value={registerData.email}
                 onChange={handleRegisterChange}
                 required
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
-                placeholder="Enter your email"
+                className={inputStyle}
+                placeholder="driver@example.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Phone Number *
-              </label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Phone Number *</label>
               <input
                 type="tel"
                 name="phone"
                 value={registerData.phone}
                 onChange={handleRegisterChange}
                 required
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
-                placeholder="Enter your phone number"
+                className={inputStyle}
+                placeholder="+91 98765 43210"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Password *
-              </label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Password *</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -328,31 +238,29 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
                   value={registerData.password}
                   onChange={handleRegisterChange}
                   required
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400 pr-12"
-                  placeholder="Create a password"
+                  className={`${inputStyle} pr-10`}
+                  placeholder="Min. 6 characters"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Confirm Password *
-              </label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Confirm Password *</label>
               <input
                 type="password"
                 name="confirmPassword"
                 value={registerData.confirmPassword}
                 onChange={handleRegisterChange}
                 required
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
-                placeholder="Confirm your password"
+                className={inputStyle}
+                placeholder="Confirm password"
               />
             </div>
           </div>
@@ -360,74 +268,66 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
 
       case 2:
         return (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MapPin className="w-8 h-8 text-slate-900" />
+          <div className="space-y-3.5">
+            <div className="text-center mb-4">
+              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-800">
+                <MapPin className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Address & Location</h3>
-              <p className="text-slate-300">Where will you be operating from?</p>
+              <h3 className="text-base font-semibold text-slate-900">Address & Hub Location</h3>
+              <p className="text-xs text-slate-500">Operating base for delivery route assignments</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Full Address *
-              </label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Street Address *</label>
               <textarea
                 name="address"
                 value={registerData.address}
                 onChange={handleRegisterChange}
                 required
-                rows="3"
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400 resize-none"
-                placeholder="Enter your complete address"
+                rows="2"
+                className={`${inputStyle} resize-none`}
+                placeholder="Complete street address"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  City *
-                </label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">City *</label>
                 <input
                   type="text"
                   name="city"
                   value={registerData.city}
                   onChange={handleRegisterChange}
                   required
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
+                  className={inputStyle}
                   placeholder="City"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  State *
-                </label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">State *</label>
                 <input
                   type="text"
                   name="state"
                   value={registerData.state}
                   onChange={handleRegisterChange}
                   required
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
+                  className={inputStyle}
                   placeholder="State"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Postal Code *
-              </label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Postal Code *</label>
               <input
                 type="text"
                 name="postalCode"
                 value={registerData.postalCode}
                 onChange={handleRegisterChange}
                 required
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
-                placeholder="Enter postal code"
+                className={inputStyle}
+                placeholder="PIN code"
               />
             </div>
           </div>
@@ -435,130 +335,116 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
 
       case 3:
         return (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Truck className="w-8 h-8 text-slate-900" />
+          <div className="space-y-3.5">
+            <div className="text-center mb-4">
+              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-800">
+                <Truck className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Vehicle & Documents</h3>
-              <p className="text-slate-300">Final step to complete your registration</p>
+              <h3 className="text-base font-semibold text-slate-900">Vehicle & Bank Details</h3>
+              <p className="text-xs text-slate-500">Required for route dispatch and weekly settlements</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Vehicle Type *
-              </label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Vehicle Type *</label>
               <select
                 name="vehicleType"
                 value={registerData.vehicleType}
                 onChange={handleRegisterChange}
                 required
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                className={inputStyle}
               >
-                <option value="">Select Vehicle Type</option>
-                <option value="bike">Bike</option>
-                <option value="scooter">Scooter</option>
-                <option value="car">Car</option>
-                <option value="van">Van</option>
-                <option value="truck">Truck</option>
+                <option value="">Select vehicle type</option>
+                <option value="bike">Motorcycle / Bike</option>
+                <option value="scooter">Electric Scooter</option>
+                <option value="van">Commercial Delivery Van</option>
+                <option value="truck">Light Commercial Truck</option>
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Vehicle Number *
-                </label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Vehicle RC Number *</label>
                 <input
                   type="text"
                   name="vehicleNumber"
                   value={registerData.vehicleNumber}
                   onChange={handleRegisterChange}
                   required
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
-                  placeholder="e.g., MH12AB1234"
+                  className={inputStyle}
+                  placeholder="MH-02-AB-1234"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  License Number *
-                </label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Driving License No. *</label>
                 <input
                   type="text"
                   name="licenseNumber"
                   value={registerData.licenseNumber}
                   onChange={handleRegisterChange}
                   required
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
-                  placeholder="Driving license number"
+                  className={inputStyle}
+                  placeholder="DL-0420110012"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Experience
-              </label>
-              <select
-                name="experience"
-                value={registerData.experience}
-                onChange={handleRegisterChange}
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-              >
-                <option value="">Select Experience Level</option>
-                <option value="0-1">0-1 Years</option>
-                <option value="1-3">1-3 Years</option>
-                <option value="3-5">3-5 Years</option>
-                <option value="5+">5+ Years</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Working Hours *
-              </label>
-              <select
-                name="workingHours"
-                value={registerData.workingHours}
-                onChange={handleRegisterChange}
-                required
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-              >
-                <option value="">Select Working Hours</option>
-                <option value="morning">Morning (6 AM - 12 PM)</option>
-                <option value="afternoon">Afternoon (12 PM - 6 PM)</option>
-                <option value="evening">Evening (6 PM - 12 AM)</option>
-                <option value="flexible">Flexible (Any Time)</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Bank Account Number
-                </label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Experience *</label>
+                <select
+                  name="experience"
+                  value={registerData.experience || '0-1'}
+                  onChange={handleRegisterChange}
+                  className={inputStyle}
+                >
+                  <option value="0-1">0 - 1 Years</option>
+                  <option value="1-3">1 - 3 Years</option>
+                  <option value="3-5">3 - 5 Years</option>
+                  <option value="5+">5+ Years</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Preferred Shifts *</label>
+                <select
+                  name="workingHours"
+                  value={registerData.workingHours}
+                  onChange={handleRegisterChange}
+                  required
+                  className={inputStyle}
+                >
+                  <option value="">Select shift</option>
+                  <option value="morning">Morning (6 AM - 12 PM)</option>
+                  <option value="afternoon">Afternoon (12 PM - 6 PM)</option>
+                  <option value="evening">Evening (6 PM - 12 AM)</option>
+                  <option value="flexible">Flexible / Full Day</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Bank Account</label>
                 <input
                   type="text"
                   name="bankAccount"
                   value={registerData.bankAccount}
                   onChange={handleRegisterChange}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
-                  placeholder="For payments"
+                  className={inputStyle}
+                  placeholder="Account number"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  IFSC Code
-                </label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Bank IFSC</label>
                 <input
                   type="text"
                   name="ifscCode"
                   value={registerData.ifscCode}
                   onChange={handleRegisterChange}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
-                  placeholder="Bank IFSC code"
+                  className={inputStyle}
+                  placeholder="IFSC code"
                 />
               </div>
             </div>
@@ -571,48 +457,37 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div 
-        className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto relative"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-        }}
-      >
-        <style jsx>{`
-          div::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
+    <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto relative border border-slate-200">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
-          <h2 className="text-2xl font-bold text-white">
-            {activeTab === 'login' ? 'Partner Login' : 'Join as Partner'}
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <h2 className="text-lg font-bold text-slate-900">
+            {activeTab === 'login' ? 'Partner Portal Sign In' : 'Join as Delivery Partner'}
           </h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100 transition-colors"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-700">
+        <div className="flex border-b border-slate-100">
           <button
             onClick={() => {
               setActiveTab('login');
               setError('');
               setSuccess('');
             }}
-            className={`flex-1 py-4 px-6 text-center font-medium transition-colors ${
+            className={`flex-1 py-3 px-4 text-center text-sm font-medium transition-colors ${
               activeTab === 'login'
-                ? 'text-yellow-500 border-b-2 border-yellow-500 bg-slate-750'
-                : 'text-slate-300 hover:text-white'
+                ? 'text-slate-900 border-b-2 border-slate-900 font-semibold bg-slate-50/50'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            Login
+            Sign In
           </button>
           <button
             onClick={() => {
@@ -621,10 +496,10 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
               setError('');
               setSuccess('');
             }}
-            className={`flex-1 py-4 px-6 text-center font-medium transition-colors ${
+            className={`flex-1 py-3 px-4 text-center text-sm font-medium transition-colors ${
               activeTab === 'register'
-                ? 'text-yellow-500 border-b-2 border-yellow-500 bg-slate-750'
-                : 'text-slate-300 hover:text-white'
+                ? 'text-slate-900 border-b-2 border-slate-900 font-semibold bg-slate-50/50'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             Register
@@ -634,126 +509,121 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
         {/* Content */}
         <div className="p-6">
           {error && (
-            <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4">
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 px-3.5 py-2.5 rounded-lg mb-4 text-xs font-medium">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="bg-green-900 border border-green-700 text-green-300 px-4 py-3 rounded-lg mb-4">
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-3.5 py-2.5 rounded-lg mb-4 text-xs font-medium">
               {success}
             </div>
           )}
 
-          {loading ? (
-            // Show skeleton screens when loading
-            activeTab === 'login' ? <LoginSkeleton /> : <RegistrationSkeleton />
-          ) : (
-            // Show actual content when not loading
-            activeTab === 'login' ? (
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Mail className="w-8 h-8 text-slate-900" />
-                  </div>
-                  <p className="text-slate-300">Welcome back! Sign in to your partner account</p>
+          {activeTab === 'login' ? (
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div className="text-center mb-4">
+                <div className="w-10 h-10 bg-slate-100 text-slate-800 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Mail className="w-5 h-5" />
                 </div>
+                <p className="text-xs text-slate-500">Sign in with your registered partner credentials</p>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Email Address
-                  </label>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={loginData.email}
+                  onChange={handleLoginChange}
+                  required
+                  className={inputStyle}
+                  placeholder="driver@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Password</label>
+                <div className="relative">
                   <input
-                    type="email"
-                    name="email"
-                    value={loginData.email}
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={loginData.password}
                     onChange={handleLoginChange}
                     required
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400"
-                    placeholder="Enter your email"
+                    className={`${inputStyle} pr-10`}
+                    placeholder="Enter password"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      name="password"
-                      value={loginData.password}
-                      onChange={handleLoginChange}
-                      required
-                      className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-slate-400 pr-12"
-                      placeholder="Enter your password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-slate-900 text-white py-2.5 px-4 rounded-xl hover:bg-slate-800 disabled:opacity-50 text-sm font-medium transition shadow-sm"
+              >
+                {loading ? 'Authenticating...' : 'Sign In to Driver Portal'}
+              </button>
 
+              <div className="text-center mt-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('register')}
+                  className="text-slate-900 hover:underline text-xs font-semibold"
+                >
+                  New driver? Register here
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleRegisterSubmit}>
+              <div className="text-center mb-4">
+                <span className="text-xs font-mono font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded">
+                  Step {registrationStep} of 3
+                </span>
+              </div>
+
+              {renderRegistrationStep()}
+
+              <div className="flex gap-3 mt-6">
+                {registrationStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={goBackStep}
+                    className="flex-1 border border-slate-300 hover:bg-slate-50 text-slate-700 py-2.5 px-4 rounded-xl text-xs font-medium transition"
+                  >
+                    ← Back
+                  </button>
+                )}
+                
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-yellow-500 text-slate-900 py-3 px-4 rounded-lg hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-50 font-semibold transition-colors"
+                  className="flex-1 bg-slate-900 text-white py-2.5 px-4 rounded-xl hover:bg-slate-800 disabled:opacity-50 text-xs font-medium transition shadow-sm"
                 >
-                  {loading ? 'Signing In...' : 'Sign In'}
+                  {loading ? 'Submitting...' : registrationStep === 3 ? 'Complete Registration' : 'Next Step →'}
                 </button>
+              </div>
 
-                <div className="text-center mt-4">
+              {registrationStep === 1 && (
+                <div className="text-center mt-3">
                   <button
                     type="button"
-                    onClick={() => setActiveTab('register')}
-                    className="text-yellow-500 hover:text-yellow-400 text-sm"
+                    onClick={() => setActiveTab('login')}
+                    className="text-slate-900 hover:underline text-xs font-semibold"
                   >
-                    Don't have an account? Register here
+                    Already registered? Sign in
                   </button>
                 </div>
-              </form>
-            ) : (
-              <form onSubmit={handleRegisterSubmit}>
-                {renderStepIndicator()}
-                {renderRegistrationStep()}
-
-                <div className="flex gap-3 mt-8">
-                  {registrationStep > 1 && (
-                    <button
-                      type="button"
-                      onClick={goBackStep}
-                      className="flex-1 bg-slate-600 text-white py-3 px-4 rounded-lg hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500 font-semibold transition-colors"
-                    >
-                      Back
-                    </button>
-                  )}
-                  
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-yellow-500 text-slate-900 py-3 px-4 rounded-lg hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-50 font-semibold transition-colors"
-                  >
-                    {loading ? 'Processing...' : registrationStep === 3 ? 'Complete Registration' : 'Next Step'}
-                  </button>
-                </div>
-
-                {registrationStep === 1 && (
-                  <div className="text-center mt-4">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('login')}
-                      className="text-yellow-500 hover:text-yellow-400 text-sm"
-                    >
-                      Already have an account? Login here
-                    </button>
-                  </div>
-                )}
-              </form>
-            )
+              )}
+            </form>
           )}
         </div>
       </div>

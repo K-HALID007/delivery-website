@@ -82,7 +82,7 @@ const partnerSchema = new mongoose.Schema({
   // Work Preferences
   experience: {
     type: String,
-    enum: ['0-1', '1-3', '3-5', '5+'],
+    enum: ['0-1', '1-3', '3-5', '5+', ''],
     default: '0-1'
   },
   workingHours: {

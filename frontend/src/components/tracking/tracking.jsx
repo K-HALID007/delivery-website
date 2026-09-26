@@ -108,13 +108,13 @@ const Tracking = () => {
                   value={trackingId}
                   onChange={(e) => setTrackingId(e.target.value)}
                   placeholder="Enter Tracking ID"
-                  className="block w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 text-black"
+                  className="block w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all duration-200 text-slate-900 text-sm font-mono"
                   required
                 />
               </div>
               <button
                 type="submit"
-                className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-200 shadow-md hover:shadow-lg"
+                className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-all duration-200 shadow-sm whitespace-nowrap"
                 disabled={loading}
               >
                 {loading ? 'Searching...' : 'Track Package'}
@@ -147,42 +147,42 @@ const Tracking = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-                  <div className="bg-white p-4 rounded-lg border border-gray-100">
-                    <p className="text-sm text-gray-500 mb-1">Tracking ID</p>
-                    <p className="font-medium text-gray-900">{trackingData.trackingId}</p>
+                  <div className="bg-white p-4 rounded-xl border border-slate-200">
+                    <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Tracking ID</p>
+                    <p className="font-mono font-bold text-slate-900 text-base">{trackingData.trackingId}</p>
                   </div>
-                  <div className="bg-white p-4 rounded-lg border border-gray-100">
-                    <p className="text-sm text-gray-500 mb-1">Current Location</p>
-                    <p className="font-bold text-amber-600 text-lg flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0 0c-2.21 0-4 1.79-4 4v1h8v-1c0-2.21-1.79-4-4-4z" /></svg>
+                  <div className="bg-white p-4 rounded-xl border border-slate-200">
+                    <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Current Location</p>
+                    <p className="font-bold text-amber-700 text-base flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0 0c-2.21 0-4 1.79-4 4v1h8v-1c0-2.21-1.79-4-4-4z" /></svg>
                       {trackingData.currentLocation}
                     </p>
                   </div>
-                  <div className="bg-white p-4 rounded-lg border border-gray-100">
-                    <p className="text-sm text-gray-500 mb-1">Origin</p>
-                    <p className="font-medium text-gray-900">{trackingData.origin}</p>
+                  <div className="bg-white p-4 rounded-xl border border-slate-200">
+                    <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Origin</p>
+                    <p className="font-semibold text-slate-900">{trackingData.origin}</p>
                   </div>
-                  <div className="bg-white p-4 rounded-lg border border-gray-100">
-                    <p className="text-sm text-gray-500 mb-1">Destination</p>
-                    <p className="font-medium text-gray-900">{trackingData.destination}</p>
+                  <div className="bg-white p-4 rounded-xl border border-slate-200">
+                    <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Destination</p>
+                    <p className="font-semibold text-slate-900">{trackingData.destination}</p>
                   </div>
                 </div>
 
                 {/* Tracking History */}
                 <div className="mt-8">
-                  <h3 className="text-lg font-medium text-gray-900 mb-6">Tracking History</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-base font-bold text-slate-900 mb-4">Tracking History</h3>
+                  <div className="space-y-3">
                     {trackingData.history.map((item, index) => (
-                      <div key={index} className="flex items-start bg-white p-4 rounded-lg border border-gray-100">
+                      <div key={index} className="flex items-start bg-white p-4 rounded-xl border border-slate-200">
                         <div className="flex-shrink-0">
-                          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                            <History className="w-5 h-5 text-amber-600" />
+                          <div className="w-9 h-9 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center">
+                            <History className="w-4 h-4 text-amber-600" />
                           </div>
                         </div>
                         <div className="ml-4">
-                          <p className="text-sm font-medium text-gray-900">{item.status}</p>
-                          <p className="text-sm text-gray-500">{item.location}</p>
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-sm font-bold text-slate-900">{item.status}</p>
+                          <p className="text-xs font-semibold text-slate-700 mt-0.5">{item.location}</p>
+                          <p className="text-xs text-slate-600 font-medium mt-1">
                             {new Date(item.timestamp).toLocaleString()}
                           </p>
                         </div>

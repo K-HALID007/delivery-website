@@ -1,17 +1,30 @@
-// config/db.js
+// backend/config/db.js
 import mongoose from 'mongoose';
 
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+let cachedConnection = null;
 
-    console.log('✅ MongoDB connected');
+const connectDB = async () => {
+  if (cachedConnection && mongoose.connection.readyState === 1) {
+    return cachedConnection;
+  }
+
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+
+  if (!uri) {
+    console.warn('⚠️ MONGODB_URI or MONGO_URI not found in environment variables. Database operations will fail.');
+    return null;
+  }
+
+  try {
+    const conn = await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    cachedConnection = conn;
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    return conn;
   } catch (error) {
-    console.error('❌ DB connection failed:', error.message);
-    process.exit(1);
+    console.error('❌ MongoDB Connection Error:', error.message);
+    return null;
   }
 };
 

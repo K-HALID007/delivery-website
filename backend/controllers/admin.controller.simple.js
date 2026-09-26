@@ -71,13 +71,23 @@ export const getDashboardStats = async (req, res) => {
     }
 
     const result = {
+      success: true,
       totalUsers,
       totalPartners,
       activePartners,
       pendingPartners,
       activeShipments,
       pendingDeliveries,
-      totalRevenue
+      totalRevenue,
+      data: {
+        totalUsers,
+        totalPartners,
+        activePartners,
+        pendingPartners,
+        activeShipments,
+        pendingDeliveries,
+        totalRevenue
+      }
     };
 
     console.log('✅ Dashboard stats completed:', result);

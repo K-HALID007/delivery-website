@@ -1,13 +1,20 @@
 import User from '../models/user.model.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { sendDeliveryEmail } from '../utils/email.js';
+
+const getJwtSecret = () => process.env.JWT_SECRET || 'courier-tracker-fallback-secret-2025';
+
+// Helper to get user ID safely from request
+const getReqUserId = (req) => {
+  return req.user?._id || req.user?.id || req.userId;
+};
 
 // Register a new user with strict validation
 export const register = async (req, res) => {
   try {
     const { name, email, password, phone, address, city, state, postalCode, country, role } = req.body;
 
-    // Strict validation - check all required fields
     const requiredFields = {
       name: 'Full name',
       email: 'Email',
@@ -29,128 +36,72 @@ export const register = async (req, res) => {
 
     if (missingFields.length > 0) {
       return res.status(400).json({ 
+        success: false,
         message: `The following fields are required: ${missingFields.join(', ')}` 
       });
     }
 
-    // Additional validation
     if (name.trim().length < 2) {
-      return res.status(400).json({ message: 'Full name must be at least 2 characters long' });
+      return res.status(400).json({ success: false, message: 'Full name must be at least 2 characters long' });
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long' });
     }
 
-    if (phone.trim().length < 10) {
-      return res.status(400).json({ message: 'Phone number must be at least 10 characters long' });
-    }
-
-    if (address.trim().length < 5) {
-      return res.status(400).json({ message: 'Street address must be at least 5 characters long' });
-    }
-
-    if (city.trim().length < 2) {
-      return res.status(400).json({ message: 'City must be at least 2 characters long' });
-    }
-
-    if (state.trim().length < 2) {
-      return res.status(400).json({ message: 'State/Province must be at least 2 characters long' });
-    }
-
-    if (postalCode.trim().length < 3) {
-      return res.status(400).json({ message: 'Postal code must be at least 3 characters long' });
-    }
-
-    if (country.trim().length < 2) {
-      return res.status(400).json({ message: 'Country must be at least 2 characters long' });
-    }
-
-    // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: 'Please enter a valid email address' });
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address' });
     }
 
-    // Phone format validation
-    const phoneRegex = /^[\d\s\-\+\(\)]+$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ message: 'Please enter a valid phone number' });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+    const cleanEmail = email.toLowerCase().trim();
+    const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists with this email address' });
+      return res.status(400).json({ success: false, message: 'User already exists with this email address' });
     }
 
-    // Determine user role - check if email is admin email
-    const adminEmails = [
-      'admin@courier.com',
-      'admin@gmail.com', 
-      'admin@primedispatcher.com',
-      'admin@example.com',
-      'admin@admin.com'
-    ];
-    
-    const userRole = role || (adminEmails.includes(email.toLowerCase().trim()) ? 'admin' : 'user');
+    // Role is strictly user by default unless set through admin endpoints
+    const userRole = role === 'admin' ? 'user' : (role || 'user');
 
-    // Create new user with trimmed data
     const user = new User({
       name: name.trim(),
-      email: email.toLowerCase().trim(),
+      email: cleanEmail,
       password: password,
-      phone: phone.trim(),
+      phone: phone.toString().trim(),
       address: {
         street: address.trim(),
         city: city.trim(),
         state: state.trim(),
-        postalCode: postalCode.trim(),
+        postalCode: postalCode.toString().trim(),
         country: country.trim()
       },
-      role: userRole
+      role: userRole,
+      isActive: true
     });
 
     await user.save();
 
-    // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, role: user.role, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { userId: user._id, role: user.role, email: user.email, name: user.name },
+      getJwtSecret(),
+      { expiresIn: '7d' }
     );
 
-    // Return user data without password
     const userData = user.toObject();
     delete userData.password;
 
     res.status(201).json({
+      success: true,
       message: 'User registered successfully',
       user: userData,
       token
     });
   } catch (error) {
     console.error('Registration error:', error);
-    
-    // Handle mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({ 
-        message: validationErrors.join(', ')
-      });
-    }
-
-    // Handle duplicate key error
     if (error.code === 11000) {
-      return res.status(400).json({ 
-        message: 'User already exists with this email address' 
-      });
+      return res.status(400).json({ success: false, message: 'User already exists with this email address' });
     }
-
-    res.status(500).json({ 
-      message: 'Error registering user. Please try again.',
-      error: error.message 
-    });
+    res.status(500).json({ success: false, message: 'Error registering user', error: error.message });
   }
 };
 
@@ -159,405 +110,46 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate required fields
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    // Find user by email
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: cleanEmail });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // Check if user is active
     if (!user.isActive) {
-      return res.status(401).json({ message: 'Account is deactivated' });
+      return res.status(401).json({ success: false, message: 'Account is deactivated' });
     }
 
-    // Verify password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate JWT token
-    console.log('Generating JWT token for user:', user.email);
-    console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
-    console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
-    
     const token = jwt.sign(
-      { userId: user._id, role: user.role, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { userId: user._id, role: user.role, email: user.email, name: user.name },
+      getJwtSecret(),
+      { expiresIn: '7d' }
     );
 
-    console.log('Token generated successfully');
-    console.log('Token length:', token.length);
-    console.log('Token payload:', { userId: user._id, role: user.role });
-
-    // Return user data without password
     const userData = user.toObject();
     delete userData.password;
 
     res.json({
+      success: true,
       message: 'Login successful',
       user: userData,
       token
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Error logging in', error: error.message });
-  }
-};
-
-// Create admin user (protected route)
-export const createAdmin = async (req, res) => {
-  try {
-    // Check if requester is admin
-    if (!req.user.isAdmin()) {
-      return res.status(403).json({ message: 'Not authorized to create admin users' });
-    }
-
-    const { name, email, password } = req.body;
-
-    // Validate required fields
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email, and password are required' });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-
-    // Create new admin user
-    const admin = new User({
-      name,
-      email,
-      password,
-      role: 'admin'
-    });
-
-    await admin.save();
-
-    // Return admin data without password
-    const adminData = admin.toObject();
-    delete adminData.password;
-
-    res.status(201).json({
-      message: 'Admin user created successfully',
-      user: adminData
-    });
-  } catch (error) {
-    console.error('Create admin error:', error);
-    res.status(500).json({ message: 'Error creating admin user', error: error.message });
-  }
-};
-
-// Get current user profile
-export const getProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.json(user);
-  } catch (error) {
-    console.error('Get profile error:', error);
-    res.status(500).json({ message: 'Error fetching profile', error: error.message });
-  }
-};
-
-// Update user profile
-export const updateProfile = async (req, res) => {
-  try {
-    const { name, phone, address, city, state, postalCode, country } = req.body;
-    
-    const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Update user fields
-    user.name = name || user.name;
-    user.phone = phone || user.phone;
-    if (address) user.address.street = address;
-    if (city) user.address.city = city;
-    if (state) user.address.state = state;
-    if (postalCode) user.address.postalCode = postalCode;
-    if (country) user.address.country = country;
-
-    await user.save();
-
-    // Return updated user data without password
-    const userData = user.toObject();
-    delete userData.password;
-
-    res.json({
-      message: 'Profile updated successfully',
-      user: userData
-    });
-  } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Error updating profile', error: error.message });
-  }
-};
-
-// Change password
-export const changePassword = async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: 'Current password and new password are required' });
-    }
-
-    const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Verify current password
-    const isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Current password is incorrect' });
-    }
-
-    // Update password
-    user.password = newPassword;
-    await user.save();
-
-    res.json({ message: 'Password changed successfully' });
-  } catch (error) {
-    console.error('Change password error:', error);
-    res.status(500).json({ message: 'Error changing password', error: error.message });
-  }
-};
-
-// Admin: Get all users
-export const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find().select('-password');
-    res.json(users);
-  } catch (error) {
-    console.error('Get users error:', error);
-    res.status(500).json({ message: 'Error fetching users', error: error.message });
-  }
-};
-
-// Admin: Get user by ID
-export const getUserById = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.json(user);
-  } catch (error) {
-    console.error('Get user error:', error);
-    res.status(500).json({ message: 'Error fetching user', error: error.message });
-  }
-};
-
-// Admin: Update user
-export const updateUser = async (req, res) => {
-  try {
-    const { name, email, phone, role, isActive } = req.body;
-    
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Update user fields
-    user.name = name || user.name;
-    user.email = email || user.email;
-    user.phone = phone || user.phone;
-    user.role = role || user.role;
-    user.isActive = isActive !== undefined ? isActive : user.isActive;
-
-    await user.save();
-
-    // Return updated user data without password
-    const userData = user.toObject();
-    delete userData.password;
-
-    res.json({
-      message: 'User updated successfully',
-      user: userData
-    });
-  } catch (error) {
-    console.error('Update user error:', error);
-    res.status(500).json({ message: 'Error updating user', error: error.message });
-  }
-};
-
-// Admin: Delete user
-export const deleteUser = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Prevent deleting the last admin
-    if (user.role === 'admin') {
-      const adminCount = await User.countDocuments({ role: 'admin' });
-      if (adminCount <= 1) {
-        return res.status(400).json({ message: 'Cannot delete the last admin user' });
-      }
-    }
-
-    await user.deleteOne();
-    res.json({ message: 'User deleted successfully' });
-  } catch (error) {
-    console.error('Delete user error:', error);
-    res.status(500).json({ message: 'Error deleting user', error: error.message });
-  }
-};
-
-// Admin: Get system statistics
-export const getSystemStats = async (req, res) => {
-  try {
-    const totalUsers = await User.countDocuments();
-    const activeUsers = await User.countDocuments({ isActive: true });
-    const adminUsers = await User.countDocuments({ role: 'admin' });
-    const regularUsers = await User.countDocuments({ role: 'user' });
-
-    res.json({
-      totalUsers,
-      activeUsers,
-      adminUsers,
-      regularUsers
-    });
-  } catch (error) {
-    console.error('Get stats error:', error);
-    res.status(500).json({ message: 'Error fetching statistics', error: error.message });
-  }
-};
-  
-// Delete current user profile
-import crypto from 'crypto';
-import nodemailer from 'nodemailer';
-
-export const sendDeleteAccountOtp = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    user.resetToken = otp;
-    user.resetTokenExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
-    await user.save();
-
-    // Debug: print SMTP credentials
-    console.log('SMTP_USER:', process.env.SMTP_USER);
-    console.log('SMTP_PASS:', process.env.SMTP_PASS);
-
-    // Send OTP via email
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: process.env.SMTP_USER,
-      to: user.email,
-      subject: 'Your OTP for Account Deletion',
-      html: `
-        <div style="background:#fffbe6;padding:24px;border-radius:12px;border:1px solid #ffe58f;font-family:sans-serif;max-width:420px;margin:auto;">
-          <h2 style="color:#d97706;margin-bottom:8px;">Account Deletion Request</h2>
-          <p style="color:#333;font-size:16px;">We received a request to delete your Prime Dispatcher account.</p>
-          <p style="color:#333;font-size:16px;">To confirm, please use the following OTP:</p>
-          <div style="font-size:32px;font-weight:bold;color:#f59e0b;background:#fff3cd;padding:12px 0;border-radius:8px;text-align:center;letter-spacing:6px;margin:16px 0;">
-            <span>${otp}</span>
-          </div>
-          <p style="color:#666;font-size:14px;">If you did not request this, please ignore this email. Your account will not be deleted without confirmation.</p>
-          <div style="margin-top:24px;text-align:center;">
-            <span style="color:#b45309;font-size:13px;">Prime Dispatcher Team</span>
-          </div>
-        </div>
-      `,
-    });
-
-    res.json({ message: 'OTP sent to your email' });
-  } catch (error) {
-    console.error('Send OTP error:', error);
-    res.status(500).json({ message: 'Error sending OTP', error: error.message });
-  }
-};
-
-export const deleteProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    const { password, otp } = req.body;
-    // If password is provided, verify it
-    if (password) {
-      const isMatch = await user.comparePassword(password);
-      if (!isMatch) {
-        return res.status(401).json({ message: 'Incorrect password' });
-      }
-    } else if (otp) {
-      // If OTP is provided, verify it
-      if (!user.resetToken || !user.resetTokenExpiry) {
-        return res.status(400).json({ message: 'No OTP requested' });
-      }
-      if (user.resetToken !== otp) {
-        return res.status(401).json({ message: 'Invalid OTP' });
-      }
-      if (user.resetTokenExpiry < Date.now()) {
-        return res.status(401).json({ message: 'OTP expired' });
-      }
-      // Clear OTP after use
-      user.resetToken = undefined;
-      user.resetTokenExpiry = undefined;
-      await user.save();
-    } else {
-      return res.status(400).json({ message: 'Password or OTP required' });
-    }
-    // Anonymize all shipments where this user is sender or receiver
-    const userEmail = user.email;
-    await user.deleteOne();
-    await import('../models/tracking.model.js').then(async ({ default: Tracking }) => {
-      await Tracking.updateMany(
-        { 'sender.email': userEmail },
-        {
-          $set: {
-            'sender.name': 'Deleted User',
-            'sender.email': null,
-            'sender.phone': null
-          }
-        }
-      );
-      await Tracking.updateMany(
-        { 'receiver.email': userEmail },
-        {
-          $set: {
-            'receiver.name': 'Deleted User',
-            'receiver.email': null,
-            'receiver.phone': null
-          }
-        }
-      );
-    });
-    res.json({ message: 'Account deleted and associated shipments anonymized successfully' });
-  } catch (error) {
-    console.error('Delete profile error:', error);
-    res.status(500).json({ message: 'Error deleting account', error: error.message });
+    res.status(500).json({ success: false, message: 'Error logging in', error: error.message });
   }
 };
 
@@ -566,112 +158,394 @@ export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate required fields
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    // Find user by email
-    const user = await User.findOne({ email });
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: cleanEmail });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
     }
 
-    // Check if user is admin
     if (user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized as admin' });
+      return res.status(403).json({ success: false, message: 'Access denied. Not an admin.' });
     }
 
-    // Check if user is active
     if (!user.isActive) {
-      return res.status(401).json({ message: 'Account is deactivated' });
+      return res.status(401).json({ success: false, message: 'Admin account is deactivated' });
     }
 
-    // Verify password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, role: user.role, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { userId: user._id, role: user.role, email: user.email, name: user.name },
+      getJwtSecret(),
+      { expiresIn: '7d' }
     );
 
-    // Return user data without password
     const userData = user.toObject();
     delete userData.password;
 
     res.json({
+      success: true,
       message: 'Admin login successful',
       user: userData,
       token
     });
   } catch (error) {
     console.error('Admin login error:', error);
-    res.status(500).json({ message: 'Error logging in as admin', error: error.message });
+    res.status(500).json({ success: false, message: 'Error logging in as admin', error: error.message });
   }
 };
 
-// Create first admin user (special function for initial setup)
-export const createFirstAdmin = async (req, res) => {
+// Create admin user (protected route for existing admins)
+export const createAdmin = async (req, res) => {
   try {
-    // Check if any admin exists
-    const adminExists = await User.findOne({ role: 'admin' });
-    if (adminExists) {
-      return res.status(403).json({ 
-        message: 'Admin user already exists. Please use the admin creation endpoint instead.' 
-      });
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized to create admin users' });
     }
 
-    const { name, email, password } = req.body;
+    const { name, email, password, phone, address } = req.body;
 
-    // Validate required fields
     if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email, and password are required' });
+      return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const cleanEmail = email.toLowerCase().trim();
+    const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ success: false, message: 'User already exists with this email' });
     }
 
-    // Create new admin user
     const admin = new User({
-      name,
-      email,
-      password,
+      name: name.trim(),
+      email: cleanEmail,
+      password: password,
+      phone: (phone || '1234567890').toString().trim(),
+      address: {
+        street: address?.street || 'Admin HQ',
+        city: address?.city || 'Admin City',
+        state: address?.state || 'Admin State',
+        postalCode: (address?.postalCode || '100001').toString(),
+        country: address?.country || 'India'
+      },
       role: 'admin',
       isActive: true
     });
 
     await admin.save();
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: admin._id, role: 'admin', email: admin.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    // Return admin data without password
     const adminData = admin.toObject();
     delete adminData.password;
 
     res.status(201).json({
+      success: true,
+      message: 'Admin user created successfully',
+      user: adminData
+    });
+  } catch (error) {
+    console.error('Create admin error:', error);
+    res.status(500).json({ success: false, message: 'Error creating admin user', error: error.message });
+  }
+};
+
+// Create first admin user (for initial project setup)
+export const createFirstAdmin = async (req, res) => {
+  try {
+    const adminExists = await User.findOne({ role: 'admin' });
+    if (adminExists) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Admin user already exists. Please use admin login or admin management.' 
+      });
+    }
+
+    const { name, email, password, phone, address } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const admin = new User({
+      name: name.trim(),
+      email: cleanEmail,
+      password: password,
+      phone: (phone || '1234567890').toString().trim(),
+      address: {
+        street: address?.street || 'Admin Main Street',
+        city: address?.city || 'HQ City',
+        state: address?.state || 'HQ State',
+        postalCode: (address?.postalCode || '100001').toString(),
+        country: address?.country || 'India'
+      },
+      role: 'admin',
+      isActive: true
+    });
+
+    await admin.save();
+
+    const token = jwt.sign(
+      { userId: admin._id, role: admin.role, email: admin.email, name: admin.name },
+      getJwtSecret(),
+      { expiresIn: '7d' }
+    );
+
+    const adminData = admin.toObject();
+    delete adminData.password;
+
+    res.status(201).json({
+      success: true,
       message: 'First admin user created successfully',
       user: adminData,
       token
     });
   } catch (error) {
     console.error('Create first admin error:', error);
-    res.status(500).json({ message: 'Error creating first admin user', error: error.message });
+    res.status(500).json({ success: false, message: 'Error creating first admin user', error: error.message });
   }
+};
+
+// Get current user profile
+export const getProfile = async (req, res) => {
+  try {
+    const userId = getReqUserId(req);
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching profile', error: error.message });
+  }
+};
+
+// Update user profile
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = getReqUserId(req);
+    const { name, phone, address, city, state, postalCode, country } = req.body;
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (name) user.name = name.trim();
+    if (phone) user.phone = phone.toString().trim();
+    
+    user.address = user.address || {};
+    if (address) user.address.street = address.trim();
+    if (city) user.address.city = city.trim();
+    if (state) user.address.state = state.trim();
+    if (postalCode) user.address.postalCode = postalCode.toString().trim();
+    if (country) user.address.country = country.trim();
+
+    await user.save();
+
+    const userData = user.toObject();
+    delete userData.password;
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: userData
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ success: false, message: 'Error updating profile', error: error.message });
+  }
+};
+
+// Change password
+export const changePassword = async (req, res) => {
+  try {
+    const userId = getReqUserId(req);
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Current password and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ success: false, message: 'Error changing password', error: error.message });
+  }
+};
+
+// Send OTP for account deletion
+export const sendDeleteAccountOtp = async (req, res) => {
+  try {
+    const userId = getReqUserId(req);
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.resetToken = otp;
+    user.resetTokenExpiry = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    await sendDeliveryEmail(
+      user.email,
+      'Your OTP for Account Deletion',
+      `
+      <div style="background:#fffbe6;padding:24px;border-radius:12px;border:1px solid #ffe58f;font-family:sans-serif;max-width:420px;margin:auto;">
+        <h2 style="color:#d97706;margin-bottom:8px;">Account Deletion Request</h2>
+        <p style="color:#333;font-size:16px;">We received a request to delete your Prime Dispatcher account.</p>
+        <p style="color:#333;font-size:16px;">To confirm, please use the following OTP (valid for 10 minutes):</p>
+        <div style="font-size:32px;font-weight:bold;color:#f59e0b;background:#fff3cd;padding:12px 0;border-radius:8px;text-align:center;letter-spacing:6px;margin:16px 0;">
+          <span>${otp}</span>
+        </div>
+        <p style="color:#666;font-size:14px;">If you did not request this, please ignore this email.</p>
+      </div>
+      `
+    );
+
+    res.json({ success: true, message: 'OTP sent to your email' });
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({ success: false, message: 'Error sending OTP', error: error.message });
+  }
+};
+
+// Delete account
+export const deleteProfile = async (req, res) => {
+  try {
+    const userId = getReqUserId(req);
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const { password, otp } = req.body;
+    if (password) {
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ success: false, message: 'Incorrect password' });
+      }
+    } else if (otp) {
+      if (!user.resetToken || user.resetToken !== otp || user.resetTokenExpiry < Date.now()) {
+        return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
+      }
+    } else {
+      return res.status(400).json({ success: false, message: 'Password or OTP is required' });
+    }
+
+    const userEmail = user.email;
+    await user.deleteOne();
+
+    try {
+      const { default: Tracking } = await import('../models/tracking.model.js');
+      await Tracking.updateMany(
+        { 'sender.email': userEmail },
+        { $set: { 'sender.name': 'Deleted User', 'sender.email': null, 'sender.phone': null } }
+      );
+    } catch (e) {
+      console.warn('Error anonymizing tracking records:', e.message);
+    }
+
+    res.json({ success: true, message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Delete profile error:', error);
+    res.status(500).json({ success: false, message: 'Error deleting account', error: error.message });
+  }
+};
+
+// Admin: Get all users
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    res.json({ success: true, users });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching users', error: error.message });
+  }
+};
+
+// Admin: Get user by ID
+export const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching user', error: error.message });
+  }
+};
+
+// Admin: Update user status
+export const updateUser = async (req, res) => {
+  try {
+    const { name, email, phone, role, isActive } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (name) user.name = name.trim();
+    if (email) user.email = email.toLowerCase().trim();
+    if (phone) user.phone = phone.toString().trim();
+    if (role) user.role = role;
+    if (typeof isActive === 'boolean') user.isActive = isActive;
+
+    await user.save();
+    const updated = user.toObject();
+    delete updated.password;
+
+    res.json({ success: true, message: 'User updated successfully', user: updated });
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ success: false, message: 'Error updating user', error: error.message });
+  }
+};
+
+export default {
+  register,
+  login,
+  adminLogin,
+  createAdmin,
+  createFirstAdmin,
+  getProfile,
+  updateProfile,
+  changePassword,
+  sendDeleteAccountOtp,
+  deleteProfile,
+  getAllUsers,
+  getUserById,
+  updateUser
 };

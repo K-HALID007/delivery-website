@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, AlertTriangle, Package, Truck, User, Calendar, Star, Camera } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 export default function ComplaintModal({ isOpen, onClose, shipment, onComplaintSubmit }) {
   const [complaintData, setComplaintData] = useState({

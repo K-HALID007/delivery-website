@@ -301,12 +301,17 @@ COMPLAINT DETECTION: If the customer mentions problems like delays, damage, wron
     return prompts[language] || prompts.en;
   }
 
+  getAuthToken() {
+    if (typeof window === 'undefined') return '';
+    return sessionStorage.getItem('admin_token') || sessionStorage.getItem('user_token') || localStorage.getItem('token') || '';
+  }
+
   // Get admin reports
   async getAdminReports(type = 'daily') {
     try {
       const response = await fetch(`${this.baseURL}/admin/reports/${type}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${this.getAuthToken()}`
         }
       });
       
@@ -322,7 +327,7 @@ COMPLAINT DETECTION: If the customer mentions problems like delays, damage, wron
     try {
       const response = await fetch(`${this.baseURL}/admin/complaints?status=${status}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${this.getAuthToken()}`
         }
       });
       
@@ -338,7 +343,7 @@ COMPLAINT DETECTION: If the customer mentions problems like delays, damage, wron
     try {
       const response = await fetch(`${this.baseURL}/admin/analytics?period=${period}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${this.getAuthToken()}`
         }
       });
       
@@ -356,7 +361,7 @@ COMPLAINT DETECTION: If the customer mentions problems like delays, damage, wron
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${this.getAuthToken()}`
         },
         body: JSON.stringify({
           messages,
@@ -370,3 +375,4 @@ COMPLAINT DETECTION: If the customer mentions problems like delays, damage, wron
 }
 
 export const chatbotService = new ChatbotService();
+export default chatbotService;
