@@ -26,7 +26,7 @@ function PaymentSuccessContent() {
           return;
         }
 
-        const token = sessionStorage.getItem('user_token');
+        const token = sessionStorage.getItem('user_token') || sessionStorage.getItem('admin_token') || localStorage.getItem('token');
         if (!token) {
           router.push('/');
           return;
@@ -46,6 +46,7 @@ function PaymentSuccessContent() {
         if (data.success) {
           setPaymentStatus('success');
           setTrackingId(data.data.trackingId);
+          sessionStorage.removeItem('pendingShipment');
         } else {
           setPaymentStatus('failed');
           setError(data.message || 'Payment verification failed');

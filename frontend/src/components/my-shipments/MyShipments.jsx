@@ -2,7 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Package, Truck, MapPin, Calendar, Clock } from 'lucide-react';
+import { 
+  Package, 
+  Truck, 
+  MapPin, 
+  Calendar, 
+  Clock, 
+  Search, 
+  Copy, 
+  Check, 
+  ArrowRight, 
+  AlertCircle,
+  ShieldCheck,
+  FileText,
+  RotateCcw
+} from 'lucide-react';
 import Navbar from '@/components/home/navbar/navbar';
 import Footer from '@/components/home/footer/footer';
 import { authService } from '@/services/auth.service';
@@ -19,22 +33,20 @@ export default function MyShipments() {
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState(null);
+  const [activeTab, setActiveTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [copiedId, setCopiedId] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
     const fetchShipments = async () => {
       try {
         const token = sessionStorage.getItem('user_token');
-        console.log('Token from sessionStorage:', token ? 'Present' : 'Missing');
-        console.log('Token length:', token ? token.length : 0);
-        
         if (!token) {
-          console.log('No token found, redirecting to home');
           router.push('/');
           return;
         }
 
-        console.log('Making request to fetch shipments...');
         const response = await fetch(`${API_URL}/tracking/user`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -42,53 +54,77 @@ export default function MyShipments() {
           }
         });
 
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-
         if (!response.ok) {
-          const errorData = await response.json();
-          console.log('Error response:', errorData);
+          const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || 'Failed to fetch shipments');
         }
 
         const data = await response.json();
-        console.log('Shipments data received:', data);
         setShipments(Array.isArray(data) ? data : data.shipments || []);
       } catch (err) {
-        console.error('Fetch shipments error:', err);
-        setError(err.message);
+        setError(err.message || 'Failed to retrieve shipments');
       } finally {
         setLoading(false);
       }
     };
 
     const currentUser = authService.getCurrentUser();
-    console.log('Current user:', currentUser);
     setUser(currentUser);
-
     fetchShipments();
   }, [router]);
 
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
+  const copyToClipboard = (id) => {
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    toast.success('Tracking ID copied to clipboard');
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const getStatusBadge = (status) => {
+    const s = (status || '').toLowerCase();
+    switch (s) {
       case 'delivered':
-        return 'bg-green-100 text-green-800';
+        return {
+          bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          dot: 'bg-emerald-500',
+          label: 'Delivered'
+        };
       case 'in transit':
-        return 'bg-blue-100 text-blue-800';
+        return {
+          bg: 'bg-sky-50 text-sky-700 border-sky-200',
+          dot: 'bg-sky-500 animate-pulse',
+          label: 'In Transit'
+        };
       case 'out for delivery':
-        return 'bg-yellow-100 text-yellow-800';
+        return {
+          bg: 'bg-amber-50 text-amber-700 border-amber-200',
+          dot: 'bg-amber-500 animate-pulse',
+          label: 'Out for Delivery'
+        };
       case 'pending':
-        return 'bg-gray-100 text-gray-800';
+        return {
+          bg: 'bg-slate-100 text-slate-700 border-slate-200',
+          dot: 'bg-slate-400',
+          label: 'Pending Ingestion'
+        };
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return {
+          bg: 'bg-rose-50 text-rose-700 border-rose-200',
+          dot: 'bg-rose-500',
+          label: 'Cancelled'
+        };
       default:
-        return 'bg-gray-100 text-gray-800';
+        return {
+          bg: 'bg-slate-100 text-slate-700 border-slate-200',
+          dot: 'bg-slate-400',
+          label: status || 'Processing'
+        };
     }
   };
 
   const handleCancel = async (trackingId) => {
     const reason = window.prompt('Please provide a reason for cancellation (optional):');
-    if (reason === null) return; // User clicked cancel
+    if (reason === null) return;
     
     try {
       const token = sessionStorage.getItem('user_token');
@@ -111,7 +147,6 @@ export default function MyShipments() {
         return;
       }
       
-      // Update the shipment status in the local state
       setShipments((prev) => 
         prev.map((s) => 
           s.trackingId === trackingId 
@@ -146,7 +181,6 @@ export default function MyShipments() {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
-          // Don't set Content-Type for FormData, let browser set it with boundary
         },
         body: formData
       });
@@ -156,7 +190,6 @@ export default function MyShipments() {
         throw new Error(data.message || 'Failed to request refund');
       }
       
-      // Update the shipment refund status in the local state
       setShipments((prev) => 
         prev.map((s) => 
           s.trackingId === selectedShipment.trackingId 
@@ -165,16 +198,13 @@ export default function MyShipments() {
         )
       );
       
-      // Close the modal after successful submission
       setShowRefundModal(false);
       setSelectedShipment(null);
-      
       toast.success('Refund request submitted successfully');
-      toast.info('Your request is now under review. You will be notified once it is processed.');
+      toast.info('Our dispatch support team will review the request within 24 hours.');
     } catch (err) {
-      console.error('Refund submission error:', err);
       toast.error(err.message);
-      throw err; // Re-throw to let modal handle the error state
+      throw err;
     }
   };
 
@@ -195,8 +225,8 @@ export default function MyShipments() {
         throw new Error(data.message || 'Failed to submit complaint');
       }
       
-      toast.success('Detailed complaint submitted successfully');
-      toast.info('Our support team will contact you within 24 hours.');
+      toast.success('Issue report submitted successfully');
+      toast.info('Our customer support team will investigate and contact you.');
     } catch (err) {
       toast.error(err.message);
       throw err;
@@ -205,7 +235,7 @@ export default function MyShipments() {
 
   const handleCancelRefund = async (trackingId) => {
     const reason = window.prompt('Please provide a reason for cancelling the refund request (optional):');
-    if (reason === null) return; // User clicked cancel
+    if (reason === null) return;
     
     try {
       const token = sessionStorage.getItem('user_token');
@@ -223,7 +253,6 @@ export default function MyShipments() {
         throw new Error(data.message || 'Failed to cancel refund request');
       }
       
-      // Update the shipment refund status in the local state
       setShipments((prev) => 
         prev.map((s) => 
           s.trackingId === trackingId 
@@ -233,301 +262,350 @@ export default function MyShipments() {
       );
       
       toast.success('Refund request cancelled successfully');
-      toast.info('Your payment status has been restored to completed.');
     } catch (err) {
       toast.error(err.message);
     }
   };
 
-  // Debug: log all tracking IDs
-  useEffect(() => {
-    if (shipments.length > 0) {
-      console.log('Shipments trackingIds:', shipments.map(s => s.trackingId));
-    }
-  }, [shipments]);
+  // Filter shipments based on tab & search query
+  const filteredShipments = shipments.filter((s) => {
+    const matchTab = 
+      activeTab === 'all' ? true :
+      activeTab === 'active' ? ['in transit', 'out for delivery', 'pending'].includes(s.status?.toLowerCase()) :
+      activeTab === 'delivered' ? s.status?.toLowerCase() === 'delivered' :
+      activeTab === 'cancelled' ? s.status?.toLowerCase() === 'cancelled' : true;
 
-  // Skeleton Component with shimmer effect
-  const ShipmentSkeleton = () => (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-      <div className="p-8">
-        {/* Header Skeleton */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 animate-shimmer rounded"></div>
-            <div>
-              <div className="h-5 animate-shimmer rounded w-48 mb-2"></div>
-              <div className="h-4 animate-shimmer rounded w-32"></div>
-            </div>
-          </div>
-          <div className="h-6 animate-shimmer rounded-full w-20"></div>
-        </div>
+    const q = searchQuery.toLowerCase().trim();
+    const matchQuery = !q ? true :
+      s.trackingId?.toLowerCase().includes(q) ||
+      s.destination?.toLowerCase().includes(q) ||
+      s.currentLocation?.toLowerCase().includes(q) ||
+      s.origin?.toLowerCase().includes(q);
 
-        {/* Content Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-start">
-              <div className="w-5 h-5 animate-shimmer rounded mt-0.5"></div>
-              <div className="ml-3 flex-1">
-                <div className="h-4 animate-shimmer rounded w-24 mb-2"></div>
-                <div className="h-5 animate-shimmer rounded w-32"></div>
-              </div>
-            </div>
-          ))}
-        </div>
+    return matchTab && matchQuery;
+  });
 
-        {/* Payment Status Skeleton */}
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="h-4 animate-shimmer rounded w-24 mb-2"></div>
-              <div className="h-5 animate-shimmer rounded w-40"></div>
-            </div>
-            <div className="h-6 animate-shimmer rounded-full w-24"></div>
-          </div>
-        </div>
-
-        {/* Buttons Skeleton */}
-        <div className="flex justify-end space-x-3">
-          <div className="h-10 animate-shimmer rounded w-16"></div>
-          <div className="h-10 animate-shimmer rounded w-24"></div>
-          <div className="h-10 animate-shimmer rounded w-32"></div>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <main className="pt-24 pb-12">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Header Skeleton */}
-            <div className="mb-8">
-              <div className="h-8 animate-shimmer rounded w-64 mb-2"></div>
-              <div className="h-6 animate-shimmer rounded w-96"></div>
-            </div>
-            
-            {/* Button Skeleton */}
-            <div className="flex justify-end mb-6">
-              <div className="h-10 animate-shimmer rounded w-48"></div>
-            </div>
-
-            {/* Shipments Skeleton */}
-            <div className="space-y-6">
-              {[1, 2, 3].map((i) => (
-                <ShipmentSkeleton key={i} />
-              ))}
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const totalCount = shipments.length;
+  const activeCount = shipments.filter(s => ['in transit', 'out for delivery', 'pending'].includes(s.status?.toLowerCase())).length;
+  const deliveredCount = shipments.filter(s => s.status?.toLowerCase() === 'delivered').length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50/70 text-slate-900 antialiased flex flex-col justify-between">
       <Navbar />
-      <main className="pt-24 pb-12">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-extrabold text-black mb-2">My Shipments</h1>
-            <p className="text-gray-600 text-lg">Track and manage all your shipments in one place.</p>
+
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20 w-full flex-1">
+        {/* Top Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700 mb-2">
+              <Package className="w-3.5 h-3.5 text-slate-600" />
+              <span>Consignment Management</span>
+            </div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              My Shipments
+            </h1>
+            <p className="mt-1 text-sm text-slate-600">
+              Track live dispatch milestones, monitor payments, and manage booking requests in one place.
+            </p>
           </div>
-          <div className="flex justify-end mb-6">
+
+          <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/create-shipment')}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl shadow-sm transition whitespace-nowrap"
             >
-              Create New Shipment
+              <Package className="w-4 h-4" />
+              <span>Book New Courier</span>
             </button>
           </div>
-          {shipments.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-              <Package className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-xl font-medium text-black mb-2">No shipments found</h3>
-              <p className="text-gray-500 mb-6">You haven't created any shipments yet.</p>
+        </div>
+
+        {/* Overview KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm">
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Consignments</div>
+            <div className="text-2xl font-bold text-slate-900 mt-1">{totalCount}</div>
+          </div>
+          <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm">
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active In-Transit</div>
+            <div className="text-2xl font-bold text-teal-700 mt-1">{activeCount}</div>
+          </div>
+          <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm">
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Successfully Delivered</div>
+            <div className="text-2xl font-bold text-emerald-700 mt-1">{deliveredCount}</div>
+          </div>
+        </div>
+
+        {/* Filter and Search Bar */}
+        <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Tabs */}
+          <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+            {[
+              { id: 'all', label: 'All Orders', count: totalCount },
+              { id: 'active', label: 'In Transit', count: activeCount },
+              { id: 'delivered', label: 'Delivered', count: deliveredCount },
+              { id: 'cancelled', label: 'Cancelled' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                {tab.label}
+                {tab.count !== undefined && (
+                  <span className={`ml-1.5 text-[11px] px-1.5 py-0.2 rounded-full ${
+                    activeTab === tab.id ? 'bg-teal-700 text-white' : 'bg-slate-200/70 text-slate-700'
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Box */}
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search ID, destination, hub..."
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-teal-600 focus:ring-1 focus:ring-teal-600 transition"
+            />
+          </div>
+        </div>
+
+        {/* Content Section */}
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="bg-white rounded-2xl border border-slate-200 p-6 animate-pulse">
+                <div className="h-5 bg-slate-100 rounded w-1/4 mb-4"></div>
+                <div className="h-4 bg-slate-100 rounded w-1/2 mb-6"></div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="h-12 bg-slate-50 rounded"></div>
+                  <div className="h-12 bg-slate-50 rounded"></div>
+                  <div className="h-12 bg-slate-50 rounded"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="p-6 bg-red-50 border border-red-200 rounded-2xl text-red-700 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm">Failed to load shipments</p>
+              <p className="text-xs mt-1">{error}</p>
+            </div>
+          </div>
+        ) : filteredShipments.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
+              <Package className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">No consignments found</h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              {searchQuery 
+                ? 'No packages matched your search query. Try clearing filters.' 
+                : 'You have not scheduled any delivery shipments yet.'}
+            </p>
+            <div className="mt-5">
               <button
                 onClick={() => router.push('/create-shipment')}
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-semibold shadow-sm transition"
               >
-                Create New Shipment
+                Book Your First Shipment
               </button>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {shipments.map((shipment) => {
-                console.log('Shipment:', shipment);
-                return (
-                  <div key={shipment._id} className="bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow duration-300">
-                    <div className="p-8">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                            <Package className="h-5 w-5 text-slate-800" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredShipments.map((shipment) => {
+              const badge = getStatusBadge(shipment.status);
+              return (
+                <div
+                  key={shipment._id || shipment.trackingId}
+                  className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition duration-200 overflow-hidden"
+                >
+                  <div className="p-5 sm:p-6">
+                    {/* Header: Tracking ID + Status + Creation Date */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-800 flex-shrink-0">
+                          <Package className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm font-bold text-slate-900 tracking-tight">
+                              {shipment.trackingId}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(shipment.trackingId)}
+                              title="Copy Tracking ID"
+                              className="text-slate-400 hover:text-slate-700 transition"
+                            >
+                              {copiedId === shipment.trackingId ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
                           </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-slate-900">
-                              Tracking ID: {shipment.trackingId}
-                            </h3>
-                            <p className="text-xs text-slate-600 font-medium">
-                              Created {new Date(shipment.createdAt).toLocaleDateString()}
-                            </p>
+                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                            <Calendar className="w-3 h-3 text-slate-400" />
+                            <span>Booked on {new Date(shipment.createdAt || Date.now()).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}</span>
                           </div>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(shipment.status)}`}>
-                          {shipment.status}
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${badge.bg}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                        <span>{badge.label}</span>
+                      </div>
+                    </div>
+
+                    {/* Routing Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                      {/* Current Location */}
+                      <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-100">
+                        <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          Current Location
+                        </span>
+                        <div className="flex items-start gap-1.5 text-xs font-semibold text-slate-900">
+                          <MapPin className="w-3.5 h-3.5 text-slate-500 flex-shrink-0 mt-0.5" />
+                          <span className="truncate">{shipment.currentLocation || 'In Transit Corridor'}</span>
+                        </div>
+                      </div>
+
+                      {/* Destination */}
+                      <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-100">
+                        <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          Destination
+                        </span>
+                        <div className="flex items-start gap-1.5 text-xs font-semibold text-slate-900">
+                          <Truck className="w-3.5 h-3.5 text-slate-500 flex-shrink-0 mt-0.5" />
+                          <span className="truncate">{shipment.destination || 'Unassigned Destination'}</span>
+                        </div>
+                      </div>
+
+                      {/* Specifications */}
+                      <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-100">
+                        <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          Parcel Details
+                        </span>
+                        <div className="text-xs font-semibold text-slate-900">
+                          {shipment.packageDetails ? (
+                            <span className="capitalize">
+                              {shipment.packageDetails.type || 'Standard'} • {shipment.packageDetails.weight || 1} kg
+                            </span>
+                          ) : (
+                            <span>Standard Consignment</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Payment Info if Available */}
+                    {shipment.payment && (
+                      <div className="mb-5 p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-700">Payment:</span>
+                          <span className="font-bold text-slate-900">₹{shipment.payment.amount || 0}</span>
+                          <span className="text-slate-400">•</span>
+                          <span className="text-slate-600 uppercase">{shipment.payment.method || 'Online'}</span>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${
+                          shipment.payment.status === 'Completed' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                          shipment.payment.status === 'Refund Requested' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                          shipment.payment.status === 'Refunded' ? 'bg-sky-50 text-sky-800 border-sky-200' :
+                          'bg-slate-100 text-slate-700 border-slate-200'
+                        }`}>
+                          {shipment.payment.status === 'Refund Requested' ? 'Refund Under Review' : shipment.payment.status}
                         </span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div className="flex items-start">
-                          <MapPin className="h-5 w-5 text-slate-500 mt-0.5" />
-                          <div className="ml-3">
-                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-0.5">Current Location</p>
-                            <p className="text-sm font-bold text-slate-900">{shipment.currentLocation}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start">
-                          <Truck className="h-5 w-5 text-slate-500 mt-0.5" />
-                          <div className="ml-3">
-                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-0.5">Destination</p>
-                            <p className="text-sm font-bold text-slate-900">{shipment.destination}</p>
-                          </div>
-                        </div>
-                        {shipment.packageDetails && (
-                          <div className="flex items-start">
-                            <Package className="h-5 w-5 text-slate-500 mt-0.5" />
-                            <div className="ml-3">
-                              <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-0.5">Package Details</p>
-                              <p className="text-sm font-bold text-slate-900 capitalize">
-                                {shipment.packageDetails.type} • {shipment.packageDetails.weight}kg
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Payment Status for delivered orders */}
-                      {shipment.status.toLowerCase() === 'delivered' && shipment.payment && (
-                        <div className="mb-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-0.5">Payment Status</p>
-                              <p className="text-sm font-extrabold text-slate-900">
-                                ₹{shipment.payment.amount} • {shipment.payment.method}
-                              </p>
-                            </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              shipment.payment.status === 'Completed' ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' :
-                              shipment.payment.status === 'Refunded' ? 'bg-blue-50 text-blue-800 border border-blue-300' :
-                              shipment.payment.status === 'Refund Requested' ? 'bg-amber-50 text-amber-900 border border-amber-300' :
-                              shipment.payment.status === 'Refund Rejected' ? 'bg-red-50 text-red-800 border border-red-300' :
-                              'bg-slate-100 text-slate-800 border border-slate-200'
-                            }`}>
-                              {shipment.payment.status === 'Refund Requested' ? 'Under Review' : 
-                               shipment.payment.status === 'Refunded' ? 'Refund Approved' : 
-                               shipment.payment.status === 'Refund Rejected' ? 'Refund Rejected' :
-                               shipment.payment.status}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="flex justify-end space-x-3">
-                        <button
-                          onClick={() => router.push(`/track-package?trackingId=${shipment.trackingId}`)}
-                          className="px-6 py-2.5 bg-yellow-500 text-white rounded-md text-sm font-medium hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-                        >
-                          Track
-                        </button>
-                        
-                        {/* Show cancel button only for non-delivered and non-cancelled orders */}
-                        {shipment.status.toLowerCase() !== 'delivered' && 
-                         shipment.status.toLowerCase() !== 'cancelled' && 
+                    )}
+
+                    {/* Actions Bar */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                      <div className="flex items-center gap-2">
+                        {/* Cancel Button (only for non-delivered, non-cancelled) */}
+                        {shipment.status?.toLowerCase() !== 'delivered' &&
+                         shipment.status?.toLowerCase() !== 'cancelled' &&
                          shipment.sender?.email === user?.email && (
                           <button
+                            type="button"
                             onClick={() => handleCancel(shipment.trackingId)}
-                            className="px-4 py-2 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-semibold transition"
+                            className="px-3 py-1.5 border border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-rose-700 rounded-lg text-xs font-semibold transition"
                           >
-                            Cancel Order
+                            Cancel Consignment
                           </button>
                         )}
 
-                        {/* Show refund button only for delivered orders */}
-                        {shipment.status.toLowerCase() === 'delivered' && 
-                         shipment.sender?.email === user?.email && 
-                         shipment.payment?.status !== 'Refunded' && 
-                         shipment.payment?.status !== 'Refund Requested' && 
-                         shipment.payment?.status !== 'Refund Rejected' && (
+                        {/* Refund Button for delivered */}
+                        {shipment.status?.toLowerCase() === 'delivered' &&
+                         shipment.sender?.email === user?.email &&
+                         shipment.payment?.status !== 'Refunded' &&
+                         shipment.payment?.status !== 'Refund Requested' && (
                           <button
+                            type="button"
                             onClick={() => handleRefund(shipment)}
-                            className="px-4 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 rounded-lg text-xs font-semibold transition"
+                            className="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition"
                           >
                             Request Refund
                           </button>
                         )}
 
-                        {/* Show complaint button for delivered orders */}
-                        {shipment.status.toLowerCase() === 'delivered' && (
+                        {/* Complaint Button for delivered */}
+                        {shipment.status?.toLowerCase() === 'delivered' && (
                           <button
+                            type="button"
                             onClick={() => handleComplaint(shipment)}
-                            className="px-4 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 rounded-lg text-xs font-semibold transition"
+                            className="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition"
                           >
                             Report Issue
                           </button>
                         )}
 
-                        {/* Show refund status for refund requested orders with cancel option */}
+                        {/* Cancel Refund Button if Under Review */}
                         {shipment.payment?.status === 'Refund Requested' && (
-                          <div className="flex items-center space-x-2">
-                            <span className="px-3.5 py-1.5 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-full text-xs font-medium">
-                              Under Review
-                            </span>
-                            <button
-                              onClick={() => handleCancelRefund(shipment.trackingId)}
-                              className="px-3.5 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition"
-                              title="Cancel your refund request"
-                            >
-                              Cancel Refund
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Show refunded status */}
-                        {shipment.payment?.status === 'Refunded' && (
-                          <span className="px-3.5 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/80 rounded-full text-xs font-medium">
-                            Refund Approved
-                          </span>
-                        )}
-
-                        {/* Show rejected refund status */}
-                        {shipment.payment?.status === 'Refund Rejected' && (
-                          <span className="px-3.5 py-1.5 bg-rose-50 text-rose-800 border border-rose-200/80 rounded-full text-xs font-medium">
-                            Refund Rejected
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCancelRefund(shipment.trackingId)}
+                            className="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition"
+                          >
+                            Cancel Refund Request
+                          </button>
                         )}
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/track-package?trackingId=${shipment.trackingId}`)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold shadow-sm transition whitespace-nowrap"
+                      >
+                        <span>Live Telemetry</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </main>
+
       <Footer />
 
       {/* Modals */}

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { usePartner } from '../../../contexts/PartnerContext.js';
 import { useToast } from '../../../contexts/ToastContext.js';
 import partnerService from '../../../services/partner.service.js';
-import { Package, CheckCircle2, TrendingUp, Zap, RefreshCw, ArrowRight, MapPin } from 'lucide-react';
+import { Package, CheckCircle2, TrendingUp, RefreshCw, ArrowRight, MapPin } from 'lucide-react';
 
 export default function PartnerDashboard() {
   const { partner, stats, onlineStatus, toggleOnlineStatus, setStats } = usePartner();
@@ -50,10 +50,10 @@ export default function PartnerDashboard() {
 
   const getStatusColor = (status) => {
     const map = {
-      assigned: 'bg-blue-50 text-blue-700 border-blue-200',
-      picked_up: 'bg-purple-50 text-purple-700 border-purple-200',
-      in_transit: 'bg-amber-50 text-amber-700 border-amber-200',
-      out_for_delivery: 'bg-orange-50 text-orange-700 border-orange-200',
+      assigned: 'bg-teal-50 text-teal-700 border-teal-200',
+      picked_up: 'bg-sky-50 text-sky-700 border-sky-200',
+      in_transit: 'bg-teal-50 text-teal-700 border-teal-200',
+      out_for_delivery: 'bg-cyan-50 text-cyan-700 border-cyan-200',
       delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     };
     return map[status] || 'bg-slate-50 text-slate-700 border-slate-200';
@@ -100,7 +100,7 @@ export default function PartnerDashboard() {
               className={`px-4 py-2 rounded-xl text-sm font-semibold border transition shadow-sm ${
                 onlineStatus
                   ? 'bg-white border-slate-200 text-slate-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
-                  : 'bg-slate-900 border-slate-900 text-white hover:bg-slate-800'
+                  : 'bg-teal-600 border-teal-600 text-white hover:bg-teal-700'
               }`}
             >
               {onlineStatus ? 'Go Offline' : 'Go Online'}
@@ -118,7 +118,7 @@ export default function PartnerDashboard() {
           {[
             { label: "Today's Deliveries", value: stats?.todayDeliveries ?? 0, icon: Package, badge: 'Today', badgeStyle: 'text-slate-700 bg-slate-100 border-slate-200' },
             { label: 'Total Completed', value: stats?.completedDeliveries ?? 0, icon: CheckCircle2, badge: 'All time', badgeStyle: 'text-emerald-800 bg-emerald-50 border-emerald-200' },
-            { label: 'Monthly Earnings', value: `₹${(stats?.monthlyEarnings || 0).toLocaleString('en-IN')}`, icon: TrendingUp, badge: 'This month', badgeStyle: 'text-amber-900 bg-amber-50 border-amber-200' },
+            { label: 'Monthly Earnings', value: `₹${(stats?.monthlyEarnings || 0).toLocaleString('en-IN')}`, icon: TrendingUp, badge: 'This month', badgeStyle: 'text-teal-800 bg-teal-50 border-teal-200' },
           ].map((card) => (
             <div key={card.label} className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 hover:shadow-md transition">
               <div className="flex items-center justify-between mb-3">
@@ -162,7 +162,7 @@ export default function PartnerDashboard() {
               {!onlineStatus && (
                 <button
                   onClick={handleToggle}
-                  className="mt-4 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition"
+                  className="mt-4 px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 transition"
                 >
                   Go Online
                 </button>
@@ -180,7 +180,7 @@ export default function PartnerDashboard() {
                           {d.status.replace(/_/g, ' ')}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 text-xs text-slate-500">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-500">
                         <div className="flex items-start gap-1.5">
                           <MapPin className="w-3 h-3 text-slate-400 mt-0.5 flex-shrink-0" />
                           <div>
@@ -189,7 +189,7 @@ export default function PartnerDashboard() {
                           </div>
                         </div>
                         <div className="flex items-start gap-1.5">
-                          <MapPin className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <MapPin className="w-3 h-3 text-teal-600 mt-0.5 flex-shrink-0" />
                           <div>
                             <p className="font-medium text-slate-700 truncate">{d.receiver?.name}</p>
                             <p className="truncate">{d.receiver?.address}</p>
@@ -201,7 +201,7 @@ export default function PartnerDashboard() {
                       <p className="text-base font-bold text-slate-900">₹{d.partnerEarnings || 0}</p>
                       <button
                         onClick={() => router.push(`/partner/deliveries/${d.trackingId}`)}
-                        className="mt-2 px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-semibold hover:bg-slate-800 transition"
+                        className="mt-2 px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 transition"
                       >
                         Details
                       </button>
@@ -213,28 +213,6 @@ export default function PartnerDashboard() {
           )}
         </div>
 
-        {/* ── Quick Links ─────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: 'All Deliveries', href: '/partner/deliveries', icon: Package },
-            { label: 'Earnings', href: '/partner/earnings', icon: TrendingUp },
-            { label: 'Analytics', href: '/partner/analytics', icon: Zap },
-            { label: 'Profile', href: '/partner/profile', icon: 'user' },
-          ].map((item) => (
-            <button
-              key={item.label}
-              onClick={() => router.push(item.href)}
-              className="flex items-center gap-2 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition shadow-sm"
-            >
-              {item.icon !== 'user' ? <item.icon className="w-4 h-4 text-slate-500" /> : (
-                <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              )}
-              {item.label}
-            </button>
-          ))}
-        </div>
 
       </div>
     </div>

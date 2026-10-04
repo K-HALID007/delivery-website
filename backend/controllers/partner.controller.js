@@ -3,6 +3,7 @@ import Tracking from '../models/tracking.model.js';
 import jwt from 'jsonwebtoken';
 import { sendDeliveryEmail } from '../utils/email.js';
 import assignmentService from '../services/assignmentService.js';
+import { canPartnerTransition, getLegacyStatusValues, normalizeShipmentStatus } from '../utils/shipmentLifecycle.js';
 
 // Generate JWT token
 const generateToken = (partnerId) => {
@@ -360,7 +361,9 @@ export const getPartnerDashboard = async (req, res) => {
 // Get Partner Deliveries
 export const getPartnerDeliveries = async (req, res) => {
   try {
-    const { status, page = 1, limit = 10, trackingId } = req.query;
+    const { status, search = '', trackingId } = req.query;
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit, 10) || 10));
     const skip = (page - 1) * limit;
 
     // Convert partnerId to ObjectId for proper matching
@@ -369,41 +372,42 @@ export const getPartnerDeliveries = async (req, res) => {
 
     const query = { assignedPartner: partnerObjectId };
     if (status) {
-      query.status = status;
+      const canonicalStatus = normalizeShipmentStatus(status);
+      if (!canonicalStatus) return res.status(400).json({ success: false, message: 'Invalid delivery status filter' });
+      query.status = { $in: getLegacyStatusValues(canonicalStatus) };
     }
+    // Keep the exact lookup used by the delivery detail page.
     if (trackingId) {
       query.trackingId = trackingId;
     }
-
-    console.log(`🔍 Partner ${req.partnerId} requesting deliveries with query:`, query);
-    console.log(`🔍 Partner ObjectId: ${partnerObjectId}`);
-
-    // Debug: Check all deliveries with this partner assigned
-    const allAssignedDeliveries = await Tracking.find({ assignedPartner: partnerObjectId });
-    console.log(`🔍 Total deliveries assigned to this partner: ${allAssignedDeliveries.length}`);
-    if (allAssignedDeliveries.length > 0) {
-      console.log(`🔍 All assigned delivery IDs: ${allAssignedDeliveries.map(d => d.trackingId).join(', ')}`);
-      console.log(`🔍 All assigned delivery statuses: ${allAssignedDeliveries.map(d => `${d.trackingId}:${d.status}`).join(', ')}`);
+    const searchTerm = String(search).trim().slice(0, 100);
+    if (searchTerm) {
+      const escapedSearch = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchPattern = { $regex: escapedSearch, $options: 'i' };
+      query.$or = [
+        { trackingId: searchPattern },
+        { 'sender.name': searchPattern },
+        { 'sender.phone': searchPattern },
+        { 'sender.email': searchPattern },
+        { 'receiver.name': searchPattern },
+        { 'receiver.phone': searchPattern },
+        { 'receiver.email': searchPattern },
+        { receiverName: searchPattern }
+      ];
     }
 
     const deliveries = await Tracking.find(query)
-      .populate('sender receiver', 'name phone email address')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(limit);
 
     const total = await Tracking.countDocuments(query);
-
-    console.log(`📦 Found ${deliveries.length} deliveries for partner ${req.partnerId} with status filter: ${status || 'all'}`);
-    if (deliveries.length > 0) {
-      console.log(`📋 Filtered delivery IDs: ${deliveries.map(d => d.trackingId).join(', ')}`);
-    }
 
     res.json({
       success: true,
       deliveries,
       pagination: {
-        current: parseInt(page),
+        current: page,
         total: Math.ceil(total / limit),
         count: deliveries.length,
         totalRecords: total
@@ -424,7 +428,11 @@ export const getPartnerDeliveries = async (req, res) => {
 export const updateDeliveryStatus = async (req, res) => {
   try {
     const { trackingId } = req.params;
-    const { status, notes, location } = req.body;
+    const { status: requestedStatus, notes, location, receiverName } = req.body;
+    const status = normalizeShipmentStatus(requestedStatus);
+    if (!status) {
+      return res.status(400).json({ success: false, message: 'Invalid delivery status' });
+    }
 
     // Convert partnerId to ObjectId for proper matching
     const mongoose = await import('mongoose');
@@ -442,37 +450,61 @@ export const updateDeliveryStatus = async (req, res) => {
       });
     }
 
-    // Update tracking status
-    tracking.status = status;
-    if (notes) tracking.notes = notes;
-    if (location) tracking.currentLocation = location;
-
-    // Add status history
-    tracking.statusHistory.push({
-      status,
-      timestamp: new Date(),
-      location: location || tracking.currentLocation,
-      notes
-    });
-
-    // If delivered, update partner stats and earnings
-    if (status === 'delivered') {
-      const partner = await Partner.findById(req.partnerId);
-      partner.completedDeliveries += 1;
-      partner.totalEarnings += tracking.partnerEarnings || 0;
-      await partner.save();
-
-      tracking.deliveredAt = new Date();
-
-      // 💰 AUTO-UPDATE PAYMENT STATUS FOR COD ORDERS
-      if (tracking.payment.method === 'COD' && tracking.payment.status === 'Pending') {
-        tracking.payment.status = 'Completed';
-        tracking.payment.paidAt = new Date();
-        console.log(`✅ COD payment automatically completed for delivery: ${trackingId}`);
-      }
+    const currentStatus = normalizeShipmentStatus(tracking.status);
+    if (currentStatus === status) {
+      return res.json({ success: true, message: 'Delivery is already at this status', delivery: tracking });
+    }
+    if (!canPartnerTransition(currentStatus, status)) {
+      return res.status(409).json({
+        success: false,
+        message: `Cannot move delivery from ${currentStatus || tracking.status} to ${status}`
+      });
     }
 
-    await tracking.save();
+    const now = new Date();
+    const currentLocation = location || tracking.currentLocation;
+    const partnerEarningsAmount = status === 'delivered'
+      ? (tracking.partnerEarnings || Math.round((tracking.revenue || 0) * 0.7))
+      : tracking.partnerEarnings;
+    const historyEvent = { status, timestamp: now, location: currentLocation, notes };
+    const update = {
+      $set: {
+        status,
+        ...(notes ? { notes } : {}),
+        ...(location ? { currentLocation: location } : {}),
+        ...(status === 'delivered' ? { deliveredAt: now } : {}),
+        ...(status === 'delivered' ? { partnerEarnings: partnerEarningsAmount } : {}),
+        ...(status === 'delivered' && receiverName?.trim() ? { receiverName: receiverName.trim() } : {}),
+        ...(status === 'delivered' && tracking.payment.method === 'COD' && tracking.payment.status === 'Pending'
+          ? { 'payment.status': 'Completed', 'payment.paidAt': now }
+          : {})
+      },
+      $push: {
+        statusHistory: historyEvent,
+        history: { status, timestamp: now, location: currentLocation }
+      }
+    };
+    const updatedTracking = await Tracking.findOneAndUpdate(
+      { _id: tracking._id, assignedPartner: partnerObjectId, status: tracking.status },
+      update,
+      { new: true, runValidators: true }
+    );
+    if (!updatedTracking) {
+      const latest = await Tracking.findById(tracking._id).select('status');
+      if (normalizeShipmentStatus(latest?.status) === status) {
+        return res.json({ success: true, message: 'Delivery is already at this status' });
+      }
+      return res.status(409).json({ success: false, message: 'Delivery changed. Refresh and try again.' });
+    }
+
+    // The conditional status update above ensures duplicate requests cannot credit twice.
+    if (status === 'delivered') {
+      await Partner.updateOne(
+        { _id: req.partnerId },
+        { $inc: { completedDeliveries: 1, totalEarnings: partnerEarningsAmount || 0 } }
+      );
+    }
+    Object.assign(tracking, updatedTracking.toObject());
 
     // 🚀 EMIT REAL-TIME UPDATE TO ADMIN
     try {

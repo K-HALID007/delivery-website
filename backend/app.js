@@ -1,15 +1,6 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Load environment variables
-dotenv.config();
-
-// Resolve paths for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Import routes
 import authRoutes from './routes/auth.routes.js';
@@ -24,20 +15,22 @@ import { errorHandler, notFoundHandler } from './middleware/error.middleware.js'
 
 const app = express();
 
-// Fallback JWT Secret for development
-if (!process.env.JWT_SECRET) {
-  process.env.JWT_SECRET = 'courier-tracker-fallback-secret-2025';
-}
+const allowedOrigins = new Set([
+  'http://localhost:3000',
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.replace(/\/$/, '')] : []),
+  ...(process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim().replace(/\/$/, '')).filter(Boolean)
+]);
 
+// Fallback JWT Secret for development
 // 🛡️ Robust & Standards-Compliant CORS Configuration
 // Reflects origin dynamically to satisfy W3C spec with credentials: true
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
-  if (origin) {
+  if (origin && allowedOrigins.has(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
-  } else {
+  } else if (!origin) {
     res.header('Access-Control-Allow-Origin', '*');
   }
 
@@ -61,22 +54,18 @@ app.use((req, res, next) => {
 
 // Standard CORS middleware as second layer
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Cache-Control', 'Pragma']
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Cache-Control', 'Pragma', 'X-Client-Version']
 }));
+
+// Preserve the exact payload bytes used by Cashfree's webhook signature.
+app.use('/api/payment/webhook', express.raw({ type: 'application/json' }));
 
 // Body parsers
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
-
-// Static uploads serving with permissive CORS
-app.use('/uploads', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
-  next();
-}, express.static(path.join(__dirname, 'uploads')));
 
 // Root & Health check
 app.get('/', (req, res) => {

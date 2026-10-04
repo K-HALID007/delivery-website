@@ -38,15 +38,15 @@ const features = [
 
 export default function Features() {
   return (
-    <section id="features" className="py-20 bg-white border-b border-slate-200 text-slate-900">
+    <section id="features" className="py-20 bg-white border-b border-slate-200/80 text-slate-900">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+          <span className="text-xs font-semibold uppercase tracking-wider text-teal-800 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
             Technology Advantage
           </span>
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight mt-3">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
             Built for Reliability and Speed
           </h2>
           <p className="text-slate-600 text-sm sm:text-base mt-2.5">
@@ -61,13 +61,13 @@ export default function Features() {
             return (
               <div 
                 key={idx}
-                className="bg-slate-50/50 border border-slate-200 rounded-xl p-6 hover:bg-white hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+                className="bg-white border border-slate-200 rounded-2xl p-6 hover:border-teal-500/50 hover:shadow-md transition-all duration-200 flex flex-col justify-between shadow-2xs"
               >
                 <div>
-                  <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-800 mb-4 shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200/80 flex items-center justify-center text-teal-700 mb-4 shadow-2xs">
                     <Icon className="w-5 h-5" />
                   </div>
-                  <h3 className="text-base font-semibold text-slate-900">
+                  <h3 className="text-base font-bold text-slate-900">
                     {feat.title}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
@@ -75,8 +75,8 @@ export default function Features() {
                   </p>
                 </div>
 
-                <div className="pt-4 mt-5 border-t border-slate-200/60">
-                  <span className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-md">
+                <div className="pt-4 mt-5 border-t border-slate-100">
+                  <span className="text-xs font-semibold text-teal-800 bg-teal-50 border border-teal-200/80 px-2.5 py-1 rounded-md">
                     {feat.metric}
                   </span>
                 </div>

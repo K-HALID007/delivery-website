@@ -169,7 +169,7 @@ export default function RealTimeAdminDashboard() {
             {/* Manual Refresh */}
             <button
               onClick={refreshAll}
-              className="flex items-center px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors"
+              className="flex items-center px-3 py-1 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors"
             >
               <RefreshCw className="w-4 h-4 mr-1" />
               Refresh
@@ -229,11 +229,11 @@ export default function RealTimeAdminDashboard() {
           </div>
 
           <div className={`rounded-xl shadow-lg p-6 text-center transition-all duration-300 ${
-            notificationsConnected ? 'bg-gradient-to-r from-amber-50 to-amber-100' : 'bg-gray-100'
+            notificationsConnected ? 'bg-gradient-to-r from-teal-50 to-teal-100' : 'bg-gray-100'
           }`}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">Notifications</span>
-              <div className={`w-3 h-3 rounded-full ${notificationsConnected ? 'bg-amber-500 animate-pulse' : 'bg-gray-400'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${notificationsConnected ? 'bg-teal-600 animate-pulse' : 'bg-gray-400'}`}></div>
             </div>
             <div className="text-2xl font-bold text-gray-800">
               {notificationsLoading ? '...' : (notificationsConnected ? 'Live' : 'Offline')}
@@ -243,8 +243,8 @@ export default function RealTimeAdminDashboard() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl shadow-lg p-6 text-center">
-            <div className="text-3xl font-bold text-amber-600">{summary.totalShipments}</div>
+          <div className="bg-gradient-to-r from-teal-50 to-teal-100 rounded-xl shadow-lg p-6 text-center">
+            <div className="text-3xl font-bold text-teal-700">{summary.totalShipments}</div>
             <div className="text-gray-800 mt-2 font-medium">Total Shipments</div>
             <div className="text-xs text-gray-600 mt-1">
               {dashboardConnected ? 'Real-time' : 'Last known'}

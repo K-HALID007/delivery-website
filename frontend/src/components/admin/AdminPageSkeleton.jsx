@@ -159,7 +159,7 @@ const AdminPageSkeleton = ({
       {/* Loading Indicator */}
       <div className="text-center mt-8">
         <div className="flex items-center justify-center space-x-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500"></div>
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-600"></div>
           <span className="text-gray-500 text-sm">Loading {title.toLowerCase()}...</span>
         </div>
       </div>

@@ -259,10 +259,10 @@ export default function AdminShipmentDetailsPage() {
           <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
-                <MapPin className="w-4 h-4 text-amber-600" />
+                <MapPin className="w-4 h-4 text-teal-600" />
                 Receiver (Delivery Consignee)
               </div>
-              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-300">Destination</span>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">Destination</span>
             </div>
 
             <div className="space-y-3 text-xs">

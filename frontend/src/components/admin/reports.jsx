@@ -121,12 +121,23 @@ export default function AdminReports() {
     setShowCustomerModal(false);
   };
 
-  const viewImage = (image) => {
-    setSelectedImage(image);
-    setShowImageModal(true);
+  const viewImage = async (image) => {
+    try {
+      const sourceUrl = image.imageUrl.startsWith('http') ? image.imageUrl : `${BACKEND_BASE}${image.imageUrl}`;
+      const token = sessionStorage.getItem('admin_token');
+      const response = await fetch(sourceUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (!response.ok) throw new Error('Could not load refund evidence');
+      const imageUrl = URL.createObjectURL(await response.blob());
+      setSelectedImage({ ...image, imageUrl, previewObjectUrl: imageUrl });
+      setShowImageModal(true);
+    } catch (error) {
+      console.error('Image preview failed:', error);
+      alert(error.message || 'Could not load refund evidence');
+    }
   };
 
   const closeImageModal = () => {
+    if (selectedImage?.previewObjectUrl) URL.revokeObjectURL(selectedImage.previewObjectUrl);
     setSelectedImage(null);
     setShowImageModal(false);
   };
@@ -134,11 +145,13 @@ export default function AdminReports() {
   const downloadImage = async (image) => {
     try {
       // Fix the image URL to use correct backend URL
-      const imageUrl = image.imageUrl.startsWith('http') 
+      const imageUrl = /^(https?:|blob:)/.test(image.imageUrl)
         ? image.imageUrl 
         : `${BACKEND_BASE}${image.imageUrl}`;
       
-      const response = await fetch(imageUrl);
+      const token = sessionStorage.getItem('admin_token');
+      const response = await fetch(imageUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (!response.ok) throw new Error('Could not download refund evidence');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -147,7 +160,7 @@ export default function AdminReports() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
     } catch (error) {
       console.error('Download failed:', error);
       alert('Download failed. Please try again.');
@@ -262,7 +275,7 @@ export default function AdminReports() {
       return (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <RefreshCw className="w-8 h-8 animate-spin text-amber-500 mx-auto mb-4" />
+            <RefreshCw className="w-8 h-8 animate-spin text-teal-600 mx-auto mb-4" />
             <p className="text-gray-600">Generating report...</p>
           </div>
         </div>
@@ -279,7 +292,7 @@ export default function AdminReports() {
         <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <currentReport.icon className="w-6 h-6 text-amber-500 mr-3" />
+              <currentReport.icon className="w-6 h-6 text-teal-600 mr-3" />
               <div>
                 <h3 className="text-xl font-semibold text-black">{currentReport.name}</h3>
                 <p className="text-gray-600">{currentReport.description}</p>
@@ -359,7 +372,7 @@ export default function AdminReports() {
         {selectedReport !== 'customer' && reportData.chartData && (
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
             <h4 className="text-lg font-semibold text-black mb-4 flex items-center">
-              <BarChart3 className="w-5 h-5 mr-2 text-amber-500" />
+              <BarChart3 className="w-5 h-5 mr-2 text-teal-600" />
               Data Visualization
             </h4>
             <div className="h-80">
@@ -400,7 +413,7 @@ export default function AdminReports() {
         {selectedReport === 'customer' && reportData.tableData && (
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
             <h4 className="text-lg font-semibold text-black mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-amber-500" />
+              <Users className="w-5 h-5 mr-2 text-teal-600" />
               Customer Refund Details
             </h4>
             <div className="overflow-x-auto">
@@ -474,7 +487,7 @@ export default function AdminReports() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <button
                           onClick={() => viewCustomerDetails(customer)}
-                          className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-md text-xs font-semibold transition-colors"
+                          className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded-md text-xs font-semibold transition-colors"
                         >
                           View Details
                         </button>
@@ -548,7 +561,7 @@ export default function AdminReports() {
           <button
             onClick={generateReport}
             disabled={loading}
-            className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors flex items-center disabled:opacity-50"
+            className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -566,15 +579,15 @@ export default function AdminReports() {
               onClick={() => setSelectedReport(report.id)}
               className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
                 selectedReport === report.id
-                  ? 'border-amber-500 bg-amber-50 shadow-lg'
-                  : 'border-gray-200 bg-white hover:border-amber-300 hover:shadow-md'
+                  ? 'border-teal-600 bg-teal-50 shadow-lg'
+                  : 'border-gray-200 bg-white hover:border-teal-300 hover:shadow-md'
               }`}
             >
               <Icon className={`w-6 h-6 mb-2 ${
-                selectedReport === report.id ? 'text-amber-600' : 'text-gray-600'
+                selectedReport === report.id ? 'text-teal-700' : 'text-gray-600'
               }`} />
               <h3 className={`font-semibold text-sm ${
-                selectedReport === report.id ? 'text-amber-800' : 'text-gray-800'
+                selectedReport === report.id ? 'text-teal-800' : 'text-gray-800'
               }`}>
                 {report.name}
               </h3>
@@ -594,7 +607,7 @@ export default function AdminReports() {
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div className="flex items-center">
-                <Users className="w-6 h-6 text-amber-500 mr-3" />
+                <Users className="w-6 h-6 text-teal-600 mr-3" />
                 <div>
                   <h3 className="text-xl font-semibold text-black">Customer Details</h3>
                   <p className="text-gray-600">{selectedCustomer.customerId} - {selectedCustomer.name}</p>
@@ -613,7 +626,7 @@ export default function AdminReports() {
               {/* Customer Info */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="text-lg font-semibold text-black mb-3 flex items-center">
-                  <Users className="w-5 h-5 mr-2 text-amber-500" />
+                  <Users className="w-5 h-5 mr-2 text-teal-600" />
                   Customer Information
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -693,7 +706,7 @@ export default function AdminReports() {
                             {/* Tracking ID */}
                             <td className="px-4 py-4 text-sm font-medium text-gray-900">
                               <div className="flex items-center">
-                                <Package className="w-4 h-4 mr-2 text-amber-500" />
+                                <Package className="w-4 h-4 mr-2 text-teal-600" />
                                 <div>
                                   <div className="font-bold text-blue-600">{refund.trackingId}</div>
                                   <div className="text-xs text-gray-500">Track ID</div>
@@ -966,7 +979,7 @@ export default function AdminReports() {
             {/* Image Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex items-center">
-                <Image className="w-6 h-6 text-amber-500 mr-3" />
+                <Image className="w-6 h-6 text-teal-600 mr-3" />
                 <div>
                   <h3 className="text-lg font-semibold text-black">Evidence Photo</h3>
                   <p className="text-gray-600">{selectedImage.originalName || selectedImage.filename}</p>
@@ -1054,7 +1067,7 @@ export default function AdminReports() {
             {/* Approval Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div className="flex items-center">
-                <MessageSquare className="w-6 h-6 text-amber-500 mr-3" />
+                <MessageSquare className="w-6 h-6 text-teal-600 mr-3" />
                 <div>
                   <h3 className="text-xl font-semibold text-black">Refund Decision</h3>
                   <p className="text-gray-600">Tracking ID: {selectedRefund.trackingId}</p>
@@ -1157,7 +1170,7 @@ export default function AdminReports() {
                   value={adminResponse}
                   onChange={(e) => setAdminResponse(e.target.value)}
                   placeholder="Enter your response or notes for this refund request... Or use auto-generate buttons above."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   rows={6}
                 /><div className="mt-2 text-xs text-gray-500">
                   💡 Tip: Use the auto-generate buttons above to create professional responses based on the refund category and reason.

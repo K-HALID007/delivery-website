@@ -3,6 +3,7 @@ import Partner from '../models/partner.model.js';
 import Shipment from '../models/shipment.model.js';
 import Tracking from '../models/tracking.model.js';
 import { sendDeliveryEmail } from '../utils/email.js';
+import { normalizeShipmentStatus } from '../utils/shipmentLifecycle.js';
 
 // Get dashboard statistics
 export const getDashboardStats = async (req, res) => {
@@ -106,17 +107,42 @@ export const updateUserStatus = async (req, res) => {
 export const updateTrackingStatusAdmin = async (req, res) => {
   try {
     const { trackingId } = req.params;
-    const { status, currentLocation } = req.body;
+    const { status: requestedStatus, currentLocation } = req.body;
+    const status = normalizeShipmentStatus(requestedStatus);
+    if (!status) return res.status(400).json({ success: false, message: 'Invalid shipment status' });
     const tracking = await Tracking.findOne({ trackingId });
     if (!tracking) {
       return res.status(404).json({ message: 'Tracking entry not found' });
     }
-    tracking.status = status;
-    if (currentLocation !== undefined) {
-      tracking.currentLocation = currentLocation;
+    const previousStatus = tracking.status;
+    const now = new Date();
+    const statusChanged = status !== normalizeShipmentStatus(previousStatus);
+    const locationChanged = currentLocation !== undefined && currentLocation !== tracking.currentLocation;
+    if (!statusChanged && !locationChanged) return res.json({ success: true, message: 'Shipment is already up to date', tracking });
+    const creditPartner = statusChanged && status === 'delivered' && tracking.assignedPartner && !tracking.deliveredAt;
+    const partnerEarningsAmount = creditPartner
+      ? (tracking.partnerEarnings || Math.round((tracking.revenue || 0) * 0.7)) : null;
+    const update = { $set: {
+      ...(statusChanged ? { status } : {}),
+      ...(locationChanged ? { currentLocation } : {}),
+      ...(status === 'delivered' && !tracking.deliveredAt ? { deliveredAt: now } : {}),
+      ...(creditPartner ? { partnerEarnings: partnerEarningsAmount } : {}),
+      ...(status === 'delivered' && tracking.payment?.method === 'COD' && tracking.payment?.status === 'Pending'
+        ? { 'payment.status': 'Completed', 'payment.paidAt': now } : {})
+    } };
+    if (statusChanged) update.$push = {
+      history: { status, location: currentLocation ?? tracking.currentLocation, timestamp: now },
+      statusHistory: { status, location: currentLocation ?? tracking.currentLocation, timestamp: now, updatedBy: req.userId, updatedByModel: 'Admin' }
+    };
+    const updatedTracking = await Tracking.findOneAndUpdate(
+      { _id: tracking._id, status: previousStatus }, update, { new: true, runValidators: true }
+    );
+    if (!updatedTracking) return res.status(409).json({ success: false, message: 'Shipment changed. Refresh and try again.' });
+    if (creditPartner) {
+      await Partner.findByIdAndUpdate(tracking.assignedPartner, {
+        $inc: { completedDeliveries: 1, totalEarnings: partnerEarningsAmount }
+      });
     }
-    tracking.history.push({ status, location: tracking.currentLocation, timestamp: new Date() });
-    await tracking.save();
 
     // Emit real-time update to admin dashboard
     const io = req.app.get('io');
@@ -132,9 +158,9 @@ export const updateTrackingStatusAdmin = async (req, res) => {
       // Emit shipment update
       io.to('admin-room').emit('shipment-update', {
         trackingId,
-        status,
-        currentLocation,
-        timestamp: new Date()
+        status: updatedTracking.status,
+        currentLocation: updatedTracking.currentLocation,
+        timestamp: now
       });
 
       // Generate and emit new notifications
@@ -145,9 +171,9 @@ export const updateTrackingStatusAdmin = async (req, res) => {
     }
 
     // Notify for specific statuses
-    const notifyStatuses = ['out for delivery', 'delivered'];
-    const currentStatus = status?.toLowerCase();
-    const { email } = tracking.receiver;
+    const notifyStatuses = ['out_for_delivery', 'delivered'];
+    const currentStatus = status;
+    const { email } = updatedTracking.receiver || {};
     if (notifyStatuses.includes(currentStatus) && email) {
       try {
         // Build HTML email template (same as shipment created)
@@ -198,7 +224,7 @@ export const updateTrackingStatusAdmin = async (req, res) => {
       }
     }
 
-    res.json({ message: 'Status updated successfully', tracking });
+    res.json({ message: 'Status updated successfully', tracking: updatedTracking });
   } catch (error) {
     console.error('Error updating tracking status:', error);
     res.status(500).json({ message: 'Error updating tracking status' });
@@ -3182,7 +3208,9 @@ export const getDeliveryDetails = async (req, res) => {
 export const updateDeliveryStatus = async (req, res) => {
   try {
     const { trackingId } = req.params;
-    const { status, notes, location } = req.body;
+    const { status: requestedStatus, notes, location } = req.body;
+    const status = normalizeShipmentStatus(requestedStatus);
+    if (!status) return res.status(400).json({ success: false, message: 'Invalid shipment status' });
 
     const delivery = await Tracking.findOne({ trackingId });
     if (!delivery) {
@@ -3193,58 +3221,54 @@ export const updateDeliveryStatus = async (req, res) => {
     }
 
     const oldStatus = delivery.status;
-    delivery.status = status;
-    
-    if (location) {
-      delivery.currentLocation = location;
+    const statusChanged = status !== normalizeShipmentStatus(oldStatus);
+    const locationChanged = Boolean(location && location !== delivery.currentLocation);
+    if (!statusChanged && !locationChanged) {
+      return res.json({ success: true, message: 'Delivery is already up to date', delivery });
     }
-
-    // Add to status history
-    const historyEntry = {
-      status,
-      timestamp: new Date(),
-      location: location || delivery.currentLocation,
-      notes: notes || `Status updated by admin`,
-      updatedBy: 'admin'
-    };
-
-    if (delivery.statusHistory) {
-      delivery.statusHistory.push(historyEntry);
-    } else if (delivery.history) {
-      delivery.history.push(historyEntry);
-    } else {
-      delivery.statusHistory = [historyEntry];
+    const now = new Date();
+    const creditPartner = status === 'delivered' && statusChanged && delivery.assignedPartner && !delivery.deliveredAt;
+    const partnerEarningsAmount = creditPartner
+      ? (delivery.partnerEarnings || Math.round((delivery.revenue || 0) * 0.7))
+      : null;
+    const update = { $set: {
+      ...(statusChanged ? { status } : {}),
+      ...(locationChanged ? { currentLocation: location } : {}),
+      ...(status === 'delivered' && !delivery.deliveredAt ? { deliveredAt: now } : {}),
+      ...(creditPartner ? { partnerEarnings: partnerEarningsAmount } : {}),
+      ...(status === 'delivered' && delivery.payment?.method === 'COD' && delivery.payment?.status === 'Pending'
+        ? { 'payment.status': 'Completed', 'payment.paidAt': now } : {})
+    } };
+    if (statusChanged) {
+      const historyEntry = { status, timestamp: now, location: location || delivery.currentLocation,
+        notes: notes || 'Status updated by admin', updatedBy: 'admin' };
+      update.$push = {
+        history: { status, location: location || delivery.currentLocation, timestamp: now },
+        statusHistory: historyEntry
+      };
     }
-
-    // Update delivery timestamps
-    if (status.toLowerCase() === 'delivered') {
-      delivery.deliveredAt = new Date();
-      
-      // Update partner stats if assigned
-      if (delivery.assignedPartner) {
-        const partner = await Partner.findById(delivery.assignedPartner);
-        if (partner) {
-          partner.completedDeliveries += 1;
-          partner.totalEarnings += delivery.partnerEarnings || 0;
-          await partner.save();
-        }
-      }
+    const updatedDelivery = await Tracking.findOneAndUpdate(
+      { _id: delivery._id, status: oldStatus }, update, { new: true, runValidators: true }
+    );
+    if (!updatedDelivery) return res.status(409).json({ success: false, message: 'Delivery changed. Refresh and try again.' });
+    if (creditPartner) {
+      await Partner.findByIdAndUpdate(delivery.assignedPartner, {
+        $inc: { completedDeliveries: 1, totalEarnings: partnerEarningsAmount }
+      });
     }
-
-    await delivery.save();
 
     // Send notification email to customer
-    if (delivery.receiver?.email) {
+    if (updatedDelivery.receiver?.email) {
       try {
         const emailSubject = `Delivery Update - ${trackingId}`;
         const emailContent = `
           <h2>Delivery Status Update</h2>
           <p>Your package ${trackingId} status has been updated to: <strong>${status.toUpperCase()}</strong></p>
           ${notes ? `<p>Notes: ${notes}</p>` : ''}
-          <p>Current Location: ${delivery.currentLocation || 'In Transit'}</p>
+          <p>Current Location: ${updatedDelivery.currentLocation || 'In Transit'}</p>
           <p>Track your package: <a href="${process.env.FRONTEND_URL}/track/${trackingId}">Click here</a></p>
         `;
-        await sendDeliveryEmail(delivery.receiver.email, emailSubject, emailContent);
+        await sendDeliveryEmail(updatedDelivery.receiver.email, emailSubject, emailContent);
         console.log(`📧 Status update email sent to customer: ${delivery.receiver.email}`);
       } catch (emailError) {
         console.error('Failed to send status update email:', emailError);
@@ -3256,7 +3280,7 @@ export const updateDeliveryStatus = async (req, res) => {
     if (io) {
       io.to('admin-room').emit('delivery-status-update', {
         trackingId,
-        status,
+        status: updatedDelivery.status,
         oldStatus,
         timestamp: new Date()
       });
@@ -3267,9 +3291,9 @@ export const updateDeliveryStatus = async (req, res) => {
       message: `Delivery status updated to ${status}`,
       delivery: {
         trackingId: delivery.trackingId,
-        status: delivery.status,
-        currentLocation: delivery.currentLocation,
-        updatedAt: new Date()
+        status: updatedDelivery.status,
+        currentLocation: updatedDelivery.currentLocation,
+        updatedAt: updatedDelivery.updatedAt
       }
     });
 

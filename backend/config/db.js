@@ -12,7 +12,7 @@ const connectDB = async () => {
 
   if (!uri) {
     console.warn('⚠️ MONGODB_URI or MONGO_URI not found in environment variables. Database operations will fail.');
-    return null;
+    throw new Error('MONGODB_URI or MONGO_URI must be configured before the API starts');
   }
 
   try {
@@ -24,7 +24,7 @@ const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error('❌ MongoDB Connection Error:', error.message);
-    return null;
+    throw error;
   }
 };
 

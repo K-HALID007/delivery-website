@@ -202,7 +202,7 @@ export default function AdminSettings() {
         <div className="bg-white rounded-xl shadow-lg border border-gray-200">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading settings...</p>
             </div>
           </div>
@@ -225,7 +225,7 @@ export default function AdminSettings() {
               <p className="text-red-600 mb-4">{error}</p>
               <button
                 onClick={loadSettings}
-                className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors"
+                className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors"
               >
                 Try Again
               </button>
@@ -259,7 +259,7 @@ export default function AdminSettings() {
                   type="text"
                   value={settings.siteName}
                   onChange={(e) => handleInputChange('siteName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                 />
               </div>
               <div>
@@ -268,7 +268,7 @@ export default function AdminSettings() {
                   type="email"
                   value={settings.contactEmail}
                   onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                 />
               </div>
               <div>
@@ -277,7 +277,7 @@ export default function AdminSettings() {
                   type="tel"
                   value={settings.supportPhone}
                   onChange={(e) => handleInputChange('supportPhone', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                 />
               </div>
             </div>
@@ -287,7 +287,7 @@ export default function AdminSettings() {
                 value={settings.siteDescription}
                 onChange={(e) => handleInputChange('siteDescription', e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
               />
             </div>
             <div>
@@ -296,7 +296,7 @@ export default function AdminSettings() {
                 value={settings.companyAddress}
                 onChange={(e) => handleInputChange('companyAddress', e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
               />
             </div>
           </div>
@@ -312,7 +312,7 @@ export default function AdminSettings() {
                   <button
                     onClick={() => handleInputChange('emailNotifications', !settings.emailNotifications)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.emailNotifications ? 'bg-amber-500' : 'bg-gray-200'
+                      settings.emailNotifications ? 'bg-teal-600' : 'bg-gray-200'
                     }`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -325,7 +325,7 @@ export default function AdminSettings() {
                   <button
                     onClick={() => handleInputChange('smsNotifications', !settings.smsNotifications)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.smsNotifications ? 'bg-amber-500' : 'bg-gray-200'
+                      settings.smsNotifications ? 'bg-teal-600' : 'bg-gray-200'
                     }`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -338,7 +338,7 @@ export default function AdminSettings() {
                   <button
                     onClick={() => handleInputChange('pushNotifications', !settings.pushNotifications)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.pushNotifications ? 'bg-amber-500' : 'bg-gray-200'
+                      settings.pushNotifications ? 'bg-teal-600' : 'bg-gray-200'
                     }`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -353,7 +353,7 @@ export default function AdminSettings() {
                   type="email"
                   value={settings.notificationEmail}
                   onChange={(e) => handleInputChange('notificationEmail', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                 />
               </div>
             </div>
@@ -370,7 +370,7 @@ export default function AdminSettings() {
                   <button
                     onClick={() => handleInputChange('twoFactorAuth', !settings.twoFactorAuth)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.twoFactorAuth ? 'bg-amber-500' : 'bg-gray-200'
+                      settings.twoFactorAuth ? 'bg-teal-600' : 'bg-gray-200'
                     }`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -384,7 +384,7 @@ export default function AdminSettings() {
                     type="number"
                     value={settings.sessionTimeout}
                     onChange={(e) => handleInputChange('sessionTimeout', parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   />
                 </div>
               </div>
@@ -395,7 +395,7 @@ export default function AdminSettings() {
                     type="number"
                     value={settings.passwordExpiry}
                     onChange={(e) => handleInputChange('passwordExpiry', parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   />
                 </div>
                 <div>
@@ -404,7 +404,7 @@ export default function AdminSettings() {
                     type="number"
                     value={settings.maxLoginAttempts}
                     onChange={(e) => handleInputChange('maxLoginAttempts', parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   />
                 </div>
               </div>
@@ -435,7 +435,7 @@ export default function AdminSettings() {
                   <button
                     onClick={() => handleInputChange('debugMode', !settings.debugMode)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.debugMode ? 'bg-amber-500' : 'bg-gray-200'
+                      settings.debugMode ? 'bg-teal-600' : 'bg-gray-200'
                     }`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -462,7 +462,7 @@ export default function AdminSettings() {
                 <select
                   value={settings.backupFrequency}
                   onChange={(e) => handleInputChange('backupFrequency', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                 >
                   <option value="hourly">Hourly</option>
                   <option value="daily">Daily</option>
@@ -486,7 +486,7 @@ export default function AdminSettings() {
                     step="0.01"
                     value={settings.defaultShippingRate}
                     onChange={(e) => handleInputChange('defaultShippingRate', parseFloat(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   />
                 </div>
                 <div>
@@ -496,7 +496,7 @@ export default function AdminSettings() {
                     step="0.01"
                     value={settings.expressShippingRate}
                     onChange={(e) => handleInputChange('expressShippingRate', parseFloat(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   />
                 </div>
                 <div>
@@ -506,7 +506,7 @@ export default function AdminSettings() {
                     step="0.01"
                     value={settings.freeShippingThreshold}
                     onChange={(e) => handleInputChange('freeShippingThreshold', parseFloat(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   />
                 </div>
               </div>
@@ -516,7 +516,7 @@ export default function AdminSettings() {
                   <select
                     value={settings.currency}
                     onChange={(e) => handleInputChange('currency', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   >
                     <option value="USD">USD - US Dollar</option>
                     <option value="EUR">EUR - Euro</option>
@@ -529,7 +529,7 @@ export default function AdminSettings() {
                   <select
                     value={settings.timezone}
                     onChange={(e) => handleInputChange('timezone', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   >
                     <option value="America/New_York">Eastern Time</option>
                     <option value="America/Chicago">Central Time</option>
@@ -553,7 +553,7 @@ export default function AdminSettings() {
                   <button
                     onClick={() => handleInputChange('darkMode', !settings.darkMode)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.darkMode ? 'bg-amber-500' : 'bg-gray-200'
+                      settings.darkMode ? 'bg-teal-600' : 'bg-gray-200'
                     }`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -566,7 +566,7 @@ export default function AdminSettings() {
                   <button
                     onClick={() => handleInputChange('compactView', !settings.compactView)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.compactView ? 'bg-amber-500' : 'bg-gray-200'
+                      settings.compactView ? 'bg-teal-600' : 'bg-gray-200'
                     }`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -579,7 +579,7 @@ export default function AdminSettings() {
                   <button
                     onClick={() => handleInputChange('showWelcomeMessage', !settings.showWelcomeMessage)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.showWelcomeMessage ? 'bg-amber-500' : 'bg-gray-200'
+                      settings.showWelcomeMessage ? 'bg-teal-600' : 'bg-gray-200'
                     }`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -593,7 +593,7 @@ export default function AdminSettings() {
                 <select
                   value={settings.itemsPerPage}
                   onChange={(e) => handleInputChange('itemsPerPage', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                 >
                   <option value={10}>10</option>
                   <option value={20}>20</option>
@@ -622,7 +622,7 @@ export default function AdminSettings() {
                     value={settings.smtpHost}
                     onChange={(e) => handleInputChange('smtpHost', e.target.value)}
                     placeholder="smtp.gmail.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   />
                 </div>
                 <div>
@@ -631,7 +631,7 @@ export default function AdminSettings() {
                     type="number"
                     value={settings.smtpPort}
                     onChange={(e) => handleInputChange('smtpPort', parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -656,7 +656,7 @@ export default function AdminSettings() {
                     value={settings.smtpUser}
                     onChange={(e) => handleInputChange('smtpUser', e.target.value)}
                     placeholder="your-email@gmail.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   />
                 </div>
                 <div>
@@ -667,7 +667,7 @@ export default function AdminSettings() {
                       value={settings.smtpPassword}
                       onChange={(e) => handleInputChange('smtpPassword', e.target.value)}
                       placeholder="App password or SMTP password"
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                     />
                     <button
                       type="button"
@@ -779,7 +779,7 @@ export default function AdminSettings() {
                     max="100"
                     value={settings.maxFileSize}
                     onChange={(e) => handleInputChange('maxFileSize', parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   />
                 </div>
                 <div>
@@ -789,7 +789,7 @@ export default function AdminSettings() {
                     value={settings.googleAnalyticsId}
                     onChange={(e) => handleInputChange('googleAnalyticsId', e.target.value)}
                     placeholder="GA-XXXXXXXXX-X"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gray-50 text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600 bg-gray-50 text-gray-900"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -844,7 +844,7 @@ export default function AdminSettings() {
           <button
             onClick={saveSettings}
             disabled={saveLoading}
-            className="px-6 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 disabled:opacity-50 transition-colors flex items-center"
+            className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center"
           >
             {saveLoading ? (
               <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -868,7 +868,7 @@ export default function AdminSettings() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
-                      ? 'border-amber-500 text-amber-600'
+                      ? 'border-teal-600 text-teal-700'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >

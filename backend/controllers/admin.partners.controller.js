@@ -532,11 +532,11 @@ export const assignDeliveryToPartner = async (req, res) => {
     // Assign partner to delivery
     tracking.assignedPartner = partnerId;
     tracking.assignedAt = new Date();
-    tracking.status = 'Assigned';
+    tracking.status = 'assigned';
     
     // Add to history
     tracking.history.push({
-      status: 'Assigned',
+      status: 'assigned',
       location: tracking.currentLocation,
       timestamp: new Date(),
       description: `Assigned to partner: ${partner.name}`

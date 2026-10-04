@@ -225,86 +225,81 @@ export default function ComplaintDashboard() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">Complaint Management Dashboard</h1>
-        <p className="text-slate-600">User complaints aur unka management</p>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-xs font-semibold text-teal-800 mb-2">
+            <MessageSquare className="w-3.5 h-3.5 text-teal-600" />
+            <span>Support & Ticket Center</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            Customer Escalations & SLA Tickets
+          </h1>
+          <p className="text-sm text-slate-600 mt-1">
+            Track delivery delay reports, damaged package claims, and resolution tickets.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={exportComplaints}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-300 rounded-xl bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Total Complaints</p>
-              <p className="text-2xl font-bold text-slate-800">{stats.total}</p>
-            </div>
-            <MessageSquare className="w-8 h-8 text-blue-500" />
-          </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        <div className="bg-white p-4 rounded-xl shadow-2xs border border-slate-200">
+          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Total Tickets</p>
+          <p className="text-2xl font-extrabold text-slate-900 mt-1">{stats.total}</p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Pending</p>
-              <p className="text-2xl font-bold text-red-600">{stats.pending}</p>
-            </div>
-            <Clock className="w-8 h-8 text-red-500" />
-          </div>
+        <div className="bg-white p-4 rounded-xl shadow-2xs border border-slate-200">
+          <p className="text-xs text-amber-700 font-semibold uppercase tracking-wider">Pending</p>
+          <p className="text-2xl font-extrabold text-amber-700 mt-1">{stats.pending}</p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">In Progress</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.inProgress}</p>
-            </div>
-            <AlertTriangle className="w-8 h-8 text-yellow-500" />
-          </div>
+        <div className="bg-white p-4 rounded-xl shadow-2xs border border-slate-200">
+          <p className="text-xs text-blue-700 font-semibold uppercase tracking-wider">In Progress</p>
+          <p className="text-2xl font-extrabold text-blue-700 mt-1">{stats.inProgress}</p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Resolved</p>
-              <p className="text-2xl font-bold text-green-600">{stats.resolved}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-500" />
-          </div>
+        <div className="bg-white p-4 rounded-xl shadow-2xs border border-slate-200">
+          <p className="text-xs text-emerald-700 font-semibold uppercase tracking-wider">Resolved</p>
+          <p className="text-2xl font-extrabold text-emerald-700 mt-1">{stats.resolved}</p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">High Priority</p>
-              <p className="text-2xl font-bold text-red-600">{stats.highPriority}</p>
-            </div>
-            <AlertTriangle className="w-8 h-8 text-red-500" />
-          </div>
+        <div className="bg-white p-4 rounded-xl shadow-2xs border border-slate-200">
+          <p className="text-xs text-rose-700 font-semibold uppercase tracking-wider">High Priority</p>
+          <p className="text-2xl font-extrabold text-rose-700 mt-1">{stats.highPriority}</p>
         </div>
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border mb-6">
-        <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center space-x-2">
-              <Search className="w-4 h-4 text-slate-400" />
+      <div className="bg-white p-4 rounded-xl shadow-2xs border border-slate-200">
+        <div className="flex flex-wrap gap-3 items-center justify-between">
+          <div className="flex flex-wrap gap-3 items-center flex-1">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Search complaints..."
+                placeholder="Search ticket ID, customer, tracking..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="border border-slate-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600"
               />
             </div>
 
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="border border-slate-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              className="border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-teal-600"
             >
-              <option value="all">All Status</option>
+              <option value="all">All Statuses</option>
               <option value="pending">Pending</option>
               <option value="in_progress">In Progress</option>
               <option value="resolved">Resolved</option>
@@ -314,22 +309,14 @@ export default function ComplaintDashboard() {
             <select
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value)}
-              className="border border-slate-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              className="border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-teal-600"
             >
-              <option value="all">All Priority</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
+              <option value="all">All Priorities</option>
+              <option value="high">High Priority</option>
+              <option value="medium">Medium Priority</option>
+              <option value="low">Low Priority</option>
             </select>
           </div>
-
-          <button
-            onClick={exportComplaints}
-            className="flex items-center space-x-2 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-sm transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            <span>Export</span>
-          </button>
         </div>
       </div>
 

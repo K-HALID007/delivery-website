@@ -1,269 +1,184 @@
 import express from 'express';
 import { CashfreeService } from '../services/cashfree.service.js';
+import PaymentOrder from '../models/paymentOrder.model.js';
 import Tracking from '../models/tracking.model.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
+import { calculateShippingCost } from '../utils/pricing.js';
+import { autoAssignPartner } from '../utils/autoAssignPartner.js';
 
 const router = express.Router();
 
-// Create payment session
+const createTrackingId = () => {
+  const date = new Date();
+  const year = date.getFullYear().toString().slice(-2);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `TRK${year}${month}${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+};
+
+const fulfillPaidOrder = async (order, payment) => {
+  if (order.trackingId) return order.trackingId;
+
+  const existingTracking = await Tracking.findOne({ 'payment.orderId': order.orderId });
+  if (existingTracking) {
+    order.status = 'paid';
+    order.paymentId = payment.paymentId || existingTracking.payment.transactionId;
+    order.trackingId = existingTracking.trackingId;
+    await order.save();
+    return order.trackingId;
+  }
+
+  const shipmentData = order.shipmentData;
+  const initialStatus = 'Pending';
+  const tracking = new Tracking({
+    trackingId: createTrackingId(),
+    sender: shipmentData.sender,
+    receiver: shipmentData.receiver,
+    currentLocation: shipmentData.currentLocation || 'Not Updated',
+    status: initialStatus,
+    origin: shipmentData.origin,
+    destination: shipmentData.destination,
+    packageDetails: shipmentData.packageDetails,
+    history: [{ status: initialStatus, location: shipmentData.currentLocation || 'Not Updated', timestamp: new Date() }],
+    revenue: order.amount,
+    payment: {
+      method: 'ONLINE', status: 'Completed', amount: order.amount,
+      transactionId: payment.paymentId, orderId: order.orderId, paidAt: new Date()
+    }
+  });
+  try {
+    await tracking.save();
+  } catch (error) {
+    if (error.code !== 11000) throw error;
+    const concurrentTracking = await Tracking.findOne({ 'payment.orderId': order.orderId });
+    if (!concurrentTracking) throw error;
+    order.status = 'paid';
+    order.paymentId = payment.paymentId || concurrentTracking.payment.transactionId;
+    order.trackingId = concurrentTracking.trackingId;
+    await order.save();
+    return order.trackingId;
+  }
+
+  order.status = 'paid';
+  order.paymentId = payment.paymentId;
+  order.trackingId = tracking.trackingId;
+  await order.save();
+
+  try {
+    await autoAssignPartner(tracking);
+  } catch (assignmentError) {
+    console.error('Auto-assignment failed for paid shipment:', assignmentError);
+  }
+  return tracking.trackingId;
+};
+
 router.post('/create-session', verifyToken, async (req, res) => {
   try {
-    const { shipmentData, amount } = req.body;
-    const user = req.user;
-
-    if (!shipmentData || !amount) {
-      return res.status(400).json({
-        success: false,
-        message: 'Shipment data and amount are required'
-      });
+    const { shipmentData } = req.body;
+    if (!shipmentData?.sender?.name || !shipmentData?.sender?.phone || !shipmentData?.receiver?.name ||
+        !shipmentData?.receiver?.email || !shipmentData?.receiver?.phone || !shipmentData?.packageDetails ||
+        !shipmentData?.origin || !shipmentData?.destination) {
+      return res.status(400).json({ success: false, message: 'Complete sender, receiver, route, and package details are required' });
+    }
+    if (!process.env.FRONTEND_URL) {
+      return res.status(503).json({ success: false, message: 'Payment return URL is not configured' });
     }
 
-    // Generate unique order ID
-    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    const orderData = {
-      orderId,
-      amount: parseFloat(amount),
-      customerDetails: {
-        customerId: user.id,
-        name: shipmentData.sender.name,
-        email: shipmentData.sender.email,
-        phone: shipmentData.sender.phone
-      },
-      returnUrl: `${process.env.FRONTEND_URL}/payment/success?orderId=${orderId}`
-    };
+    let amount;
+    try {
+      amount = calculateShippingCost(shipmentData.packageDetails);
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
 
-    const paymentSession = await CashfreeService.createPaymentSession(orderData);
+    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    const safeShipmentData = {
+      ...shipmentData,
+      sender: { name: shipmentData.sender.name, phone: shipmentData.sender.phone, email: req.user.email }
+    };
+    const order = await PaymentOrder.create({ orderId, userId: req.user._id, amount, shipmentData: safeShipmentData });
+    const paymentSession = await CashfreeService.createPaymentSession({
+      orderId,
+      amount,
+      customerDetails: {
+        customerId: String(req.user._id),
+        name: safeShipmentData.sender.name,
+        email: req.user.email,
+        phone: safeShipmentData.sender.phone
+      },
+      returnUrl: `${process.env.FRONTEND_URL.replace(/\/$/, '')}/payment/success?orderId=${orderId}`
+    });
 
     if (!paymentSession.success) {
-      return res.status(400).json({
-        success: false,
-        message: paymentSession.error
-      });
+      order.status = 'failed';
+      await order.save();
+      return res.status(502).json({ success: false, message: paymentSession.error || 'Payment provider could not create a session' });
     }
 
-    // Store shipment data temporarily with order ID
-    const tempShipmentData = {
-      ...shipmentData,
-      orderId,
-      userId: user.id,
-      amount,
-      paymentStatus: 'PENDING',
-      createdAt: new Date()
-    };
-
-    // Store in a temporary collection or cache (for now, we'll use a simple in-memory store)
-    // In production, you might want to use Redis or a temporary database collection
-    global.pendingShipments = global.pendingShipments || new Map();
-    global.pendingShipments.set(orderId, tempShipmentData);
-
-    res.json({
-      success: true,
-      data: {
-        paymentSessionId: paymentSession.paymentSessionId,
-        orderId: paymentSession.orderId,
-        amount: amount
-      }
-    });
-
+    order.paymentSessionId = paymentSession.paymentSessionId;
+    await order.save();
+    res.json({ success: true, data: { paymentSessionId: order.paymentSessionId, orderId, amount } });
   } catch (error) {
     console.error('Payment session creation error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create payment session',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to create payment session' });
   }
 });
 
-// Verify payment and create shipment
 router.post('/verify/:orderId', verifyToken, async (req, res) => {
   try {
-    const { orderId } = req.params;
-    const user = req.user;
-
-    // Verify payment with Cashfree
-    const paymentVerification = await CashfreeService.verifyPayment(orderId);
-
-    if (!paymentVerification.success) {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment verification failed',
-        error: paymentVerification.error
-      });
+    const order = await PaymentOrder.findOne({ orderId: req.params.orderId, userId: req.user._id });
+    if (!order) return res.status(404).json({ success: false, message: 'Payment order not found' });
+    if (order.trackingId) {
+      return res.json({ success: true, message: 'Shipment already created', data: { trackingId: order.trackingId, orderId: order.orderId, paymentId: order.paymentId, amount: order.amount } });
     }
 
-    if (paymentVerification.status !== 'SUCCESS') {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment not successful',
-        status: paymentVerification.status
-      });
+    const verification = await CashfreeService.verifyPayment(order.orderId);
+    if (!verification.success || verification.status !== 'SUCCESS') {
+      return res.status(400).json({ success: false, message: verification.error || 'Payment has not completed successfully', status: verification.status });
+    }
+    if (Math.round(Number(verification.amount) * 100) !== Math.round(order.amount * 100)) {
+      return res.status(400).json({ success: false, message: 'Verified payment amount does not match the order' });
     }
 
-    // Get shipment data from temporary storage
-    global.pendingShipments = global.pendingShipments || new Map();
-    const shipmentData = global.pendingShipments.get(orderId);
+    const trackingId = await fulfillPaidOrder(order, verification);
 
-    if (!shipmentData) {
-      return res.status(404).json({
-        success: false,
-        message: 'Shipment data not found for this order'
-      });
-    }
-
-    // Verify user ownership
-    if (shipmentData.userId !== user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized access to this order'
-      });
-    }
-
-    // Generate tracking ID
-    const date = new Date();
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    const trackingId = `TRK${year}${month}${random}`;
-
-    // Create shipment with payment information
-    const newTracking = new Tracking({
-      trackingId,
-      sender: {
-        ...shipmentData.sender,
-        email: user.email // Ensure sender email matches authenticated user
-      },
-      receiver: shipmentData.receiver,
-      currentLocation: shipmentData.currentLocation || 'Not Updated',
-      status: shipmentData.status || 'Pending',
-      origin: shipmentData.origin,
-      destination: shipmentData.destination,
-      packageDetails: shipmentData.packageDetails,
-      history: [{
-        status: shipmentData.status || 'Pending',
-        location: shipmentData.currentLocation || 'Not Updated',
-        timestamp: new Date()
-      }],
-      revenue: parseFloat(shipmentData.amount),
-      payment: {
-        method: 'ONLINE',
-        status: 'SUCCESS',
-        amount: parseFloat(shipmentData.amount),
-        transactionId: paymentVerification.paymentId,
-        orderId: orderId,
-        paymentMethod: paymentVerification.method
-      }
-    });
-
-    await newTracking.save();
-
-    // Clean up temporary data
-    global.pendingShipments.delete(orderId);
-
-    // Auto-assign to partner (if available)
-    try {
-      const { autoAssignPartner } = await import('../utils/autoAssignPartner.js');
-      const assignedPartner = await autoAssignPartner(newTracking);
-      if (assignedPartner) {
-        console.log(`✅ Auto-assigned delivery ${trackingId} to partner: ${assignedPartner.name}`);
-      }
-    } catch (assignError) {
-      console.error('❌ Error in auto-assignment:', assignError);
-    }
-
-    res.json({
-      success: true,
-      message: 'Payment verified and shipment created successfully',
-      data: {
-        trackingId: newTracking.trackingId,
-        orderId: orderId,
-        paymentId: paymentVerification.paymentId,
-        amount: paymentVerification.amount
-      }
-    });
-
+    res.json({ success: true, message: 'Payment verified and shipment created', data: { trackingId, orderId: order.orderId, paymentId: verification.paymentId, amount: order.amount } });
   } catch (error) {
     console.error('Payment verification error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to verify payment and create shipment',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to verify payment and create shipment' });
   }
 });
 
-// Get payment status
 router.get('/status/:orderId', verifyToken, async (req, res) => {
   try {
-    const { orderId } = req.params;
-    
-    const orderStatus = await CashfreeService.getOrderStatus(orderId);
-    
-    if (!orderStatus.success) {
-      return res.status(400).json({
-        success: false,
-        message: orderStatus.error
-      });
-    }
-
-    res.json({
-      success: true,
-      data: orderStatus.data
-    });
-
+    const order = await PaymentOrder.findOne({ orderId: req.params.orderId, userId: req.user._id }).select('orderId amount status trackingId');
+    if (!order) return res.status(404).json({ success: false, message: 'Payment order not found' });
+    res.json({ success: true, data: order });
   } catch (error) {
     console.error('Payment status error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get payment status',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to get payment status' });
   }
 });
 
-// Webhook endpoint for Cashfree notifications
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+router.post('/webhook', async (req, res) => {
   try {
     const signature = req.headers['x-webhook-signature'];
     const timestamp = req.headers['x-webhook-timestamp'];
-    const rawBody = req.body;
-
-    // Verify webhook signature
-    const isValid = CashfreeService.verifyWebhookSignature(rawBody, signature, timestamp);
-    
-    if (!isValid) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid webhook signature'
-      });
+    if (!Buffer.isBuffer(req.body) || !CashfreeService.verifyWebhookSignature(signature, timestamp, req.body)) {
+      return res.status(400).json({ success: false, message: 'Invalid webhook signature' });
     }
-
-    const webhookData = JSON.parse(rawBody);
-    console.log('Cashfree webhook received:', webhookData);
-
-    // Handle different webhook events
-    if (webhookData.type === 'PAYMENT_SUCCESS_WEBHOOK') {
-      const { order_id, payment_status, cf_payment_id } = webhookData.data;
-      
-      // Update shipment payment status if needed
-      const tracking = await Tracking.findOne({ 'payment.orderId': order_id });
-      if (tracking && payment_status === 'SUCCESS') {
-        tracking.payment.status = 'SUCCESS';
-        tracking.payment.transactionId = cf_payment_id;
-        await tracking.save();
-        console.log(`Payment confirmed for tracking: ${tracking.trackingId}`);
+    const event = JSON.parse(req.body.toString('utf8'));
+    const orderId = event.data?.order?.order_id || event.data?.order_id;
+    const payment = event.data?.payment || event.data || {};
+    if (orderId && payment.payment_status === 'SUCCESS') {
+      const order = await PaymentOrder.findOne({ orderId });
+      if (order && Math.round(Number(payment.payment_amount) * 100) === Math.round(order.amount * 100)) {
+        await fulfillPaidOrder(order, { paymentId: payment.cf_payment_id });
       }
     }
-
     res.json({ success: true });
-
   } catch (error) {
     console.error('Webhook processing error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Webhook processing failed'
-    });
+    res.status(500).json({ success: false, message: 'Webhook processing failed' });
   }
 });
 

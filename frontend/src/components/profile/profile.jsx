@@ -1,8 +1,24 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Phone, MapPin, Building, Globe, Save, Loader2, Edit2 } from 'lucide-react';
+import { 
+  X, 
+  User, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Building, 
+  Globe, 
+  Save, 
+  Loader2, 
+  Edit2, 
+  ShieldCheck, 
+  AlertTriangle,
+  Lock,
+  KeyRound
+} from 'lucide-react';
 import { authService } from '@/services/auth.service';
+import { toast } from 'react-toastify';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -22,43 +38,44 @@ const Profile = () => {
     country: ''
   });
 
+  // State for delete account modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteOtp, setDeleteOtp] = useState('');
+  const [deleteStep, setDeleteStep] = useState('password'); // 'password' or 'otp'
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteSuccess, setDeleteSuccess] = useState('');
+
   useEffect(() => {
     loadUserData();
     
-    // Listen for auth state changes
     const handleAuthStateChange = (event) => {
-      const { user, isAuthenticated } = event.detail;
-      if (isAuthenticated && user) {
-        setUser(user);
-        updateFormData(user);
+      const { user: authUser, isAuthenticated } = event.detail;
+      if (isAuthenticated && authUser) {
+        setUser(authUser);
+        updateFormData(authUser);
       } else {
         setUser(null);
-        // Redirect to home if not authenticated
         window.location.href = '/';
       }
     };
 
     window.addEventListener('authChange', handleAuthStateChange);
-
-    return () => {
-      window.removeEventListener('authChange', handleAuthStateChange);
-    };
+    return () => window.removeEventListener('authChange', handleAuthStateChange);
   }, []);
 
   const loadUserData = () => {
     try {
       const currentUser = authService.getCurrentUser();
-      console.log('Loading user data:', currentUser);
-      
       if (currentUser) {
         setUser(currentUser);
         updateFormData(currentUser);
       } else {
         setError('Please log in to view your profile');
       }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-      setError('Failed to load user data');
+    } catch (err) {
+      setError('Failed to load profile data');
     } finally {
       setPageLoading(false);
     }
@@ -69,11 +86,11 @@ const Profile = () => {
       name: userData.name || '',
       email: userData.email || '',
       phone: userData.phone || '',
-      address: (userData.address && userData.address.street) ? userData.address.street : '',
-      city: (userData.address && userData.address.city) ? userData.address.city : '',
-      state: (userData.address && userData.address.state) ? userData.address.state : '',
-      postalCode: (userData.address && userData.address.postalCode) ? userData.address.postalCode : '',
-      country: (userData.address && userData.address.country) ? userData.address.country : '',
+      address: userData.address?.street || userData.address || '',
+      city: userData.address?.city || userData.city || '',
+      state: userData.address?.state || userData.state || '',
+      postalCode: userData.address?.postalCode || userData.postalCode || '',
+      country: userData.address?.country || userData.country || 'India'
     });
   };
 
@@ -97,11 +114,12 @@ const Profile = () => {
         setSuccess('Profile updated successfully');
         setUser(response.user);
         setIsEditing(false);
-        // The auth state change will be handled by the event listener
+        toast.success('Profile updated successfully');
       }
-    } catch (error) {
-      console.error('Profile update error:', error);
-      setError(error.message || 'Failed to update profile');
+    } catch (err) {
+      const msg = err.message || 'Failed to update profile';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -115,31 +133,10 @@ const Profile = () => {
 
   const cancelEditing = () => {
     setIsEditing(false);
-    updateFormData(user); // Reset form data to current user data
+    if (user) updateFormData(user);
     setError('');
     setSuccess('');
   };
-
-  // State for delete modal (move to top, before any return)
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
-  const [deleteOtp, setDeleteOtp] = useState('');
-  const [deleteStep, setDeleteStep] = useState('password'); // 'password' or 'otp'
-  const [otpSent, setOtpSent] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
-  const [deleteSuccess, setDeleteSuccess] = useState('');
-
-  if (pageLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-64px)] bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-amber-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading profile...</p>
-        </div>
-      </div>
-    );
-  }
 
   const handleDeleteAccount = async () => {
     setDeleteError('');
@@ -152,11 +149,13 @@ const Profile = () => {
         await authService.deleteAccount({ otp: deleteOtp });
       }
       setDeleteSuccess('Account deleted. Redirecting...');
+      toast.info('Account deleted');
       setTimeout(() => {
         window.location.href = '/';
       }, 1500);
     } catch (err) {
       setDeleteError(err.message || 'Failed to delete account');
+      toast.error(err.message || 'Failed to delete account');
     } finally {
       setDeleteLoading(false);
     }
@@ -168,400 +167,411 @@ const Profile = () => {
     setDeleteLoading(true);
     try {
       await authService.requestDeleteAccountOtp();
-      setOtpSent(true);
       setDeleteStep('otp');
-      setDeleteSuccess('OTP sent to your email.');
+      setDeleteSuccess('Verification code sent to your registered email.');
+      toast.info('Verification code sent to email');
     } catch (err) {
-      setDeleteError(err.message || 'Failed to send OTP');
+      setDeleteError(err.message || 'Failed to send OTP code');
+      toast.error(err.message || 'Failed to send OTP code');
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="pt-20 pb-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-lg shadow-lg">
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-140px)] bg-slate-50">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-slate-800 mx-auto mb-3" />
+          <p className="text-xs font-semibold text-slate-600">Loading user profile...</p>
+        </div>
+      </div>
+    );
+  }
 
-        {/* Delete Account Modal */}
-        {showDeleteModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md relative">
-              <button
-                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeletePassword('');
-                  setDeleteOtp('');
-                  setDeleteStep('password');
-                  setOtpSent(false);
-                  setDeleteError('');
-                  setDeleteSuccess('');
-                }}
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <h2 className="text-xl font-semibold mb-4 text-red-600">Delete Account</h2>
-              {deleteError && (
-                <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-sm">{deleteError}</div>
-              )}
-              {deleteSuccess && (
-                <div className="mb-3 p-2 bg-green-50 border border-green-200 rounded text-green-600 text-sm">{deleteSuccess}</div>
-              )}
-              {deleteStep === 'password' && (
-                <>
-                  <p className="mb-2 text-gray-700">To confirm, enter your password:</p>
-                  <input
-                    type="password"
-                    className="w-full border border-gray-300 rounded px-3 py-2 mb-3"
-                    placeholder="Password"
-                    value={deletePassword}
-                    onChange={e => setDeletePassword(e.target.value)}
-                    disabled={deleteLoading}
-                  />
+  const inputClass = (editable) => 
+    `block w-full pl-10 pr-3 py-2.5 text-sm rounded-xl transition ${
+      editable 
+        ? 'border border-slate-300 focus:outline-none focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10 bg-white text-slate-900' 
+        : 'border border-slate-200 bg-slate-50 text-slate-700 cursor-not-allowed'
+    }`;
+
+  return (
+    <div className="min-h-screen bg-slate-50/70 text-slate-900 pt-28 pb-20 antialiased">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Main Profile Container */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          
+          {/* Header Bar */}
+          <div className="bg-slate-900 px-6 sm:px-8 py-8 text-white">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-teal-300 text-xl font-bold">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-white tracking-tight">{user?.name || 'Customer'}</h1>
+                    <span className="px-2 py-0.5 rounded-full bg-teal-500/20 text-[11px] font-semibold text-teal-300 border border-teal-500/30">
+                      Verified Account
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-1">{user?.email}</p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                {!isEditing ? (
                   <button
-                    onClick={handleDeleteAccount}
-                    className="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 mb-2 disabled:opacity-60"
-                    disabled={deleteLoading || !deletePassword}
+                    type="button"
+                    onClick={startEditing}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-semibold shadow-sm transition"
                   >
-                    {deleteLoading ? 'Deleting...' : 'Delete Account'}
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Edit Profile</span>
                   </button>
+                ) : (
                   <button
-                    onClick={handleSendOtp}
-                    className="w-full bg-amber-500 text-white py-2 rounded hover:bg-amber-600 disabled:opacity-60"
-                    disabled={deleteLoading}
+                    type="button"
+                    onClick={cancelEditing}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold border border-slate-700 transition"
                   >
-                    {deleteLoading ? 'Sending OTP...' : 'Forgot password? Use Email OTP'}
+                    <X className="w-3.5 h-3.5" />
+                    <span>Cancel</span>
                   </button>
-                </>
-              )}
-              {deleteStep === 'otp' && (
-                <>
-                  <p className="mb-2 text-gray-700">Enter the OTP sent to your email:</p>
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 rounded px-3 py-2 mb-3 text-black"
-                    placeholder="OTP"
-                    value={deleteOtp}
-                    onChange={e => setDeleteOtp(e.target.value)}
-                    disabled={deleteLoading}
-                  />
-                  <button
-                    onClick={handleDeleteAccount}
-                    className="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 mb-2 disabled:opacity-60"
-                    disabled={deleteLoading || !deleteOtp}
-                  >
-                    {deleteLoading ? 'Deleting...' : 'Delete Account'}
-                  </button>
-                  <button
-                    onClick={() => setDeleteStep('password')}
-                    className="w-full bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300 disabled:opacity-60"
-                    disabled={deleteLoading}
-                  >
-                    Back to password method
-                  </button>
-                </>
-              )}
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-950/60 hover:bg-rose-900 text-rose-200 border border-rose-800/80 rounded-xl text-xs font-semibold transition"
+                >
+                  <span>Delete</span>
+                </button>
+              </div>
             </div>
           </div>
-        )}
-            {/* Profile Header */}
-            <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-t-lg px-6 py-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center">
-                    <User className="w-10 h-10 text-amber-500" />
+
+          {/* Form Content */}
+          <div className="p-6 sm:p-8">
+            <div className="mb-6 pb-4 border-b border-slate-100">
+              <h2 className="text-base font-bold text-slate-900">Personal & Delivery Dispatch Information</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                This information auto-populates as sender defaults when booking consignments.
+              </p>
+            </div>
+
+            {error && (
+              <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs">
+                {success}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Column 1: Personal Contact */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Full Name
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        className={inputClass(isEditing)}
+                        placeholder="Your full name"
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="text-white">
-                    <h1 className="text-3xl font-bold">{user.name}</h1>
-                    <p className="text-amber-100">{user.email}</p>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        className={inputClass(isEditing)}
+                        placeholder="Your email address"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Phone Number
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        className={inputClass(isEditing)}
+                        placeholder="Phone number"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  {!isEditing ? (
-                    <button
-                      onClick={startEditing}
-                      className="flex items-center gap-2 px-4 py-2 bg-white text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
-                    >
-                      <Edit2 className="w-5 h-5" />
-                      Edit Profile
-                    </button>
-                  ) : (
-                    <button
-                      onClick={cancelEditing}
-                      className="flex items-center gap-2 px-4 py-2 bg-white text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                      Cancel
-                    </button>
-                  )}
+
+                {/* Column 2: Address */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Default Street Address
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <input
+                        type="text"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        className={inputClass(isEditing)}
+                        placeholder="Building, street address"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                        City
+                      </label>
+                      <div className="relative">
+                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <input
+                          type="text"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleChange}
+                          disabled={!isEditing}
+                          className={inputClass(isEditing)}
+                          placeholder="City"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                        State
+                      </label>
+                      <div className="relative">
+                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <input
+                          type="text"
+                          name="state"
+                          value={formData.state}
+                          onChange={handleChange}
+                          disabled={!isEditing}
+                          className={inputClass(isEditing)}
+                          placeholder="State"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Postal Code
+                      </label>
+                      <input
+                        type="text"
+                        name="postalCode"
+                        value={formData.postalCode}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        className={inputClass(isEditing)}
+                        placeholder="PIN code"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Country
+                      </label>
+                      <input
+                        type="text"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        className={inputClass(isEditing)}
+                        placeholder="Country"
+                      />
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Submit Changes */}
+              {isEditing && (
+                <div className="pt-6 border-t border-slate-100 flex justify-end">
                   <button
-                    onClick={() => setShowDeleteModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    type="submit"
+                    disabled={loading}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm transition"
                   >
-                    <X className="w-5 h-5" />
-                    Delete Account
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving Changes...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>Save Profile Changes</span>
+                      </>
+                    )}
                   </button>
                 </div>
+              )}
+            </form>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-8 w-full max-w-md relative">
+            <button
+              type="button"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeletePassword('');
+                setDeleteOtp('');
+                setDeleteStep('password');
+                setDeleteError('');
+                setDeleteSuccess('');
+              }}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 flex-shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Delete Account Permanently</h3>
+                <p className="text-xs text-slate-500">This action cannot be undone.</p>
               </div>
             </div>
 
-            {/* Profile Form */}
-            <div className="p-6 md:p-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Profile Information</h2>
+            {deleteError && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
+                {deleteError}
+              </div>
+            )}
+            {deleteSuccess && (
+              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-xs">
+                {deleteSuccess}
+              </div>
+            )}
 
-              {error && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
-                  {error}
+            {deleteStep === 'password' && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-600">
+                  To confirm account deletion, please enter your account password:
+                </p>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="password"
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
+                    placeholder="Enter your account password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    disabled={deleteLoading}
+                  />
                 </div>
-              )}
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-sm transition disabled:opacity-50"
+                  disabled={deleteLoading || !deletePassword}
+                >
+                  {deleteLoading ? 'Processing...' : 'Confirm Account Deletion'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition disabled:opacity-50"
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading ? 'Transmitting code...' : 'Forgot password? Verify with Email OTP'}
+                </button>
+              </div>
+            )}
 
-              {success && (
-                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-600">
-                  {success}
+            {deleteStep === 'otp' && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-600">
+                  Enter the 6-digit verification code transmitted to your email address:
+                </p>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono tracking-widest text-center focus:outline-none focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
+                    placeholder="Enter code"
+                    value={deleteOtp}
+                    onChange={(e) => setDeleteOtp(e.target.value)}
+                    disabled={deleteLoading}
+                  />
                 </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Left Column */}
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <User className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className={`block w-full pl-10 pr-3 py-3 border ${
-                            isEditing 
-                              ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white text-gray-900' 
-                              : 'border-transparent bg-gray-50 text-gray-900'
-                          } rounded-lg transition-all`}
-                          placeholder="Enter your full name"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email Address
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Mail className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className={`block w-full pl-10 pr-3 py-3 border ${
-                            isEditing 
-                              ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white text-gray-900' 
-                              : 'border-transparent bg-gray-50 text-gray-900'
-                          } rounded-lg transition-all`}
-                          placeholder="Enter your email"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Phone className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                          type="tel"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className={`block w-full pl-10 pr-3 py-3 border ${
-                            isEditing 
-                              ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white text-gray-900' 
-                              : 'border-transparent bg-gray-50 text-gray-900'
-                          } rounded-lg transition-all`}
-                          placeholder="Enter your phone number"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Street Address
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <MapPin className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                          type="text"
-                          name="address"
-                          value={formData.address}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          className={`block w-full pl-10 pr-3 py-3 border ${
-                            isEditing 
-                              ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white text-gray-900' 
-                              : 'border-transparent bg-gray-50 text-gray-900'
-                          } rounded-lg transition-all`}
-                          placeholder="Enter your street address"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column */}
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          City
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Building className="h-5 w-5 text-gray-400" />
-                          </div>
-                          <input
-                            type="text"
-                            name="city"
-                            value={formData.city}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                            className={`block w-full pl-10 pr-3 py-3 border ${
-                              isEditing 
-                                ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white text-gray-900' 
-                                : 'border-transparent bg-gray-50 text-gray-900'
-                            } rounded-lg transition-all`}
-                            placeholder="Enter your city"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          State
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Building className="h-5 w-5 text-gray-400" />
-                          </div>
-                          <input
-                            type="text"
-                            name="state"
-                            value={formData.state}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                            className={`block w-full pl-10 pr-3 py-3 border ${
-                              isEditing 
-                                ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white text-gray-900' 
-                                : 'border-transparent bg-gray-50 text-gray-900'
-                            } rounded-lg transition-all`}
-                            placeholder="Enter your state"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Postal Code
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <MapPin className="h-5 w-5 text-gray-400" />
-                          </div>
-                          <input
-                            type="text"
-                            name="postalCode"
-                            value={formData.postalCode}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                            className={`block w-full pl-10 pr-3 py-3 border ${
-                              isEditing 
-                                ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white text-gray-900' 
-                                : 'border-transparent bg-gray-50 text-gray-900'
-                            } rounded-lg transition-all`}
-                            placeholder="Enter your postal code"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Country
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Globe className="h-5 w-5 text-gray-400" />
-                          </div>
-                          <input
-                            type="text"
-                            name="country"
-                            value={formData.country}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                            className={`block w-full pl-10 pr-3 py-3 border ${
-                              isEditing 
-                                ? 'border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white text-gray-900' 
-                                : 'border-transparent bg-gray-50 text-gray-900'
-                            } rounded-lg transition-all`}
-                            placeholder="Enter your country"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Additional spacing for alignment */}
-                    <div className="pt-[72px]">
-                      {/* This div creates spacing to align with the 4 fields on the left */}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                {isEditing && (
-                  <div className="flex justify-end pt-6 border-t border-gray-200">
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="flex items-center space-x-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white px-6 py-3 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-5 h-5" />
-                          <span>Save Changes</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </form>
-            </div>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-sm transition disabled:opacity-50"
+                  disabled={deleteLoading || !deleteOtp}
+                >
+                  {deleteLoading ? 'Verifying...' : 'Verify & Delete Account'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteStep('password')}
+                  className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition"
+                  disabled={deleteLoading}
+                >
+                  Back to password verification
+                </button>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -1,9 +1,29 @@
 import Tracking from '../models/tracking.model.js';
 import { sendSMS } from '../utils/sms.js';
 import { sendDeliveryEmail } from '../utils/email.js';
+import { 
+  getShipmentCreatedSenderEmail, 
+  getShipmentCreatedReceiverEmail, 
+  getShipmentStatusUpdateEmail 
+} from '../utils/emailTemplates.js';
+import { generateInvoicePDF } from '../utils/invoice.js';
 import Shipment from '../models/shipment.model.js';
 import User from '../models/user.model.js';
 import { autoAssignPartner } from '../utils/autoAssignPartner.js';
+import { calculateShippingCost } from '../utils/pricing.js';
+import { normalizeShipmentStatus } from '../utils/shipmentLifecycle.js';
+import { generateTrackingId } from '../utils/trackingId.js';
+
+const publicTrackingView = (tracking) => ({
+  trackingId: tracking.trackingId,
+  status: tracking.status,
+  currentLocation: tracking.currentLocation,
+  origin: tracking.origin,
+  destination: tracking.destination,
+  history: (tracking.history || []).map(({ status, location, timestamp }) => ({ status, location, timestamp })),
+  createdAt: tracking.createdAt,
+  updatedAt: tracking.updatedAt
+});
 
 // ✔ Verify tracking ID
 export const verifyTracking = async (req, res) => {
@@ -15,7 +35,7 @@ export const verifyTracking = async (req, res) => {
       console.log('Tracking ID not found in DB:', trackingId);
       return res.status(404).json({ message: 'Tracking ID not found' });
     }
-    res.json(tracking);
+    res.json(publicTrackingView(tracking));
   } catch (err) {
     console.error("❌ Error verifying tracking:", err.message);
     res.status(500).json({ message: 'Server error' });
@@ -25,7 +45,7 @@ export const verifyTracking = async (req, res) => {
 // ✔ Create new tracking entry
 export const addTracking = async (req, res) => {
   try {
-    const { sender, receiver, currentLocation, status, origin, destination, packageDetails, payment } = req.body;
+    const { sender, receiver, currentLocation, origin, destination, packageDetails, payment } = req.body;
 
     // Get the authenticated user
     const user = req.user;
@@ -33,12 +53,8 @@ export const addTracking = async (req, res) => {
       return res.status(401).json({ message: 'User not authenticated' });
     }
 
-    // Generate tracking ID if not provided
-    const date = new Date();
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    const trackingId = `TRK${year}${month}${random}`;
+    // Use an unguessable public reference; the older 4-digit suffix was enumerable.
+    const trackingId = generateTrackingId();
     
     // Debug log
     console.log('Saving new trackingId:', trackingId);
@@ -52,55 +68,19 @@ export const addTracking = async (req, res) => {
       });
     }
 
-    if (!['UPI', 'COD', 'CARD', 'ONLINE'].includes(payment.method)) {
+    if (payment.method !== 'COD') {
       return res.status(400).json({
         success: false,
-        message: 'Invalid payment method. Must be UPI, CARD, COD, or ONLINE'
+        message: 'Online payments must be completed through the payment checkout'
       });
     }
-
-    if (payment.method === 'UPI' && !payment.upiId) {
-      return res.status(400).json({
-        success: false,
-        message: 'UPI ID is required for UPI payments'
-      });
+    let shippingCost;
+    try {
+      shippingCost = calculateShippingCost(packageDetails);
+    } catch (pricingError) {
+      return res.status(400).json({ success: false, message: pricingError.message });
     }
-
-    // Calculate shipping cost (weight-based pricing only)
-    const calculateShippingCost = (packageDetails, origin, destination) => {
-      const { type, weight } = packageDetails;
-      
-      // Base rates by package type
-      const baseRates = {
-        'standard': 50,
-        'express': 100,
-        'fragile': 80,
-        'oversized': 120
-      };
-      
-      let baseCost = baseRates[type] || 50;
-      
-      // Weight-based pricing (per kg) - main pricing factor
-      const weightCost = (weight || 1) * 15; // Increased weight cost since no volume pricing
-      
-      // Distance-based pricing (simplified)
-      const distanceCost = 25;
-      
-      const totalCost = baseCost + weightCost + distanceCost;
-      
-      return Math.round(totalCost);
-    };
-
-    const shippingCost = calculateShippingCost(packageDetails, origin, destination);
     
-    // Revenue by shipment type (for backward compatibility)
-    const typePrices = {
-      standard: 50,
-      express: 100,
-      fragile: 120,
-      oversized: 150
-    };
-    const shipmentType = packageDetails.type?.toLowerCase() || 'standard';
     const revenue = shippingCost; // Use calculated cost instead of fixed price
 
     // Ensure sender email matches the authenticated user
@@ -115,22 +95,22 @@ export const addTracking = async (req, res) => {
       sender: senderData,
       receiver,
       currentLocation: currentLocation || 'Not Updated',
-      status: status || 'Pending',
+      status: 'pending',
       origin,
       destination,
       packageDetails,
       history: [{
-        status: status || 'Pending',
+        status: 'pending',
         location: currentLocation || 'Not Updated',
         timestamp: new Date()
       }],
       revenue,
       payment: {
         method: payment.method,
-        status: payment.method === 'COD' ? 'Pending' : 'Pending', // COD is pending until delivery, UPI/CARD needs processing
+        status: 'Pending', // payment status is separately capitalized
         amount: shippingCost,
-        upiId: payment.upiId || undefined,
-        transactionId: payment.transactionId || undefined
+        upiId: undefined,
+        transactionId: undefined
       }
     });
 
@@ -159,54 +139,70 @@ export const addTracking = async (req, res) => {
       confirmAttempts++;
     }
 
-    // 📧 Send shipment creation email notifications
+    // 📧 Generate PDF invoice & send professional shipment creation email notifications
     try {
-      // Send email to sender
+      // 1. Generate PDF Invoice Attachment
+      let pdfBuffer = null;
+      try {
+        pdfBuffer = await generateInvoicePDF({
+          trackingId,
+          sender: senderData,
+          receiver,
+          origin,
+          destination,
+          packageDetails,
+          payment,
+          shippingCost
+        });
+      } catch (pdfErr) {
+        console.error('⚠️ Failed to generate invoice PDF:', pdfErr.message);
+      }
+
+      const emailAttachments = pdfBuffer ? [{
+        filename: `Prime_Dispatcher_Invoice_${trackingId}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf'
+      }] : [];
+
+      // 2. Send email to sender with attached PDF invoice
+      const senderHtml = getShipmentCreatedSenderEmail({
+        trackingId,
+        senderName: senderData.name,
+        receiverName: receiver.name,
+        origin,
+        destination,
+        packageDetails,
+        paymentMethod: payment.method,
+        shippingCost
+      });
+
       await sendDeliveryEmail(
         senderData.email,
-        `Shipment Created - Tracking ID: ${trackingId}`,
-        `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #f59e0b;">Shipment Created Successfully!</h2>
-          <p>Hello ${senderData.name},</p>
-          <p>Your shipment has been created successfully. Here are the details:</p>
-          <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-            <p><strong>Tracking ID:</strong> ${trackingId}</p>
-            <p><strong>From:</strong> ${origin}</p>
-            <p><strong>To:</strong> ${destination}</p>
-            <p><strong>Status:</strong> ${status || 'Pending'}</p>
-            <p><strong>Payment Method:</strong> ${payment.method}</p>
-            <p><strong>Amount:</strong> ₹${shippingCost}</p>
-          </div>
-          <p>You can track your shipment anytime using the tracking ID.</p>
-          <p>Thank you for using our courier service!</p>
-        </div>
-        `
+        `Booking Confirmed & Tax Invoice - Waybill #${trackingId}`,
+        senderHtml,
+        emailAttachments
       );
 
-      // Send email to receiver
+      // 3. Send email to receiver with consignment details & attached waybill
+      const receiverHtml = getShipmentCreatedReceiverEmail({
+        trackingId,
+        senderName: senderData.name,
+        receiverName: receiver.name,
+        origin,
+        destination,
+        packageDetails,
+        paymentMethod: payment.method,
+        shippingCost
+      });
+
       await sendDeliveryEmail(
         receiver.email,
-        `Incoming Shipment - Tracking ID: ${trackingId}`,
-        `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #f59e0b;">You Have an Incoming Shipment!</h2>
-          <p>Hello ${receiver.name},</p>
-          <p>A shipment has been sent to you. Here are the details:</p>
-          <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-            <p><strong>Tracking ID:</strong> ${trackingId}</p>
-            <p><strong>From:</strong> ${senderData.name} (${origin})</p>
-            <p><strong>To:</strong> ${destination}</p>
-            <p><strong>Status:</strong> ${status || 'Pending'}</p>
-            <p><strong>Package Type:</strong> ${packageDetails.type}</p>
-          </div>
-          <p>You can track this shipment anytime using the tracking ID.</p>
-          <p>Thank you for using our courier service!</p>
-        </div>
-        `
+        `Incoming Consignment Scheduled - Tracking #${trackingId}`,
+        receiverHtml,
+        emailAttachments
       );
 
-      console.log('✅ Shipment creation emails sent successfully');
+      console.log('✅ Shipment creation emails with attached PDF invoice sent successfully');
     } catch (emailError) {
       console.error('❌ Failed to send shipment creation emails:', emailError.message);
       // Don't fail the shipment creation if email fails
@@ -235,7 +231,7 @@ export const addTracking = async (req, res) => {
 // ✔ Update tracking status and notify (SMS + Email)
 export const updateTracking = async (req, res) => {
   const { trackingId } = req.params;
-  const { status, currentLocation } = req.body;
+  const { status: requestedStatus, currentLocation } = req.body;
 
   try {
     const tracking = await Tracking.findOne({ trackingId });
@@ -243,28 +239,52 @@ export const updateTracking = async (req, res) => {
       return res.status(404).json({ message: 'Tracking ID not found' });
     }
 
+    const status = requestedStatus ? normalizeShipmentStatus(requestedStatus) : null;
+    if (requestedStatus && !status) {
+      return res.status(400).json({ success: false, message: 'Invalid shipment status' });
+    }
     const oldStatus = tracking.status;
+    const oldCanonicalStatus = normalizeShipmentStatus(oldStatus);
     const oldLocation = tracking.currentLocation;
+    const statusChanged = Boolean(status && status !== oldCanonicalStatus);
+    const locationChanged = Boolean(currentLocation && currentLocation !== oldLocation);
+    if (!statusChanged && !locationChanged) {
+      return res.json({ success: true, message: 'Shipment is already up to date', data: publicTrackingView(tracking) });
+    }
 
-    // Update fields
-    if (status) tracking.status = status;
-    if (currentLocation) tracking.currentLocation = currentLocation;
-
-    // Add to history
-    tracking.history.push({
-      status: status || tracking.status,
-      location: currentLocation || tracking.currentLocation,
-      timestamp: new Date()
-    });
+    const now = new Date();
+    const creditPartner = statusChanged && status === 'delivered' && tracking.assignedPartner && !tracking.deliveredAt;
+    const partnerEarningsAmount = creditPartner
+      ? (tracking.partnerEarnings || Math.round((tracking.revenue || 0) * 0.7))
+      : null;
+    const update = {
+      $set: {
+        ...(statusChanged ? { status } : {}),
+        ...(locationChanged ? { currentLocation } : {}),
+        ...(statusChanged && status === 'delivered' && !tracking.deliveredAt ? { deliveredAt: now } : {}),
+        ...(creditPartner ? { partnerEarnings: partnerEarningsAmount } : {}),
+        ...(statusChanged && status === 'delivered' && tracking.payment.method === 'COD' && tracking.payment.status === 'Pending'
+          ? { 'payment.status': 'Completed', 'payment.paidAt': now }
+          : {})
+      }
+    };
+    if (statusChanged) {
+      update.$push = {
+        history: { status, location: currentLocation || oldLocation, timestamp: now },
+        statusHistory: { status, location: currentLocation || oldLocation, timestamp: now, updatedBy: req.userId, updatedByModel: 'Admin' }
+      };
+    }
+    const updatedTracking = await Tracking.findOneAndUpdate(
+      { _id: tracking._id, status: oldStatus },
+      update,
+      { new: true, runValidators: true }
+    );
+    if (!updatedTracking) {
+      return res.status(409).json({ success: false, message: 'Shipment changed. Refresh and try again.' });
+    }
 
     // Handle partner earnings when order is delivered
-    if (status && status.toLowerCase() === 'delivered' && tracking.assignedPartner && !tracking.deliveredAt) {
-      tracking.deliveredAt = new Date();
-      
-      // Calculate partner earnings (e.g., 70% of revenue)
-      const partnerEarningsAmount = Math.round(tracking.revenue * 0.7);
-      tracking.partnerEarnings = partnerEarningsAmount;
-      
+    if (creditPartner) {
       // Update partner's total earnings and delivery stats
       const Partner = (await import('../models/partner.model.js')).default;
       await Partner.findByIdAndUpdate(
@@ -272,70 +292,50 @@ export const updateTracking = async (req, res) => {
         { 
           $inc: { 
             totalEarnings: partnerEarningsAmount,
-            completedDeliveries: 1,
-            totalDeliveries: 1
+            completedDeliveries: 1
           }
         }
       );
       
       console.log(`✅ Partner earnings credited: ₹${partnerEarningsAmount} for delivery ${trackingId}`);
 
-      // 💰 AUTO-UPDATE PAYMENT STATUS FOR COD ORDERS
-      if (tracking.payment.method === 'COD' && tracking.payment.status === 'Pending') {
-        tracking.payment.status = 'Completed';
-        tracking.payment.paidAt = new Date();
-        console.log(`✅ COD payment automatically completed for delivery: ${trackingId}`);
-      }
     }
 
-    await tracking.save();
+    Object.assign(tracking, updatedTracking.toObject());
 
     // 📧 Send email notifications for status updates
     try {
-      const statusChanged = status && status !== oldStatus;
-      const locationChanged = currentLocation && currentLocation !== oldLocation;
-
       if (statusChanged || locationChanged) {
         // Email to sender
+        const senderUpdateHtml = getShipmentStatusUpdateEmail({
+          trackingId,
+          recipientName: tracking.sender.name,
+          oldStatus,
+          status,
+          oldLocation,
+          currentLocation
+        });
+
         await sendDeliveryEmail(
           tracking.sender.email,
-          `Shipment Update - Tracking ID: ${trackingId}`,
-          `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #f59e0b;">Shipment Status Update</h2>
-            <p>Hello ${tracking.sender.name},</p>
-            <p>Your shipment has been updated:</p>
-            <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-              <p><strong>Tracking ID:</strong> ${trackingId}</p>
-              ${statusChanged ? `<p><strong>Status:</strong> ${oldStatus} → <span style="color: #10b981;">${status}</span></p>` : ''}
-              ${locationChanged ? `<p><strong>Location:</strong> ${oldLocation} → <span style="color: #10b981;">${currentLocation}</span></p>` : ''}
-              <p><strong>Updated:</strong> ${new Date().toLocaleString()}</p>
-            </div>
-            <p>You can track your shipment anytime for the latest updates.</p>
-            <p>Thank you for using our courier service!</p>
-          </div>
-          `
+          `Shipment Update: ${status || 'In Transit'} - Waybill #${trackingId}`,
+          senderUpdateHtml
         );
 
         // Email to receiver
+        const receiverUpdateHtml = getShipmentStatusUpdateEmail({
+          trackingId,
+          recipientName: tracking.receiver.name,
+          oldStatus,
+          status,
+          oldLocation,
+          currentLocation
+        });
+
         await sendDeliveryEmail(
           tracking.receiver.email,
-          `Shipment Update - Tracking ID: ${trackingId}`,
-          `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #f59e0b;">Shipment Status Update</h2>
-            <p>Hello ${tracking.receiver.name},</p>
-            <p>Your incoming shipment has been updated:</p>
-            <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-              <p><strong>Tracking ID:</strong> ${trackingId}</p>
-              ${statusChanged ? `<p><strong>Status:</strong> ${oldStatus} → <span style="color: #10b981;">${status}</span></p>` : ''}
-              ${locationChanged ? `<p><strong>Location:</strong> ${oldLocation} → <span style="color: #10b981;">${currentLocation}</span></p>` : ''}
-              <p><strong>Updated:</strong> ${new Date().toLocaleString()}</p>
-            </div>
-            <p>You can track this shipment anytime for the latest updates.</p>
-            <p>Thank you for using our courier service!</p>
-          </div>
-          `
+          `Delivery Update: ${status || 'In Transit'} - Waybill #${trackingId}`,
+          receiverUpdateHtml
         );
 
         console.log('✅ Status update emails sent successfully');
@@ -346,8 +346,8 @@ export const updateTracking = async (req, res) => {
     }
 
     // 📱 Send SMS notifications for specific statuses
-    const notifyStatuses = ['out for delivery', 'delivered'];
-    const currentStatus = status?.toLowerCase();
+    const notifyStatuses = ['out_for_delivery', 'delivered'];
+    const currentStatus = status;
     const { phone } = tracking.receiver;
 
     if (notifyStatuses.includes(currentStatus)) {
@@ -368,16 +368,19 @@ export const updateTracking = async (req, res) => {
 
 // ✔ Search by receiver email
 export const getTrackingByEmail = async (req, res) => {
-  const { email } = req.params;
+  const email = String(req.params.email || '').trim().toLowerCase();
+  if (req.user.role !== 'admin' && email !== req.user.email.toLowerCase()) {
+    return res.status(403).json({ message: 'You can only search shipments linked to your account' });
+  }
 
   try {
-    const results = await Tracking.find({ "receiver.email": email });
+    const results = await Tracking.find({ "receiver.email": email }).sort({ createdAt: -1 });
 
     if (!results.length) {
       return res.status(404).json({ message: 'No tracking records found for this email' });
     }
 
-    res.json({ count: results.length, data: results });
+    res.json({ count: results.length, data: results.map(publicTrackingView) });
   } catch (err) {
     console.error("❌ Error fetching by email:", err.message);
     res.status(500).json({ message: 'Server error while fetching tracking by email' });
@@ -462,14 +465,22 @@ export const cancelTracking = async (req, res) => {
     }
 
     const oldStatus = tracking.status;
-    
+    const cancellationClaim = await Tracking.findOneAndUpdate(
+      { _id: tracking._id, status: oldStatus },
+      { $set: { status: 'cancelled' } },
+      { new: true }
+    );
+    if (!cancellationClaim) {
+      return res.status(409).json({ success: false, message: 'Shipment changed. Refresh and try again.' });
+    }
+
     // Update status to cancelled
-    tracking.status = 'Cancelled';
+    tracking.status = 'cancelled';
     tracking.currentLocation = 'Cancelled';
 
     // Add cancellation to history
     tracking.history.push({
-      status: 'Cancelled',
+      status: 'cancelled',
       location: 'Cancelled',
       timestamp: new Date(),
       description: reason || 'Order cancelled by customer'
@@ -477,7 +488,7 @@ export const cancelTracking = async (req, res) => {
 
     // Add to status history with more details
     tracking.statusHistory.push({
-      status: 'Cancelled',
+      status: 'cancelled',
       timestamp: new Date(),
       location: 'Cancelled',
       notes: reason || 'Order cancelled by customer',
@@ -513,7 +524,7 @@ export const cancelTracking = async (req, res) => {
       const Partner = (await import('../models/partner.model.js')).default;
       await Partner.findByIdAndUpdate(
         tracking.assignedPartner._id,
-        { $inc: { cancelledDeliveries: 1, totalDeliveries: 1 } }
+        { $inc: { cancelledDeliveries: 1 } }
       );
     }
 
@@ -1167,5 +1178,37 @@ export const deleteTracking = async (req, res) => {
   } catch (error) {
     console.error('Error deleting shipment:', error);
     res.status(500).json({ success: false, message: 'Failed to delete shipment', error: error.message });
+  }
+};
+
+// ✔ Download or View PDF Tax Invoice & Waybill
+export const downloadInvoice = async (req, res) => {
+  const { trackingId } = req.params;
+  try {
+    const tracking = await Tracking.findOne({ trackingId });
+    if (!tracking) {
+      return res.status(404).json({ message: 'Consignment not found' });
+    }
+    if (req.user.role !== 'admin' && tracking.sender.email !== req.user.email) {
+      return res.status(403).json({ message: 'You can only download invoices for your own shipments' });
+    }
+
+    const pdfBuffer = await generateInvoicePDF({
+      trackingId: tracking.trackingId,
+      sender: tracking.sender,
+      receiver: tracking.receiver,
+      origin: tracking.origin,
+      destination: tracking.destination,
+      packageDetails: tracking.packageDetails || { type: 'standard', weight: 1 },
+      payment: tracking.payment || { method: 'COD' },
+      shippingCost: tracking.payment?.amount || 49
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Prime_Dispatcher_Invoice_${tracking.trackingId}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error generating invoice PDF:', error);
+    res.status(500).json({ message: 'Failed to generate invoice PDF', error: error.message });
   }
 };

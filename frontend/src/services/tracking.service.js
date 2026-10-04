@@ -42,6 +42,25 @@ class TrackingService {
     }
   }
 
+  async downloadInvoice(trackingId) {
+    const token = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('admin_token') || sessionStorage.getItem('user_token') || localStorage.getItem('token'))
+      : null;
+    const response = await fetch(`${API_URL}/tracking/invoice/${encodeURIComponent(trackingId)}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.message || 'Could not download invoice');
+    }
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Prime_Dispatcher_Invoice_${trackingId}.pdf`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
   async getPackageHistory(trackingNumber) {
     try {
       const response = await fetch(`${API_URL}/tracking/${trackingNumber}/history`, {

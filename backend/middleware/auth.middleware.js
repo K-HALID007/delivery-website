@@ -11,40 +11,14 @@ export const verifyToken = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Authentication token required' });
     }
 
-    const secret = process.env.JWT_SECRET || 'courier-tracker-fallback-secret-2025';
-    const decoded = jwt.verify(token, secret);
-    
-    // Attempt to find user in DB with a short timeout, fallback to decoded JWT payload
-    let user = null;
-    try {
-      user = await Promise.race([
-        User.findById(decoded.userId).select('-password'),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database query timeout')), 3000)
-        )
-      ]);
-    } catch (dbError) {
-      // Fallback: create safe user object from JWT data
-      user = {
-        _id: decoded.userId,
-        id: decoded.userId,
-        role: decoded.role,
-        email: decoded.email || 'unknown@example.com',
-        name: decoded.name || 'User',
-        isActive: true
-      };
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return res.status(503).json({ success: false, message: 'Authentication is not configured' });
     }
-    
+    const decoded = jwt.verify(token, secret);
+    const user = await User.findById(decoded.userId).select('-password');
     if (!user) {
-      // If DB returned null, still fallback to token data if token is valid
-      user = {
-        _id: decoded.userId,
-        id: decoded.userId,
-        role: decoded.role,
-        email: decoded.email || 'unknown@example.com',
-        name: decoded.name || 'User',
-        isActive: true
-      };
+      return res.status(401).json({ success: false, message: 'Account no longer exists' });
     }
 
     if (user.isActive === false) {
@@ -56,10 +30,11 @@ export const verifyToken = async (req, res, next) => {
     req.userRole = user.role || decoded.role;
     next();
   } catch (error) {
-    return res.status(401).json({ 
+    return res.status(error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError' ? 401 : 503).json({ 
       success: false, 
-      message: 'Invalid or expired token', 
-      error: error.message 
+      message: error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError'
+        ? 'Invalid or expired token'
+        : 'Unable to verify account right now'
     });
   }
 };

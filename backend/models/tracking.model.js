@@ -25,7 +25,7 @@ const trackingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    default: 'Pending',
+    default: 'pending',
   },
   currentLocation: {
     type: String,
@@ -76,6 +76,10 @@ const trackingSchema = new mongoose.Schema({
   deliveredAt: {
     type: Date
   },
+  receiverName: {
+    type: String,
+    trim: true
+  },
   // Status History with more details
   statusHistory: [{
     status: String,
@@ -101,7 +105,7 @@ const trackingSchema = new mongoose.Schema({
   payment: {
     method: {
       type: String,
-      enum: ['UPI', 'COD', 'CARD'],
+      enum: ['UPI', 'COD', 'CARD', 'ONLINE'],
       required: true
     },
     status: {
@@ -117,6 +121,7 @@ const trackingSchema = new mongoose.Schema({
       type: String,
       sparse: true // Only required for UPI payments
     },
+    orderId: { type: String, sparse: true },
     upiId: {
       type: String,
       required: function() {
@@ -230,5 +235,7 @@ const trackingSchema = new mongoose.Schema({
 }, {
   timestamps: true,
 });
+
+trackingSchema.index({ 'payment.orderId': 1 }, { unique: true, sparse: true });
 
 export default mongoose.model('Tracking', trackingSchema);

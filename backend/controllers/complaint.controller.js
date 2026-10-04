@@ -148,15 +148,16 @@ export const updateComplaintStatus = async (req, res) => {
         const { complaintId } = req.params;
         const { status, adminNotes, assignedTo } = req.body;
 
+        const updates = {
+            status,
+            updatedAt: new Date(),
+            ...(adminNotes !== undefined ? { adminNotes } : {}),
+            ...(assignedTo !== undefined ? { assignedTo } : {}),
+            ...(status === 'resolved' && { resolvedAt: new Date() })
+        };
         const complaint = await Complaint.findOneAndUpdate(
             { complaintId },
-            {
-                status,
-                adminNotes: adminNotes || complaint.adminNotes,
-                assignedTo: assignedTo || complaint.assignedTo,
-                updatedAt: new Date(),
-                ...(status === 'resolved' && { resolvedAt: new Date() })
-            },
+            updates,
             { new: true }
         );
 

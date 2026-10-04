@@ -15,13 +15,78 @@ import {
   Sparkles, 
   AlertCircle,
   Clock,
-  Lock
+  Lock,
+  Building2,
+  Navigation,
+  Compass,
+  Globe,
+  RotateCcw
 } from 'lucide-react';
 import Navbar from '@/components/home/navbar/navbar';
 import Footer from '@/components/home/footer/footer';
 import LoginRegisterModal from '@/components/home/navbar/loginregistermodal';
 import { authService } from '@/services/auth.service';
 import { toast } from 'react-toastify';
+
+// Safely extract clean scalar address strings from user object, avoiding [object Object]
+const extractSenderAddress = (user) => {
+  if (!user) return { street: '', city: '', state: '', postalCode: '', country: 'India' };
+
+  let street = '';
+  let city = user.city || '';
+  let state = user.state || '';
+  let postalCode = user.postalCode || '';
+  let country = user.country || 'India';
+
+  if (user.address) {
+    if (typeof user.address === 'object' && user.address !== null) {
+      street = user.address.street || '';
+      city = user.address.city || city || '';
+      state = user.address.state || state || '';
+      postalCode = user.address.postalCode || postalCode || '';
+      country = user.address.country || country || 'India';
+    } else if (typeof user.address === 'string' && user.address !== '[object Object]') {
+      street = user.address;
+    }
+  }
+
+  if (street === '[object Object]') street = '';
+
+  return { street, city, state, postalCode, country };
+};
+
+const sanitizeAddressValue = (val) => {
+  if (!val) return '';
+  if (typeof val === 'object') {
+    return val.street || '';
+  }
+  const str = String(val).trim();
+  if (str === '[object Object]') return '';
+  return str;
+};
+
+const initialFormState = {
+  senderName: '',
+  senderPhone: '',
+  senderEmail: '',
+  senderAddress: '',
+  senderCity: '',
+  senderState: '',
+  senderPostalCode: '',
+  senderCountry: 'India',
+  receiverName: '',
+  receiverPhone: '',
+  receiverEmail: '',
+  receiverAddress: '',
+  receiverCity: '',
+  receiverState: '',
+  receiverPostalCode: '',
+  receiverCountry: 'India',
+  packageType: 'standard',
+  weight: '1.0',
+  description: '',
+  specialInstructions: ''
+};
 
 export default function CreateShipment() {
   const router = useRouter();
@@ -31,73 +96,99 @@ export default function CreateShipment() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('register');
 
-  const [formData, setFormData] = useState({
-    senderName: '',
-    senderPhone: '',
-    senderEmail: '',
-    senderAddress: '',
-    senderCity: '',
-    senderState: '',
-    senderPostalCode: '',
-    senderCountry: 'India',
-    receiverName: '',
-    receiverPhone: '',
-    receiverEmail: '',
-    receiverAddress: '',
-    receiverCity: '',
-    receiverState: '',
-    receiverPostalCode: '',
-    receiverCountry: 'India',
-    packageType: 'standard',
-    weight: '1.0',
-    description: '',
-    specialInstructions: ''
-  });
+  const [formData, setFormData] = useState(initialFormState);
 
   // Restore draft or prefill logged-in user on mount
   useEffect(() => {
-    // 1. Check if draft exists in sessionStorage
-    const savedDraft = sessionStorage.getItem('draft_shipment_form');
-    if (savedDraft) {
-      try {
-        const parsed = JSON.parse(savedDraft);
-        setFormData(prev => ({ ...prev, ...parsed }));
-      } catch (err) {
-        console.error('Failed to parse draft shipment:', err);
+    const isAuth = authService.isAuthenticated();
+    const user = isAuth ? authService.getCurrentUser() : null;
+
+    if (user) {
+      setCurrentUser(user);
+      const addr = extractSenderAddress(user);
+
+      // Check draft for logged-in user
+      const savedDraft = sessionStorage.getItem('draft_shipment_form');
+      let parsed = {};
+      if (savedDraft) {
+        try {
+          parsed = JSON.parse(savedDraft) || {};
+        } catch (e) {
+          parsed = {};
+        }
       }
+
+      setFormData(prev => ({
+        ...prev,
+        ...parsed,
+        // Prefill sender from user profile, ensuring never [object Object]
+        senderName: parsed.senderName || user.name || '',
+        senderEmail: parsed.senderEmail || user.email || '',
+        senderPhone: parsed.senderPhone || user.phone || '',
+        senderAddress: sanitizeAddressValue(parsed.senderAddress) || addr.street,
+        senderCity: parsed.senderCity || addr.city,
+        senderState: parsed.senderState || addr.state,
+        senderPostalCode: parsed.senderPostalCode || addr.postalCode,
+        senderCountry: parsed.senderCountry || addr.country || 'India',
+        receiverAddress: sanitizeAddressValue(parsed.receiverAddress)
+      }));
+    } else {
+      // User is LOGGED OUT: Sender info must be clean/blank. Never prefill.
+      setCurrentUser(null);
+      sessionStorage.removeItem('draft_shipment_form');
+
+      setFormData(prev => ({
+        ...prev,
+        senderName: '',
+        senderPhone: '',
+        senderEmail: '',
+        senderAddress: '',
+        senderCity: '',
+        senderState: '',
+        senderPostalCode: '',
+        senderCountry: 'India'
+      }));
     }
 
-    // 2. Check authenticated user
-    const syncUser = () => {
-      let user = null;
-      try {
-        user = authService.getCurrentUser() || 
-          JSON.parse(sessionStorage.getItem('user_user') || sessionStorage.getItem('admin_user') || 'null');
-      } catch (e) {
-        user = null;
-      }
+    // Listen to login/logout events
+    const handleAuthChange = (e) => {
+      const isNowAuth = e?.detail?.isAuthenticated ?? authService.isAuthenticated();
+      const nowUser = e?.detail?.user ?? (isNowAuth ? authService.getCurrentUser() : null);
 
-      if (user) {
-        setCurrentUser(user);
+      if (!isNowAuth || !nowUser) {
+        // User logged out: clear sender form data and stored draft immediately
+        setCurrentUser(null);
+        sessionStorage.removeItem('draft_shipment_form');
+        sessionStorage.removeItem('pendingShipment');
         setFormData(prev => ({
           ...prev,
-          senderName: prev.senderName || user.name || '',
-          senderEmail: prev.senderEmail || user.email || '',
-          senderPhone: prev.senderPhone || user.phone || '',
-          senderAddress: prev.senderAddress || user.address || '',
-          senderCity: prev.senderCity || user.city || '',
-          senderState: prev.senderState || user.state || '',
-          senderPostalCode: prev.senderPostalCode || user.postalCode || '',
-          senderCountry: prev.senderCountry || user.country || 'India'
+          senderName: '',
+          senderPhone: '',
+          senderEmail: '',
+          senderAddress: '',
+          senderCity: '',
+          senderState: '',
+          senderPostalCode: '',
+          senderCountry: 'India'
         }));
       } else {
-        setCurrentUser(null);
+        // User logged in: sync user details
+        setCurrentUser(nowUser);
+        const addr = extractSenderAddress(nowUser);
+        setFormData(prev => ({
+          ...prev,
+          senderName: nowUser.name || prev.senderName || '',
+          senderEmail: nowUser.email || prev.senderEmail || '',
+          senderPhone: nowUser.phone || prev.senderPhone || '',
+          senderAddress: addr.street || sanitizeAddressValue(prev.senderAddress),
+          senderCity: addr.city || prev.senderCity,
+          senderState: addr.state || prev.senderState,
+          senderPostalCode: addr.postalCode || prev.senderPostalCode,
+          senderCountry: addr.country || prev.senderCountry || 'India'
+        }));
       }
     };
 
-    syncUser();
-
-    const handleAuthChange = () => syncUser();
     window.addEventListener('authChange', handleAuthChange);
     return () => window.removeEventListener('authChange', handleAuthChange);
   }, []);
@@ -106,42 +197,88 @@ export default function CreateShipment() {
     const { name, value } = e.target;
     setFormData(prev => {
       const updated = { ...prev, [name]: value };
-      // Save draft into sessionStorage continuously so user never loses their data
+      // Save draft into sessionStorage
       sessionStorage.setItem('draft_shipment_form', JSON.stringify(updated));
       return updated;
     });
   };
 
+  const handleClearForm = () => {
+    sessionStorage.removeItem('draft_shipment_form');
+    sessionStorage.removeItem('pendingShipment');
+    setFormData(initialFormState);
+    toast.info('Shipment form cleared');
+  };
+
+  const fillFromProfile = () => {
+    if (!currentUser) return;
+    const addr = extractSenderAddress(currentUser);
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        senderName: currentUser.name || '',
+        senderEmail: currentUser.email || '',
+        senderPhone: currentUser.phone || '',
+        senderAddress: addr.street,
+        senderCity: addr.city,
+        senderState: addr.state,
+        senderPostalCode: addr.postalCode,
+        senderCountry: addr.country || 'India'
+      };
+      sessionStorage.setItem('draft_shipment_form', JSON.stringify(updated));
+      return updated;
+    });
+    toast.success('Sender details synced from profile');
+  };
+
   const calculateEstimate = () => {
     const rates = {
-      standard: 50,
-      express: 100,
-      fragile: 80,
-      oversized: 120
+      standard: 49,
+      express: 99,
+      fragile: 79,
+      oversized: 149
     };
-    const base = rates[formData.packageType] || 50;
+    const base = rates[formData.packageType] || 49;
     const w = parseFloat(formData.weight) || 1;
-    const weightAddon = Math.round(w * 10);
-    const handling = 20;
-    return base + weightAddon + handling;
+    const extraWeight = Math.max(0, w - 0.5);
+    const perKgRate = formData.packageType === 'express' ? 60 : (formData.packageType === 'oversized' ? 18 : 30);
+    const weightAddon = Math.round(extraWeight * perKgRate);
+    return base + weightAddon;
   };
 
   const proceedToPayment = (shipmentPayload) => {
     setLoading(true);
     try {
+      const cleanSenderAddr = sanitizeAddressValue(shipmentPayload.senderAddress);
+      const cleanReceiverAddr = sanitizeAddressValue(shipmentPayload.receiverAddress);
+
+      const originParts = [
+        cleanSenderAddr,
+        shipmentPayload.senderCity,
+        shipmentPayload.senderState ? `${shipmentPayload.senderState} ${shipmentPayload.senderPostalCode || ''}`.trim() : shipmentPayload.senderPostalCode,
+        shipmentPayload.senderCountry || 'India'
+      ].filter(Boolean);
+
+      const destParts = [
+        cleanReceiverAddr,
+        shipmentPayload.receiverCity,
+        shipmentPayload.receiverState ? `${shipmentPayload.receiverState} ${shipmentPayload.receiverPostalCode || ''}`.trim() : shipmentPayload.receiverPostalCode,
+        shipmentPayload.receiverCountry || 'India'
+      ].filter(Boolean);
+
       const formattedData = {
         sender: {
-          name: shipmentPayload.senderName,
-          email: shipmentPayload.senderEmail,
-          phone: shipmentPayload.senderPhone
+          name: shipmentPayload.senderName || '',
+          email: shipmentPayload.senderEmail || '',
+          phone: shipmentPayload.senderPhone || ''
         },
         receiver: {
-          name: shipmentPayload.receiverName,
-          email: shipmentPayload.receiverEmail,
-          phone: shipmentPayload.receiverPhone
+          name: shipmentPayload.receiverName || '',
+          email: shipmentPayload.receiverEmail || '',
+          phone: shipmentPayload.receiverPhone || ''
         },
-        origin: `${shipmentPayload.senderAddress}, ${shipmentPayload.senderCity}, ${shipmentPayload.senderState} ${shipmentPayload.senderPostalCode}, ${shipmentPayload.senderCountry}`,
-        destination: `${shipmentPayload.receiverAddress}, ${shipmentPayload.receiverCity}, ${shipmentPayload.receiverState} ${shipmentPayload.receiverPostalCode}, ${shipmentPayload.receiverCountry}`,
+        origin: originParts.join(', '),
+        destination: destParts.join(', '),
         status: 'Pending',
         currentLocation: 'Not Updated',
         packageDetails: {
@@ -171,14 +308,14 @@ export default function CreateShipment() {
     // Ensure draft is saved
     sessionStorage.setItem('draft_shipment_form', JSON.stringify(formData));
 
-    const token = sessionStorage.getItem('user_token') || 
-                  sessionStorage.getItem('admin_token') || 
-                  authService.getToken();
+    const token = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('user_token') || sessionStorage.getItem('admin_token') || (typeof authService.getToken === 'function' ? authService.getToken() : null))
+      : null;
 
     if (!token) {
-      // User is not logged in: Prompt modal without kicking them away or clearing form!
+      // User is not logged in: Prompt login modal without clearing form!
       toast.info('Please sign in or register to complete your courier booking');
-      setAuthModalMode('register');
+      setAuthModalMode('login');
       setShowAuthModal(true);
       return;
     }
@@ -190,26 +327,28 @@ export default function CreateShipment() {
     setShowAuthModal(false);
     setCurrentUser(user);
 
-    // Merge user information with entered form data
+    const addr = extractSenderAddress(user);
+
+    // Merge user information with entered form data safely
     const updatedForm = {
       ...formData,
       senderName: formData.senderName || user.name || '',
       senderEmail: user.email || formData.senderEmail || '',
       senderPhone: formData.senderPhone || user.phone || '',
-      senderAddress: formData.senderAddress || user.address || '',
-      senderCity: formData.senderCity || user.city || '',
-      senderState: formData.senderState || user.state || '',
-      senderPostalCode: formData.senderPostalCode || user.postalCode || '',
-      senderCountry: formData.senderCountry || user.country || 'India'
+      senderAddress: sanitizeAddressValue(formData.senderAddress) || addr.street,
+      senderCity: formData.senderCity || addr.city,
+      senderState: formData.senderState || addr.state,
+      senderPostalCode: formData.senderPostalCode || addr.postalCode,
+      senderCountry: formData.senderCountry || addr.country || 'India'
     };
 
     setFormData(updatedForm);
-    // Directly proceed with all filled data intact
+    sessionStorage.setItem('draft_shipment_form', JSON.stringify(updatedForm));
     proceedToPayment(updatedForm);
   };
 
-  const inputClasses = "w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all hover:border-slate-400";
-  const labelClasses = "block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2";
+  const inputClasses = "w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 transition shadow-2xs hover:border-slate-400 font-normal";
+  const labelClasses = "block text-xs font-semibold text-slate-700 mb-1.5";
 
   return (
     <div className="min-h-screen bg-slate-50/60 text-slate-900">
@@ -217,19 +356,35 @@ export default function CreateShipment() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20">
         {/* Header Breadcrumb & Title */}
-        <div className="mb-10 text-center sm:text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-800 mb-3">
-            <Package className="w-3.5 h-3.5 text-amber-500" />
-            <span>Prime Courier Booking</span>
-            <span className="text-slate-400">•</span>
-            <span className="text-slate-700 font-bold">Step 1 of 2</span>
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-xs font-semibold text-teal-800 mb-3">
+                <Package className="w-3.5 h-3.5 text-teal-600" />
+                <span>Prime Courier Booking</span>
+                <span className="text-teal-400">•</span>
+                <span className="text-teal-900 font-bold">Step 1 of 2</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                Book a Courier
+              </h1>
+              <p className="mt-2 text-base text-slate-600 max-w-2xl">
+                Fill in pickup, destination, and package details. Real-time end-to-end tracking is included automatically with every shipment.
+              </p>
+            </div>
+
+            <div className="self-start sm:self-center">
+              <button
+                type="button"
+                onClick={handleClearForm}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-2xs transition"
+                title="Reset all form fields"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                <span>Clear Form</span>
+              </button>
+            </div>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Book a Courier
-          </h1>
-          <p className="mt-2 text-base text-slate-600 max-w-2xl">
-            Fill in pickup, destination, and package details. Real-time end-to-end tracking is included automatically with every shipment.
-          </p>
 
           {/* Auth State Guidance Banner */}
           <div className="mt-6 p-4 rounded-xl border transition-all duration-200">
@@ -245,7 +400,7 @@ export default function CreateShipment() {
             ) : (
               <div className="flex items-center justify-between flex-wrap gap-3 bg-white border-slate-200/90 shadow-sm px-4 py-3 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                  <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-600">
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div>
@@ -261,7 +416,7 @@ export default function CreateShipment() {
                     setAuthModalMode('login');
                     setShowAuthModal(true);
                   }}
-                  className="text-xs font-semibold text-slate-900 hover:text-amber-600 border border-slate-300 px-3 py-1.5 rounded-lg hover:border-slate-400 bg-white transition"
+                  className="text-xs font-semibold text-teal-700 hover:text-teal-800 border border-slate-300 px-3 py-1.5 rounded-lg hover:border-slate-400 bg-white transition shadow-2xs"
                 >
                   Already have an account? Sign in
                 </button>
@@ -281,26 +436,42 @@ export default function CreateShipment() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Row 1: Sender & Receiver */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Row 1: Sender & Receiver Details */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+            
             {/* Sender Information Card */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-8">
-              <div className="flex items-center justify-between pb-5 mb-6 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
-                    <User className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">Sender Details (Pickup)</h2>
-                    <p className="text-xs text-slate-600 font-medium">Who is dispatching this package</p>
-                  </div>
+            <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-6 sm:p-7">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 flex-wrap gap-2">
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900">Pickup Information (Sender)</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {currentUser 
+                      ? 'Synced with your account profile (editable below)'
+                      : 'Enter pickup contact and doorstep address'}
+                  </p>
                 </div>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 border border-slate-200">Origin</span>
+                <div className="flex items-center gap-2">
+                  {currentUser && (
+                    <button
+                      type="button"
+                      onClick={fillFromProfile}
+                      className="text-xs font-semibold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100/70 border border-teal-200/80 px-2.5 py-1 rounded-md transition"
+                      title="Refill sender details from your profile"
+                    >
+                      Re-sync Profile
+                    </button>
+                  )}
+                  <span className="text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md">
+                    Origin
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className={labelClasses}>Full Name *</label>
+                  <label className={labelClasses}>
+                    Full Name <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="senderName"
@@ -313,20 +484,24 @@ export default function CreateShipment() {
                 </div>
 
                 <div>
-                  <label className={labelClasses}>Phone Number *</label>
+                  <label className={labelClasses}>
+                    Mobile Phone <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="tel"
                     name="senderPhone"
                     value={formData.senderPhone}
                     onChange={handleChange}
                     required
-                    placeholder="e.g. +91 98765 43210"
+                    placeholder="+91 98765 43210"
                     className={inputClasses}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClasses}>Email Address *</label>
+                  <label className={labelClasses}>
+                    Email Address <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="email"
                     name="senderEmail"
@@ -339,20 +514,24 @@ export default function CreateShipment() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className={labelClasses}>Street Address *</label>
+                  <label className={labelClasses}>
+                    Street Address / Floor / Landmark <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="senderAddress"
-                    value={formData.senderAddress}
+                    value={sanitizeAddressValue(formData.senderAddress)}
                     onChange={handleChange}
                     required
-                    placeholder="House/Office no, building, street"
+                    placeholder="Flat/Office No, Building name, Landmark, Street"
                     className={inputClasses}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClasses}>City *</label>
+                  <label className={labelClasses}>
+                    City <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="senderCity"
@@ -365,7 +544,9 @@ export default function CreateShipment() {
                 </div>
 
                 <div>
-                  <label className={labelClasses}>State / Province *</label>
+                  <label className={labelClasses}>
+                    State <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="senderState"
@@ -378,20 +559,25 @@ export default function CreateShipment() {
                 </div>
 
                 <div>
-                  <label className={labelClasses}>Postal / PIN Code *</label>
+                  <label className={labelClasses}>
+                    Postal / PIN Code <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="senderPostalCode"
                     value={formData.senderPostalCode}
                     onChange={handleChange}
                     required
+                    maxLength={6}
                     placeholder="e.g. 400001"
-                    className={inputClasses}
+                    className={`${inputClasses} font-mono`}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClasses}>Country *</label>
+                  <label className={labelClasses}>
+                    Country <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="senderCountry"
@@ -399,30 +585,29 @@ export default function CreateShipment() {
                     onChange={handleChange}
                     required
                     placeholder="India"
-                    className={inputClasses}
+                    className={`${inputClasses} bg-slate-50 cursor-default`}
                   />
                 </div>
               </div>
             </div>
 
             {/* Receiver Information Card */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-8">
-              <div className="flex items-center justify-between pb-5 mb-6 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
-                    <Truck className="w-5 h-5 text-amber-500" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">Receiver Details (Delivery)</h2>
-                    <p className="text-xs text-slate-600 font-medium">Destination address & recipient</p>
-                  </div>
+            <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-6 sm:p-7">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900">Delivery Information (Recipient)</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Destination address and recipient contact details</p>
                 </div>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-300">Destination</span>
+                <span className="text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md">
+                  Destination
+                </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className={labelClasses}>Recipient Full Name *</label>
+                  <label className={labelClasses}>
+                    Recipient Full Name <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="receiverName"
@@ -435,20 +620,24 @@ export default function CreateShipment() {
                 </div>
 
                 <div>
-                  <label className={labelClasses}>Phone Number *</label>
+                  <label className={labelClasses}>
+                    Recipient Mobile <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="tel"
                     name="receiverPhone"
                     value={formData.receiverPhone}
                     onChange={handleChange}
                     required
-                    placeholder="e.g. +91 91234 56789"
+                    placeholder="+91 91234 56789"
                     className={inputClasses}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClasses}>Email Address *</label>
+                  <label className={labelClasses}>
+                    Email Address <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="email"
                     name="receiverEmail"
@@ -461,20 +650,24 @@ export default function CreateShipment() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className={labelClasses}>Delivery Street Address *</label>
+                  <label className={labelClasses}>
+                    Delivery Street Address / Floor / Flat <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="receiverAddress"
-                    value={formData.receiverAddress}
+                    value={sanitizeAddressValue(formData.receiverAddress)}
                     onChange={handleChange}
                     required
-                    placeholder="Apt/Flat no, building, road"
+                    placeholder="Apt/Flat/Office No, Building name, Road"
                     className={inputClasses}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClasses}>City *</label>
+                  <label className={labelClasses}>
+                    City <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="receiverCity"
@@ -487,7 +680,9 @@ export default function CreateShipment() {
                 </div>
 
                 <div>
-                  <label className={labelClasses}>State / Province *</label>
+                  <label className={labelClasses}>
+                    State <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="receiverState"
@@ -500,20 +695,25 @@ export default function CreateShipment() {
                 </div>
 
                 <div>
-                  <label className={labelClasses}>Postal / PIN Code *</label>
+                  <label className={labelClasses}>
+                    Postal / PIN Code <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="receiverPostalCode"
                     value={formData.receiverPostalCode}
                     onChange={handleChange}
                     required
+                    maxLength={6}
                     placeholder="e.g. 560001"
-                    className={inputClasses}
+                    className={`${inputClasses} font-mono`}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClasses}>Country *</label>
+                  <label className={labelClasses}>
+                    Country <span className="text-teal-700">*</span>
+                  </label>
                   <input
                     type="text"
                     name="receiverCountry"
@@ -521,25 +721,24 @@ export default function CreateShipment() {
                     onChange={handleChange}
                     required
                     placeholder="India"
-                    className={inputClasses}
+                    className={`${inputClasses} bg-slate-50 cursor-default`}
                   />
                 </div>
               </div>
             </div>
+
           </div>
 
           {/* Row 2: Package Specifications & Delivery Mode */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-8">
-            <div className="flex items-center justify-between pb-5 mb-6 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
-                  <Package className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Package & Service Type</h2>
-                  <p className="text-xs text-slate-600 font-medium">Specify package weight and handling preferences</p>
-                </div>
+          <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-6 sm:p-7">
+            <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900">Package Specifications & Service Mode</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Specify consignment weight, service tier, and handling</p>
               </div>
+              <span className="text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md">
+                Specifications
+              </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -548,16 +747,16 @@ export default function CreateShipment() {
                 <label className={labelClasses}>Shipping Service Mode *</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { id: 'standard', name: 'Standard Delivery', time: '3 - 5 Business Days', base: '₹50 base' },
-                    { id: 'express', name: 'Express Priority', time: '1 - 2 Business Days', base: '₹100 base' },
-                    { id: 'fragile', name: 'Fragile / Safe Care', time: 'Insured Handling', base: '₹80 base' },
-                    { id: 'oversized', name: 'Heavy & Oversized', time: 'Freight Transit', base: '₹120 base' }
+                    { id: 'standard', name: 'Standard Ground', time: '2 - 4 Business Days', base: '₹49 base' },
+                    { id: 'express', name: 'Express Priority Air', time: 'Guaranteed 24 Hours', base: '₹99 base' },
+                    { id: 'fragile', name: 'Fragile / Safe Care', time: 'Insured Padded Handling', base: '₹79 base' },
+                    { id: 'oversized', name: 'Heavy & Oversized', time: 'Dedicated Freight', base: '₹149 base' }
                   ].map((mode) => (
                     <label
                       key={mode.id}
                       className={`relative flex flex-col p-4 rounded-xl border cursor-pointer transition-all ${
                         formData.packageType === mode.id
-                          ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900'
+                          ? 'border-teal-600 bg-teal-50/40 ring-1 ring-teal-600 shadow-2xs'
                           : 'border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
@@ -571,10 +770,10 @@ export default function CreateShipment() {
                       />
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-bold text-slate-900">{mode.name}</span>
-                        <span className="text-xs font-bold text-slate-700">{mode.base}</span>
+                        <span className="text-xs font-bold text-teal-700">{mode.base}</span>
                       </div>
                       <span className="text-xs text-slate-600 font-medium flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-600" />
+                        <Clock className="w-3.5 h-3.5 text-slate-500" />
                         {mode.time}
                       </span>
                     </label>
@@ -602,7 +801,7 @@ export default function CreateShipment() {
                   </span>
                 </div>
                 <p className="mt-2 text-xs text-slate-600 font-medium">
-                  Rate is dynamically calculated at ₹10 per KG plus handling.
+                  500g base slab + pro-rated weight. GST & insurance included.
                 </p>
 
                 {/* Live Cost Box */}
@@ -617,7 +816,7 @@ export default function CreateShipment() {
                   </div>
                   <div className="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-900">Total Approx:</span>
-                    <span className="text-base font-extrabold text-slate-900">₹{calculateEstimate()}</span>
+                    <span className="text-base font-extrabold text-teal-700">₹{calculateEstimate()}</span>
                   </div>
                 </div>
               </div>
@@ -654,14 +853,14 @@ export default function CreateShipment() {
           </div>
 
           {/* Bottom Action Footer */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-white rounded-xl border border-slate-200/90 p-6 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 flex-shrink-0">
-                <ShieldCheck className="w-5 h-5 text-emerald-700" />
+              <div className="w-10 h-10 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 flex-shrink-0">
+                <ShieldCheck className="w-5 h-5 text-teal-700" />
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-900">Insured & Tamper-Proof Guarantee</p>
-                <p className="text-xs text-slate-600 font-medium">Real-time GPS tracking and SMS/Email delivery updates included.</p>
+                <p className="text-xs text-slate-500 font-medium">Real-time GPS tracking and SMS/Email delivery updates included.</p>
               </div>
             </div>
 
@@ -669,14 +868,14 @@ export default function CreateShipment() {
               <button
                 type="button"
                 onClick={() => router.push('/')}
-                className="w-1/2 sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition"
+                className="w-1/2 sm:w-auto px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition shadow-2xs"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-1/2 sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition shadow-sm disabled:opacity-50"
+                className="w-1/2 sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm transition shadow-sm disabled:opacity-50"
               >
                 {loading ? 'Processing...' : 'Proceed to Payment'}
                 <ArrowRight className="w-4 h-4" />

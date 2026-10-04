@@ -1,5 +1,6 @@
 import express from 'express';
 import { verifyPartnerToken } from '../middleware/partner.middleware.js';
+import { createRateLimiter } from '../utils/rateLimit.js';
 import {
   registerPartner,
   loginPartner,
@@ -13,10 +14,12 @@ import {
   getPartnerEarnings
 } from '../controllers/partner.controller.js';
 const router = express.Router();
+const partnerLoginLimiter = createRateLimiter({ keyPrefix: 'partner-login', limit: 10, windowMs: 15 * 60 * 1000 });
+const partnerRegistrationLimiter = createRateLimiter({ keyPrefix: 'partner-register', limit: 5, windowMs: 60 * 60 * 1000 });
 
 // Public routes
-router.post('/register', registerPartner);
-router.post('/login', loginPartner);
+router.post('/register', partnerRegistrationLimiter, registerPartner);
+router.post('/login', partnerLoginLimiter, loginPartner);
 
 // Protected routes (require partner authentication)
 router.use(verifyPartnerToken);

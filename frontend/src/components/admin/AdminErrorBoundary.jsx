@@ -41,7 +41,7 @@ class AdminErrorBoundary extends React.Component {
               <div className="space-y-3">
                 <button
                   onClick={() => window.location.reload()}
-                  className="w-full bg-amber-500 text-white py-2 px-4 rounded-md hover:bg-amber-600 transition-colors"
+                  className="w-full bg-teal-600 text-white py-2 px-4 rounded-xl hover:bg-teal-700 transition font-semibold text-xs shadow-xs"
                 >
                   Reload Dashboard
                 </button>

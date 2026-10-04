@@ -32,15 +32,15 @@ export default function HomeContact() {
   };
 
   return (
-    <section id="contact" className="py-20 bg-slate-50/50 border-b border-slate-200 text-slate-900">
+    <section id="contact" className="py-20 bg-slate-50/70 border-b border-slate-200/80 text-slate-900">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 bg-white px-3 py-1 rounded-full border border-slate-200">
+          <span className="text-xs font-semibold uppercase tracking-wider text-teal-800 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
             Support & Inquiries
           </span>
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight mt-3">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
             Contact Our Dispatch Support
           </h2>
           <p className="text-slate-600 text-sm sm:text-base mt-2.5">
@@ -52,12 +52,12 @@ export default function HomeContact() {
           
           {/* Left Column: Direct Info */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="p-5 rounded-xl bg-white border border-slate-200 flex items-start gap-4">
-              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-800 flex-shrink-0">
+            <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex items-start gap-4">
+              <div className="w-9 h-9 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center flex-shrink-0">
                 <MapPin className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-900">Headquarters</h4>
+                <h4 className="text-sm font-bold text-slate-900">Headquarters</h4>
                 <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                   Prime Dispatcher Logistics Ltd.<br />
                   BKC Logistics Corridor, Bandra Kurla Complex,<br />
@@ -66,34 +66,34 @@ export default function HomeContact() {
               </div>
             </div>
 
-            <div className="p-5 rounded-xl bg-white border border-slate-200 flex items-start gap-4">
-              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-800 flex-shrink-0">
+            <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex items-start gap-4">
+              <div className="w-9 h-9 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center flex-shrink-0">
                 <Phone className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-900">Telephone Support</h4>
+                <h4 className="text-sm font-bold text-slate-900">Telephone Support</h4>
                 <p className="text-xs text-slate-600 mt-1">Toll Free: 1800-419-0099</p>
                 <p className="text-xs text-slate-600">Direct Ops: +91 98765 43210</p>
               </div>
             </div>
 
-            <div className="p-5 rounded-xl bg-white border border-slate-200 flex items-start gap-4">
-              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-800 flex-shrink-0">
+            <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex items-start gap-4">
+              <div className="w-9 h-9 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center flex-shrink-0">
                 <Mail className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-900">Email Desks</h4>
+                <h4 className="text-sm font-bold text-slate-900">Email Desks</h4>
                 <p className="text-xs text-slate-600 mt-1">support@primedispatcher.com</p>
                 <p className="text-xs text-slate-600">corporate@primedispatcher.com</p>
               </div>
             </div>
 
-            <div className="p-5 rounded-xl bg-white border border-slate-200 flex items-start gap-4">
-              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-800 flex-shrink-0">
+            <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex items-start gap-4">
+              <div className="w-9 h-9 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center flex-shrink-0">
                 <Clock className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-900">Operational Hours</h4>
+                <h4 className="text-sm font-bold text-slate-900">Operational Hours</h4>
                 <p className="text-xs text-slate-600 mt-1">Dispatch Fleet: 24/7 / 365 Days</p>
                 <p className="text-xs text-slate-600">Customer Support: Mon - Sat, 8:00 AM - 10:00 PM</p>
               </div>
@@ -103,17 +103,17 @@ export default function HomeContact() {
           {/* Right Column: Clean Form */}
           <div className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
             <h3 className="text-lg font-bold text-slate-900 mb-1">Send a Direct Inquiry</h3>
-            <p className="text-xs text-slate-600 font-medium mb-6">Our support team responds within 2 hours during business operations.</p>
+            <p className="text-xs text-slate-500 font-medium mb-6">Our support team responds within 2 hours during business operations.</p>
 
             {submitted ? (
-              <div className="p-6 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-                <h4 className="text-sm font-bold text-emerald-900">Message Received</h4>
-                <p className="text-xs text-emerald-700 mt-1">Thank you! We have logged your request and a dispatch specialist will contact you shortly.</p>
+              <div className="p-6 rounded-xl bg-teal-50 border border-teal-200 text-center">
+                <CheckCircle2 className="w-8 h-8 text-teal-600 mx-auto mb-2" />
+                <h4 className="text-sm font-bold text-teal-900">Message Received</h4>
+                <p className="text-xs text-teal-700 mt-1">Thank you! We have logged your request and a dispatch specialist will contact you shortly.</p>
                 <button
                   type="button"
                   onClick={() => setSubmitted(false)}
-                  className="mt-4 text-xs font-semibold text-emerald-800 underline"
+                  className="mt-4 text-xs font-semibold text-teal-800 underline"
                 >
                   Send another message
                 </button>
@@ -130,7 +130,7 @@ export default function HomeContact() {
                       value={formData.name}
                       onChange={handleChange}
                       placeholder="e.g. Rahul Sharma"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:bg-white focus:border-slate-900"
+                      className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:bg-white focus:border-teal-600 focus:ring-1 focus:ring-teal-600"
                     />
                   </div>
 
@@ -143,7 +143,7 @@ export default function HomeContact() {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@company.com"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:bg-white focus:border-slate-900"
+                      className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:bg-white focus:border-teal-600 focus:ring-1 focus:ring-teal-600"
                     />
                   </div>
                 </div>
@@ -157,7 +157,7 @@ export default function HomeContact() {
                       value={formData.phone}
                       onChange={handleChange}
                       placeholder="+91 98765 43210"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:bg-white focus:border-slate-900"
+                      className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:bg-white focus:border-teal-600 focus:ring-1 focus:ring-teal-600"
                     />
                   </div>
 
@@ -168,7 +168,7 @@ export default function HomeContact() {
                       required
                       value={formData.subject}
                       onChange={handleChange}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:bg-white focus:border-slate-900"
+                      className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:bg-white focus:border-teal-600 focus:ring-1 focus:ring-teal-600"
                     >
                       <option value="">Select a topic</option>
                       <option value="tracking">Package Tracking Issue</option>
@@ -189,14 +189,14 @@ export default function HomeContact() {
                     value={formData.message}
                     onChange={handleChange}
                     placeholder="Provide details about your shipment, consignment number, or business requirements..."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:bg-white focus:border-slate-900 resize-none"
+                    className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:bg-white focus:border-teal-600 focus:ring-1 focus:ring-teal-600 resize-none"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition flex items-center justify-center gap-2 shadow-sm"
+                  className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-sm"
                 >
                   <Send className="w-4 h-4" />
                   <span>{loading ? 'Transmitting Message...' : 'Submit Inquiry'}</span>

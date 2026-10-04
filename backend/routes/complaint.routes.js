@@ -1,4 +1,5 @@
 import express from 'express';
+import { verifyToken, isAdmin } from '../middleware/auth.middleware.js';
 import {
     submitChatbotComplaint,
     getAllComplaints,
@@ -12,6 +13,7 @@ const router = express.Router();
 router.post('/submit', submitChatbotComplaint);
 
 // Get all complaints (admin)
+router.use(verifyToken, isAdmin);
 router.get('/all', getAllComplaints);
 
 // Update complaint status (admin)

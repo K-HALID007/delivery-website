@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '../../../contexts/ToastContext.js';
 import partnerService from '../../../services/partner.service.js';
@@ -10,8 +10,11 @@ export default function PartnerDeliveries() {
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const requestIdRef = useRef(0);
   const [filters, setFilters] = useState({
     status: '',
+    search: '',
     page: 1,
     limit: 10
   });
@@ -25,11 +28,12 @@ export default function PartnerDeliveries() {
       return;
     }
 
-    // Get status from URL params
-    const statusParam = searchParams.get('status');
-    if (statusParam) {
-      setFilters(prev => ({ ...prev, status: statusParam }));
-    }
+    const statusParam = searchParams.get('status') || '';
+    const searchParam = searchParams.get('search') || '';
+    setSearchInput(current => current === searchParam ? current : searchParam);
+    setFilters(prev => prev.status === statusParam && prev.search === searchParam
+      ? prev
+      : { ...prev, status: statusParam, search: searchParam, page: 1 });
   }, [searchParams]);
 
   useEffect(() => {
@@ -40,7 +44,7 @@ export default function PartnerDeliveries() {
   useEffect(() => {
     const interval = setInterval(() => {
       console.log('🔄 Auto-refreshing deliveries...');
-      loadDeliveries();
+      loadDeliveries(false);
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
@@ -51,7 +55,7 @@ export default function PartnerDeliveries() {
     const handlePartnerOnline = (event) => {
       console.log('🟢 Partner came online event received, refreshing deliveries...');
       showInfo('🔄 Refreshing deliveries...', 3000);
-      loadDeliveries();
+      loadDeliveries(false);
     };
 
     if (typeof window !== 'undefined') {
@@ -63,31 +67,34 @@ export default function PartnerDeliveries() {
         window.removeEventListener('partnerOnline', handlePartnerOnline);
       }
     };
-  }, [showInfo]);
+  }, [showInfo, filters]);
 
-  const loadDeliveries = async (showLoadingSpinner = true) => {
+  const loadDeliveries = async (showLoadingSpinner = true, showRefreshMessage = false) => {
+    const requestId = ++requestIdRef.current;
     try {
       if (showLoadingSpinner) {
         setLoading(true);
       }
       setError('');
-      
+
       console.log('📦 Loading deliveries with filters:', filters);
       const response = await partnerService.getDeliveries(filters);
-      
+      if (requestId !== requestIdRef.current) return;
+
       if (response.success) {
         console.log('✅ Deliveries loaded successfully:', response.deliveries.length);
         setDeliveries(response.deliveries);
         setPagination(response.pagination);
-        
+
         // Show success message for manual refresh
-        if (!showLoadingSpinner) {
+        if (showRefreshMessage) {
           showInfo(`🔄 Refreshed! Found ${response.deliveries.length} deliveries`, 3000);
         }
       } else {
         setError('Failed to load deliveries');
       }
     } catch (error) {
+      if (requestId !== requestIdRef.current) return;
       console.error('❌ Error loading deliveries:', error);
       setError(error.message);
       if (error.message.includes('unauthorized') || error.message.includes('token')) {
@@ -95,7 +102,7 @@ export default function PartnerDeliveries() {
         router.push('/partner');
       }
     } finally {
-      if (showLoadingSpinner) {
+      if (requestId === requestIdRef.current) {
         setLoading(false);
       }
     }
@@ -104,27 +111,48 @@ export default function PartnerDeliveries() {
   const handleManualRefresh = () => {
     console.log('🔄 Manual refresh triggered');
     showInfo('🔄 Refreshing deliveries...', 2000);
-    loadDeliveries(false); // Don't show loading spinner for manual refresh
+    loadDeliveries(false, true); // Keep the list visible while refreshing
   };
 
   const handleStatusFilter = (status) => {
-    setFilters(prev => ({ ...prev, status, page: 1 }));
-    // Update URL without page reload
-    const url = status ? `/partner/deliveries?status=${status}` : '/partner/deliveries';
-    window.history.pushState({}, '', url);
+    const nextFilters = { ...filters, status, page: 1 };
+    setFilters(nextFilters);
+    updateUrl(nextFilters);
   };
 
   const handlePageChange = (page) => {
     setFilters(prev => ({ ...prev, page }));
   };
 
+  const handleSearch = (event) => {
+    event.preventDefault();
+    const nextFilters = { ...filters, search: searchInput.trim(), page: 1 };
+    setFilters(nextFilters);
+    updateUrl(nextFilters);
+  };
+
+  const updateUrl = (nextFilters) => {
+    const params = new URLSearchParams();
+    if (nextFilters.status) params.set('status', nextFilters.status);
+    if (nextFilters.search) params.set('search', nextFilters.search);
+    const query = params.toString();
+    window.history.pushState({}, '', query ? `/partner/deliveries?${query}` : '/partner/deliveries');
+  };
+
+  const handleClearSearch = () => {
+    const nextFilters = { ...filters, search: '', page: 1 };
+    setSearchInput('');
+    setFilters(nextFilters);
+    updateUrl(nextFilters);
+  };
+
   const getStatusColor = (status) => {
     const colors = {
-      'assigned': 'bg-blue-100 text-blue-800 border-blue-200',
-      'picked_up': 'bg-orange-100 text-orange-800 border-orange-200',
-      'in_transit': 'bg-purple-100 text-purple-800 border-purple-200',
-      'out_for_delivery': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'delivered': 'bg-green-100 text-green-800 border-green-200',
+      'assigned': 'bg-slate-100 text-slate-700 border-slate-200',
+      'picked_up': 'bg-teal-50 text-teal-800 border-teal-200',
+      'in_transit': 'bg-teal-50 text-teal-800 border-teal-200',
+      'out_for_delivery': 'bg-teal-50 text-teal-800 border-teal-200',
+      'delivered': 'bg-emerald-50 text-emerald-800 border-emerald-200',
       'cancelled': 'bg-red-100 text-red-800 border-red-200'
     };
     return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
@@ -147,6 +175,7 @@ export default function PartnerDeliveries() {
     { key: 'in_transit', label: 'In Transit' },
     { key: 'out_for_delivery', label: 'Out for Delivery' },
     { key: 'delivered', label: 'Delivered' },
+    { key: 'cancelled', label: 'Cancelled' },
   ];
 
   if (loading) {
@@ -161,14 +190,14 @@ export default function PartnerDeliveries() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 py-5 sm:py-7 px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto space-y-5">
 
         {/* ── Header ────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">My Deliveries</h1>
-            <p className="text-sm text-slate-500 mt-0.5">{pagination.totalRecords || 0} total orders assigned to you</p>
+            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Deliveries</h1>
+            <p className="text-sm text-slate-500 mt-0.5">Find an order or update an active delivery.</p>
           </div>
           <button
             onClick={handleManualRefresh}
@@ -187,21 +216,37 @@ export default function PartnerDeliveries() {
         )}
 
         {/* ── Status tabs ───────────────────────── */}
-        <div className="flex flex-wrap gap-1.5 bg-white border border-slate-200 rounded-xl p-1.5 shadow-sm w-fit">
+        <div className="w-full overflow-x-auto bg-white border border-slate-200 rounded-xl p-1.5">
+          <div className="flex min-w-max gap-1.5">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => handleStatusFilter(tab.key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 filters.status === tab.key
-                  ? 'bg-slate-900 text-white shadow'
+                  ? 'bg-teal-700 text-white'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
               {tab.label}
             </button>
           ))}
+          </div>
         </div>
+
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
+          <input
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            type="search"
+            enterKeyHint="search"
+            placeholder="Tracking ID, sender or receiver"
+            aria-label="Search by tracking ID, sender name, receiver name or phone"
+            className="flex-1 min-w-0 px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600"
+          />
+          <button type="submit" className="px-4 py-2.5 rounded-lg bg-teal-700 text-white text-sm font-medium hover:bg-teal-800">Search</button>
+          {(searchInput || filters.search) && <button type="button" onClick={handleClearSearch} className="px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50">Clear</button>}
+        </form>
 
         {/* ── Deliveries list ───────────────────── */}
         <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm">
@@ -222,7 +267,7 @@ export default function PartnerDeliveries() {
               </div>
               <p className="text-sm font-semibold text-slate-700">No deliveries found</p>
               <p className="text-xs text-slate-400 mt-1">
-                {filters.status ? `No ${filters.status.replace(/_/g, ' ')} deliveries` : 'No deliveries assigned yet'}
+                {filters.search ? 'No deliveries match your search.' : filters.status ? `No ${filters.status.replace(/_/g, ' ')} deliveries` : 'No deliveries assigned yet'}
               </p>
             </div>
           ) : (
@@ -247,8 +292,8 @@ export default function PartnerDeliveries() {
                           <p className="text-xs text-slate-500">{delivery.sender?.phone}</p>
                           <p className="text-xs text-slate-400 mt-0.5">{delivery.sender?.address}</p>
                         </div>
-                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-100">
-                          <p className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-1">To</p>
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">To</p>
                           <p className="text-xs font-semibold text-slate-800">{delivery.receiver?.name}</p>
                           <p className="text-xs text-slate-500">{delivery.receiver?.phone}</p>
                           <p className="text-xs text-slate-400 mt-0.5">{delivery.receiver?.address}</p>
@@ -265,7 +310,7 @@ export default function PartnerDeliveries() {
                       <p className="text-xl font-extrabold text-slate-900 mb-3">₹{delivery.partnerEarnings || 0}</p>
                       <button
                         onClick={() => router.push(`/partner/deliveries/${delivery.trackingId}`)}
-                        className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition"
+                        className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-semibold hover:bg-teal-800 transition"
                       >
                         Details →
                       </button>
@@ -309,4 +354,4 @@ export default function PartnerDeliveries() {
       </div>
     </div>
   );
-}
+}

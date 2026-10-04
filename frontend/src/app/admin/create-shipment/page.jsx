@@ -97,7 +97,7 @@ export default function AdminCreateShipmentPage() {
         }
       };
 
-      const response = await fetch('${API_URL}/tracking/add', {
+      const response = await fetch(`${API_URL}/tracking/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -139,7 +139,7 @@ export default function AdminCreateShipmentPage() {
           {/* Sender Information */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <User className="h-5 w-5 mr-2 text-amber-500" />
+              <User className="h-5 w-5 mr-2 text-teal-600" />
               Sender Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -152,7 +152,7 @@ export default function AdminCreateShipmentPage() {
                   onChange={handleChange}
                   required
                   placeholder="Enter sender's full name"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -164,7 +164,7 @@ export default function AdminCreateShipmentPage() {
                   onChange={handleChange}
                   required
                   placeholder="Enter sender's phone number"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -176,7 +176,7 @@ export default function AdminCreateShipmentPage() {
                   onChange={handleChange}
                   required
                   placeholder="Enter sender's email address"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -188,7 +188,7 @@ export default function AdminCreateShipmentPage() {
                   onChange={handleChange}
                   required
                   placeholder="Enter street address"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -200,7 +200,7 @@ export default function AdminCreateShipmentPage() {
                   onChange={handleChange}
                   required
                   placeholder="Enter city name"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -212,7 +212,7 @@ export default function AdminCreateShipmentPage() {
                   onChange={handleChange}
                   required
                   placeholder="Enter state/province"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -224,7 +224,7 @@ export default function AdminCreateShipmentPage() {
                   onChange={handleChange}
                   required
                   placeholder="Enter postal/zip code"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -236,7 +236,7 @@ export default function AdminCreateShipmentPage() {
                   onChange={handleChange}
                   required
                   placeholder="Enter country name"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
             </div>
@@ -245,7 +245,7 @@ export default function AdminCreateShipmentPage() {
           {/* Receiver Information */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <Truck className="h-5 w-5 mr-2 text-amber-500" />
+              <Truck className="h-5 w-5 mr-2 text-teal-600" />
               Receiver Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -257,7 +257,7 @@ export default function AdminCreateShipmentPage() {
                   value={formData.receiverName}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -268,7 +268,7 @@ export default function AdminCreateShipmentPage() {
                   value={formData.receiverPhone}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -279,7 +279,7 @@ export default function AdminCreateShipmentPage() {
                   value={formData.receiverEmail}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -290,7 +290,7 @@ export default function AdminCreateShipmentPage() {
                   value={formData.receiverAddress}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -301,7 +301,7 @@ export default function AdminCreateShipmentPage() {
                   value={formData.receiverCity}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -312,7 +312,7 @@ export default function AdminCreateShipmentPage() {
                   value={formData.receiverState}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -323,7 +323,7 @@ export default function AdminCreateShipmentPage() {
                   value={formData.receiverPostalCode}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
               <div>
@@ -334,7 +334,7 @@ export default function AdminCreateShipmentPage() {
                   value={formData.receiverCountry}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
                 />
               </div>
             </div>
@@ -343,7 +343,7 @@ export default function AdminCreateShipmentPage() {
           {/* Package Information */}
           <div className="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-              <Package className="h-6 w-6 mr-2 text-amber-500" />
+              <Package className="h-6 w-6 mr-2 text-teal-600" />
               Package Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -354,7 +354,7 @@ export default function AdminCreateShipmentPage() {
                   value={formData.packageType}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600 bg-white text-gray-900"
                 >
                   <option value="" disabled className="text-gray-900">Select package type</option>
                   <option value="standard" className="text-gray-900">Standard Delivery (3-5 days)</option>
@@ -375,7 +375,7 @@ export default function AdminCreateShipmentPage() {
                   min="0"
                   step="0.1"
                   placeholder="Enter package weight"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600 bg-white text-gray-900"
                 />
                 <p className="mt-1 text-sm text-gray-600">Enter weight in kilograms</p>
               </div>
@@ -389,7 +389,7 @@ export default function AdminCreateShipmentPage() {
                   required
                   min="0"
                   placeholder="Enter package length"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600 bg-white text-gray-900"
                 />
                 <p className="mt-1 text-sm text-gray-600">Enter length in centimeters</p>
               </div>
@@ -403,7 +403,7 @@ export default function AdminCreateShipmentPage() {
                   required
                   min="0"
                   placeholder="Enter package width"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600 bg-white text-gray-900"
                 />
                 <p className="mt-1 text-sm text-gray-600">Enter width in centimeters</p>
               </div>
@@ -417,7 +417,7 @@ export default function AdminCreateShipmentPage() {
                   required
                   min="0"
                   placeholder="Enter package height"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600 bg-white text-gray-900"
                 />
                 <p className="mt-1 text-sm text-gray-600">Enter height in centimeters</p>
               </div>
@@ -436,7 +436,7 @@ export default function AdminCreateShipmentPage() {
                   onChange={handleChange}
                   rows="3"
                   placeholder="Describe the contents of your package (e.g., 'Electronics', 'Clothing', 'Documents')"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600 bg-white text-gray-900"
                 />
                 <p className="mt-1 text-sm text-gray-600">Provide a clear description of the package contents</p>
               </div>
@@ -448,7 +448,7 @@ export default function AdminCreateShipmentPage() {
                   onChange={handleChange}
                   rows="3"
                   placeholder="Add any special handling instructions (e.g., 'Handle with care', 'Keep upright', 'Temperature sensitive')"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-teal-600 bg-white text-gray-900"
                 />
                 <p className="mt-1 text-sm text-gray-600">Add any special handling requirements</p>
               </div>
@@ -459,14 +459,14 @@ export default function AdminCreateShipmentPage() {
             <button
               type="button"
               onClick={() => router.push('/admin/shipments')}
-              className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+              className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Creating...' : 'Create Shipment'}
             </button>

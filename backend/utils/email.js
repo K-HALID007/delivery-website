@@ -53,7 +53,7 @@ const getTransporter = async () => {
 };
 
 // Send Email
-export const sendDeliveryEmail = async (to, subject, html) => {
+export const sendDeliveryEmail = async (to, subject, html, attachments = []) => {
   try {
     console.log(`📧 Attempting to send email to: ${to}`);
     console.log(`📧 Subject: ${subject}`);
@@ -69,12 +69,18 @@ export const sendDeliveryEmail = async (to, subject, html) => {
 
     console.log(`📧 Sending from: ${fromEmail}`);
 
-    const info = await transporter.sendMail({
+    const mailOptions = {
       from: `"${siteName}" <${fromEmail}>`,
       to,
       subject,
       html,
-    });
+    };
+
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      mailOptions.attachments = attachments;
+    }
+
+    const info = await transporter.sendMail(mailOptions);
 
     console.log("✅ Email sent successfully!");
     console.log(`📧 Message ID: ${info.messageId}`);

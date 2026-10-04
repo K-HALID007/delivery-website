@@ -24,7 +24,7 @@ export class CashfreeService {
         },
         order_meta: {
           return_url: returnUrl,
-          notify_url: `${process.env.FRONTEND_URL}/api/payment/webhook`,
+          ...(process.env.BACKEND_URL ? { notify_url: `${process.env.BACKEND_URL.replace(/\/$/, '')}/api/payment/webhook` } : {}),
         }
       };
 
@@ -50,7 +50,7 @@ export class CashfreeService {
       const response = await Cashfree.PGOrderFetchPayments("2023-08-01", orderId);
       
       if (response.data && response.data.length > 0) {
-        const payment = response.data[0];
+        const payment = response.data.find(item => item.payment_status === 'SUCCESS') || response.data[0];
         return {
           success: true,
           status: payment.payment_status,
@@ -91,9 +91,9 @@ export class CashfreeService {
   }
 
   // Handle webhook verification
-  static verifyWebhookSignature(rawBody, signature, timestamp) {
+  static verifyWebhookSignature(signature, timestamp, rawBody) {
     try {
-      return Cashfree.PGVerifyWebhookSignature(rawBody, signature, timestamp);
+      return Cashfree.PGVerifyWebhookSignature(signature, rawBody.toString('utf8'), timestamp);
     } catch (error) {
       console.error('Webhook verification error:', error);
       return false;

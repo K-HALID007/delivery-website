@@ -59,7 +59,7 @@ export default function TestPartnerContent() {
     setResult('');
 
     try {
-      const response = await fetch('${API_URL}/partner/register', {
+      const response = await fetch(`${API_URL}/partner/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

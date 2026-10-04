@@ -293,14 +293,14 @@ export default function PartnerDetailsPage() {
                 </div>
                 <div>
                   <span className="text-slate-600 font-bold uppercase tracking-wider text-[11px] block mb-0.5">Email Address</span>
-                  <a href={`mailto:${partner.email}`} className="text-slate-900 hover:text-amber-700 font-semibold flex items-center gap-1.5">
+                  <a href={`mailto:${partner.email}`} className="text-slate-900 hover:text-teal-700 font-semibold flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-slate-600" />
                     {partner.email}
                   </a>
                 </div>
                 <div>
                   <span className="text-slate-600 font-bold uppercase tracking-wider text-[11px] block mb-0.5">Contact Phone Number</span>
-                  <a href={`tel:${partner.phone}`} className="text-slate-900 hover:text-amber-700 font-semibold flex items-center gap-1.5">
+                  <a href={`tel:${partner.phone}`} className="text-slate-900 hover:text-teal-700 font-semibold flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 text-slate-600" />
                     {partner.phone}
                   </a>

@@ -175,7 +175,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
     }
   };
 
-  const inputStyle = "w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition";
+  const inputStyle = "w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-600/10 focus:border-teal-600 transition";
 
   const renderRegistrationStep = () => {
     switch (registrationStep) {
@@ -183,7 +183,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
         return (
           <div className="space-y-3.5">
             <div className="text-center mb-4">
-              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-800">
+              <div className="w-10 h-10 bg-teal-50 border border-teal-100 rounded-full flex items-center justify-center mx-auto mb-2 text-teal-700">
                 <User className="w-5 h-5" />
               </div>
               <h3 className="text-base font-semibold text-slate-900">Personal Information</h3>
@@ -270,7 +270,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
         return (
           <div className="space-y-3.5">
             <div className="text-center mb-4">
-              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-800">
+              <div className="w-10 h-10 bg-teal-50 border border-teal-100 rounded-full flex items-center justify-center mx-auto mb-2 text-teal-700">
                 <MapPin className="w-5 h-5" />
               </div>
               <h3 className="text-base font-semibold text-slate-900">Address & Hub Location</h3>
@@ -337,7 +337,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
         return (
           <div className="space-y-3.5">
             <div className="text-center mb-4">
-              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-800">
+              <div className="w-10 h-10 bg-teal-50 border border-teal-100 rounded-full flex items-center justify-center mx-auto mb-2 text-teal-700">
                 <Truck className="w-5 h-5" />
               </div>
               <h3 className="text-base font-semibold text-slate-900">Vehicle & Bank Details</h3>
@@ -483,7 +483,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
             }}
             className={`flex-1 py-3 px-4 text-center text-sm font-medium transition-colors ${
               activeTab === 'login'
-                ? 'text-slate-900 border-b-2 border-slate-900 font-semibold bg-slate-50/50'
+                ? 'text-teal-800 border-b-2 border-teal-600 font-semibold bg-teal-50/30'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -498,7 +498,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
             }}
             className={`flex-1 py-3 px-4 text-center text-sm font-medium transition-colors ${
               activeTab === 'register'
-                ? 'text-slate-900 border-b-2 border-slate-900 font-semibold bg-slate-50/50'
+                ? 'text-teal-800 border-b-2 border-teal-600 font-semibold bg-teal-50/30'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -523,7 +523,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
           {activeTab === 'login' ? (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div className="text-center mb-4">
-                <div className="w-10 h-10 bg-slate-100 text-slate-800 rounded-full flex items-center justify-center mx-auto mb-2">
+                <div className="w-10 h-10 bg-teal-50 border border-teal-100 text-teal-700 rounded-full flex items-center justify-center mx-auto mb-2">
                   <Mail className="w-5 h-5" />
                 </div>
                 <p className="text-xs text-slate-500">Sign in with your registered partner credentials</p>
@@ -567,7 +567,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-slate-900 text-white py-2.5 px-4 rounded-xl hover:bg-slate-800 disabled:opacity-50 text-sm font-medium transition shadow-sm"
+                className="w-full bg-teal-600 text-white py-2.5 px-4 rounded-xl hover:bg-teal-700 disabled:opacity-50 text-sm font-semibold transition shadow-sm"
               >
                 {loading ? 'Authenticating...' : 'Sign In to Driver Portal'}
               </button>
@@ -576,7 +576,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
                 <button
                   type="button"
                   onClick={() => setActiveTab('register')}
-                  className="text-slate-900 hover:underline text-xs font-semibold"
+                  className="text-teal-700 hover:text-teal-900 hover:underline text-xs font-semibold"
                 >
                   New driver? Register here
                 </button>
@@ -585,7 +585,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
           ) : (
             <form onSubmit={handleRegisterSubmit}>
               <div className="text-center mb-4">
-                <span className="text-xs font-mono font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded">
+                <span className="text-xs font-mono font-semibold text-teal-800 bg-teal-50 border border-teal-200 px-2.5 py-1 rounded">
                   Step {registrationStep} of 3
                 </span>
               </div>
@@ -606,7 +606,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-slate-900 text-white py-2.5 px-4 rounded-xl hover:bg-slate-800 disabled:opacity-50 text-xs font-medium transition shadow-sm"
+                  className="flex-1 bg-teal-600 text-white py-2.5 px-4 rounded-xl hover:bg-teal-700 disabled:opacity-50 text-xs font-semibold transition shadow-sm"
                 >
                   {loading ? 'Submitting...' : registrationStep === 3 ? 'Complete Registration' : 'Next Step →'}
                 </button>
@@ -617,7 +617,7 @@ export default function PartnerAuthModal({ isOpen, onClose, onLoginSuccess, defa
                   <button
                     type="button"
                     onClick={() => setActiveTab('login')}
-                    className="text-slate-900 hover:underline text-xs font-semibold"
+                    className="text-teal-700 hover:text-teal-900 hover:underline text-xs font-semibold"
                   >
                     Already registered? Sign in
                   </button>

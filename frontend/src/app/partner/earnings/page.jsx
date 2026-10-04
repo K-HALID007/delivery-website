@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import partnerService from '../../../services/partner.service.js';
-import { TrendingUp, Package, BarChart2, RefreshCw, ArrowRight, Lightbulb } from 'lucide-react';
+import { TrendingUp, Package, BarChart2, RefreshCw, ArrowRight } from 'lucide-react';
 
 export default function PartnerEarnings() {
   const [earnings, setEarnings] = useState(null);
@@ -36,8 +36,6 @@ export default function PartnerEarnings() {
   ];
 
   const fmtDate = (d) => new Date(d).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
-  const maxEarning = earnings?.dailyBreakdown?.length ? Math.max(...earnings.dailyBreakdown.map(d => d.dailyEarnings), 1) : 1;
-
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -50,8 +48,8 @@ export default function PartnerEarnings() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 py-5 sm:py-7 px-4 sm:px-6">
+      <div className="max-w-5xl mx-auto space-y-5">
 
         {/* ── Header ────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -76,7 +74,7 @@ export default function PartnerEarnings() {
               key={p.key}
               onClick={() => setSelectedPeriod(p.key)}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                selectedPeriod === p.key ? 'bg-slate-900 text-white shadow' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                selectedPeriod === p.key ? 'bg-teal-700 text-white' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
               {p.label}
@@ -89,7 +87,7 @@ export default function PartnerEarnings() {
           {[
             {
               label: 'Total Earnings', value: `₹${(earnings?.totalEarnings || 0).toLocaleString('en-IN')}`,
-              badge: 'Period total', badgeStyle: 'text-amber-900 bg-amber-50 border-amber-200', icon: TrendingUp
+              badge: 'Period total', badgeStyle: 'text-teal-800 bg-teal-50 border-teal-200', icon: TrendingUp
             },
             {
               label: 'Deliveries Completed', value: earnings?.totalDeliveries || 0,
@@ -100,7 +98,7 @@ export default function PartnerEarnings() {
               badge: 'Per order', badgeStyle: 'text-slate-700 bg-slate-100 border-slate-200', icon: BarChart2
             },
           ].map((card) => (
-            <div key={card.label} className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 hover:shadow-md transition">
+            <div key={card.label} className="bg-white rounded-xl border border-slate-200 p-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{card.label}</span>
                 <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center">
@@ -116,7 +114,7 @@ export default function PartnerEarnings() {
         </div>
 
         {/* ── Daily Breakdown ─────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm">
+        <div className="bg-white rounded-xl border border-slate-200">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Daily Breakdown</h2>
@@ -137,27 +135,6 @@ export default function PartnerEarnings() {
             </div>
           ) : (
             <div className="p-5 space-y-5">
-              {/* Mini bar chart */}
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Earnings chart</p>
-                <div className="flex items-end gap-1 h-24">
-                  {earnings.dailyBreakdown.slice(-14).map((day, i) => {
-                    const pct = (day.dailyEarnings / maxEarning) * 100;
-                    return (
-                      <div key={i} className="flex-1 group relative flex flex-col items-center justify-end h-full">
-                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap">
-                          ₹{day.dailyEarnings}
-                        </div>
-                        <div
-                          className="w-full rounded-sm bg-slate-900 hover:bg-amber-500 transition-colors"
-                          style={{ height: `${Math.max(pct, 3)}%` }}
-                        ></div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* Table */}
               <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="min-w-full divide-y divide-slate-100">
@@ -188,31 +165,7 @@ export default function PartnerEarnings() {
           )}
         </div>
 
-        {/* ── Tips ──────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center">
-              <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-            </div>
-            <h2 className="text-sm font-bold text-slate-900">Tips to Boost Earnings</h2>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {[
-              { title: 'Stay Online', desc: 'Be available during peak hours (12–2 PM, 6–9 PM)' },
-              { title: 'Complete Quickly', desc: 'Faster deliveries mean more orders per day' },
-              { title: 'Maintain Ratings', desc: 'High ratings get you priority assignments' },
-              { title: 'Smart Positioning', desc: 'Stay near busy areas during meal times' },
-            ].map((tip) => (
-              <div key={tip.title} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0"></span>
-                <div>
-                  <p className="text-xs font-bold text-slate-800">{tip.title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{tip.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+
 
       </div>
     </div>

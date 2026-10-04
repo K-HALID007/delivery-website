@@ -37,7 +37,7 @@ const AdminNavbar = () => {
           {/* Logo and Desktop Navigation */}
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/admin" className="text-xl font-bold text-amber-600">
+              <Link href="/admin" className="text-xl font-bold text-teal-700">
                 Admin Panel
               </Link>
             </div>
@@ -50,7 +50,7 @@ const AdminNavbar = () => {
                     href={item.href}
                     className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                       pathname === item.href
-                        ? 'border-amber-500 text-gray-900'
+                        ? 'border-teal-600 text-gray-900'
                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                     }`}
                   >
@@ -77,7 +77,7 @@ const AdminNavbar = () => {
           <div className="flex items-center sm:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-amber-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-600"
             >
               {isMenuOpen ? (
                 <X className="h-6 w-6" />
@@ -101,7 +101,7 @@ const AdminNavbar = () => {
                   href={item.href}
                   className={`flex items-center px-3 py-2 text-base font-medium ${
                     pathname === item.href
-                      ? 'bg-amber-50 border-l-4 border-amber-500 text-amber-700'
+                      ? 'bg-teal-50 border-l-4 border-teal-600 text-teal-800'
                       : 'border-l-4 border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
                   }`}
                   onClick={() => setIsMenuOpen(false)}

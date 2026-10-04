@@ -336,10 +336,10 @@ const LoginRegisterModal = ({ isOpen, onClose, onLoginSuccess, initialData = {},
   if (!isOpen) return null;
 
   // Common input classes for consistent styling
-  const inputClasses = "w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
-  const inputClassesWithIcon = "w-full pl-9 pr-10 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
-  const loginInputClasses = "w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
-  const loginInputClassesWithIcon = "w-full pl-10 pr-12 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
+  const inputClasses = "w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-600/10 focus:border-teal-600 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
+  const inputClassesWithIcon = "w-full pl-9 pr-10 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-600/10 focus:border-teal-600 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
+  const loginInputClasses = "w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-600/10 focus:border-teal-600 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
+  const loginInputClassesWithIcon = "w-full pl-10 pr-12 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-600/10 focus:border-teal-600 transition-all text-slate-900 placeholder-slate-400 bg-white text-sm";
 
   // Get phone digit count for display
   const phoneDigitCount = formData.phone.replace(/\D/g, '').length;
@@ -412,7 +412,7 @@ const LoginRegisterModal = ({ isOpen, onClose, onLoginSuccess, initialData = {},
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        <User className="w-3.5 h-3.5 text-amber-500" />
+                        <User className="w-3.5 h-3.5 text-teal-600" />
                         Customer / Public
                       </button>
                       <button
@@ -424,7 +424,7 @@ const LoginRegisterModal = ({ isOpen, onClose, onLoginSuccess, initialData = {},
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        <Truck className="w-3.5 h-3.5 text-amber-500" />
+                        <Truck className="w-3.5 h-3.5 text-teal-600" />
                         Delivery Partner
                       </button>
                     </div>
@@ -702,10 +702,10 @@ const LoginRegisterModal = ({ isOpen, onClose, onLoginSuccess, initialData = {},
                 <button
                   type="submit"
                   disabled={loading || (!isLogin && !isRegistrationFormComplete())}
-                  className={`w-full flex items-center justify-center px-6 py-3 text-sm font-medium rounded-xl text-white transition-all shadow-sm ${
+                  className={`w-full flex items-center justify-center px-6 py-3 text-sm font-semibold rounded-xl text-white transition-all shadow-sm ${
                     loading || (!isLogin && !isRegistrationFormComplete())
                       ? 'bg-slate-300 cursor-not-allowed text-slate-500' 
-                      : 'bg-slate-900 hover:bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900'
+                      : 'bg-teal-600 hover:bg-teal-700 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600'
                   }`}
                 >
                   {loading ? (
@@ -737,7 +737,7 @@ const LoginRegisterModal = ({ isOpen, onClose, onLoginSuccess, initialData = {},
                     confirmPassword: ''
                   }));
                 }}
-                className="text-slate-900 hover:underline font-semibold text-sm transition-colors"
+                className="text-teal-700 hover:text-teal-800 font-semibold text-sm transition-colors"
               >
                 {isLogin ? "Don't have an account? Create one" : "Already have an account? Sign in"}
               </button>

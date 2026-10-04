@@ -2,8 +2,12 @@ import User from '../models/user.model.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { sendDeliveryEmail } from '../utils/email.js';
+import { timingSafeEqual } from 'node:crypto';
 
-const getJwtSecret = () => process.env.JWT_SECRET || 'courier-tracker-fallback-secret-2025';
+const getJwtSecret = () => {
+  if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is not configured');
+  return process.env.JWT_SECRET;
+};
 
 // Helper to get user ID safely from request
 const getReqUserId = (req) => {
@@ -259,6 +263,14 @@ export const createAdmin = async (req, res) => {
 // Create first admin user (for initial project setup)
 export const createFirstAdmin = async (req, res) => {
   try {
+    const setupKey = process.env.INITIAL_ADMIN_SETUP_KEY;
+    const suppliedKey = req.get('x-admin-setup-key') || '';
+    const suppliedKeyBuffer = Buffer.from(suppliedKey);
+    const setupKeyBuffer = Buffer.from(setupKey || '');
+    if (!setupKey || suppliedKeyBuffer.length !== setupKeyBuffer.length || !timingSafeEqual(suppliedKeyBuffer, setupKeyBuffer)) {
+      return res.status(403).json({ success: false, message: 'Admin setup is unavailable or unauthorized' });
+    }
+
     const adminExists = await User.findOne({ role: 'admin' });
     if (adminExists) {
       return res.status(403).json({ 

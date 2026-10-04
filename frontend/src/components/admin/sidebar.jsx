@@ -125,15 +125,15 @@ export default function AdminSidebar() {
           {!isCollapsed && (
             <div className="flex items-center justify-between w-full">
               <Link href="/admin" className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0 text-slate-950 font-extrabold shadow-sm">
-                  <Package className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center flex-shrink-0 text-white font-extrabold shadow-sm">
+                  <Package className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <span className="text-sm font-extrabold text-white tracking-tight block">
                     Prime Dispatcher
                   </span>
-                  <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block">
-                    Command Console
+                  <span className="text-[10px] uppercase tracking-wider text-teal-400 font-semibold block">
+                    Ops Command
                   </span>
                 </div>
               </Link>
@@ -161,7 +161,7 @@ export default function AdminSidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeKey === item.key;
@@ -175,15 +175,15 @@ export default function AdminSidebar() {
                   group flex items-center rounded-xl text-xs font-semibold
                   transition-all duration-150
                   ${isActive 
-                    ? 'bg-slate-800 text-white border-l-2 border-amber-400 shadow-sm' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    ? 'bg-teal-500/10 text-teal-300 border-l-2 border-teal-500 shadow-2xs font-bold' 
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }
                   ${isCollapsed ? 'justify-center py-3 px-2' : 'gap-3 py-2.5 px-3.5'}
                 `}
                 title={isCollapsed ? item.label : ''}
               >
                 <div className="flex items-center justify-center flex-shrink-0">
-                  <Icon className={`w-4 h-4 transition-transform ${isActive ? 'text-amber-400' : 'text-slate-400 group-hover:text-white'}`} />
+                  <Icon className={`w-4 h-4 transition-transform ${isActive ? 'text-teal-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
                 </div>
                 
                 {!isCollapsed && (
@@ -197,20 +197,20 @@ export default function AdminSidebar() {
         </nav>
 
         {/* User Profile & Logout */}
-        <div className="p-4 border-t border-slate-700 space-y-2">
+        <div className="p-3 border-t border-slate-800/80 space-y-2">
           {/* User Profile */}
           <div className={`
-            flex items-center p-3 rounded-lg bg-slate-700/50
-            transition-all duration-300 ease-out
+            flex items-center p-2.5 rounded-xl bg-slate-800/50 border border-slate-800
+            transition-all duration-200
             ${isCollapsed ? 'justify-center' : 'gap-3'}
           `}>
-            <div className="w-8 h-8 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <UserCircle className="w-5 h-5 text-white" />
+            <div className="w-7 h-7 bg-teal-500/20 border border-teal-500/30 text-teal-400 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-xs">
+              {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'A'}
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate whitespace-nowrap">{currentUser?.name || 'Admin User'}</p>
-                <p className="text-xs text-slate-400 truncate whitespace-nowrap">{currentUser?.email || 'admin@gmail.com'}</p>
+                <p className="text-xs font-bold text-slate-200 truncate">{currentUser?.name || 'Administrator'}</p>
+                <p className="text-[11px] text-slate-400 truncate">{currentUser?.email || 'admin@primedispatcher.com'}</p>
               </div>
             )}
           </div>
@@ -219,28 +219,19 @@ export default function AdminSidebar() {
           <button
             onClick={handleLogout}
             className={`
-              w-full flex items-center py-3 px-3 rounded-lg
-              text-red-400 hover:bg-red-500/10 hover:text-red-300
-              transition-all duration-200 ease-out group will-change-transform
-              hover:transform hover:scale-[1.01]
-              ${isCollapsed ? 'justify-center' : 'gap-3'}
+              w-full flex items-center py-2 px-3 rounded-lg
+              text-rose-400 hover:bg-rose-500/10 hover:text-rose-300
+              transition-colors text-xs font-medium
+              ${isCollapsed ? 'justify-center' : 'gap-2.5'}
             `}
             title={isCollapsed ? 'Logout' : ''}
           >
-            <LogOut className="w-5 h-5 group-hover:scale-105 transition-transform duration-200 flex-shrink-0" />
+            <LogOut className="w-4 h-4 flex-shrink-0" />
             {!isCollapsed && (
-              <span className="font-medium whitespace-nowrap">Logout</span>
+              <span>Sign Out</span>
             )}
           </button>
         </div>
-
-        {/* Scroll Indicator */}
-        <div className={`
-          absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-16 
-          bg-gradient-to-b from-amber-400 to-amber-600 rounded-l-full
-          transition-opacity duration-300 ease-out will-change-transform
-          ${scrollY > 100 ? 'opacity-100' : 'opacity-0'}
-        `} />
       </aside>
     </>
   );

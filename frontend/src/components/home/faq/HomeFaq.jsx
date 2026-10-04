@@ -35,15 +35,15 @@ export default function HomeFaq() {
   };
 
   return (
-    <section id="faq" className="py-20 bg-white border-b border-slate-200 text-slate-900">
+    <section id="faq" className="py-20 bg-white border-b border-slate-200/80 text-slate-900">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
         
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+          <span className="text-xs font-semibold uppercase tracking-wider text-teal-800 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
             Frequently Asked Questions
           </span>
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight mt-3">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
             Common Inquiries
           </h2>
           <p className="text-slate-600 text-sm sm:text-base mt-2.5">
@@ -58,23 +58,25 @@ export default function HomeFaq() {
             return (
               <div
                 key={idx}
-                className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/40 transition-colors"
+                className={`border rounded-xl overflow-hidden transition-all duration-200 ${
+                  isOpen ? 'border-teal-400 bg-teal-50/20 shadow-2xs' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50'
+                }`}
               >
                 <button
                   type="button"
                   onClick={() => toggleFaq(idx)}
-                  className="w-full px-5 py-4 flex items-center justify-between text-left font-medium text-slate-900 hover:bg-slate-50 transition"
+                  className="w-full px-5 py-4 flex items-center justify-between text-left font-medium text-slate-900 transition"
                 >
-                  <span className="text-sm sm:text-base">{faq.q}</span>
+                  <span className="text-sm sm:text-base font-semibold">{faq.q}</span>
                   <ChevronDown
                     className={`w-4 h-4 text-slate-400 transition-transform duration-200 flex-shrink-0 ml-4 ${
-                      isOpen ? 'transform rotate-180 text-slate-900' : ''
+                      isOpen ? 'transform rotate-180 text-teal-600' : ''
                     }`}
                   />
                 </button>
 
                 {isOpen && (
-                  <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100">
+                  <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-teal-100">
                     {faq.a}
                   </div>
                 )}
@@ -84,16 +86,16 @@ export default function HomeFaq() {
         </div>
 
         {/* Need more help */}
-        <div className="mt-12 text-center p-6 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-12 text-center p-6 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-left">
-            <h4 className="text-sm font-semibold text-slate-900">Have a specific question not answered here?</h4>
-            <p className="text-xs text-slate-600 mt-0.5">Our support team and 24/7 AI chatbot are available around the clock.</p>
+            <h4 className="text-sm font-bold text-slate-900">Have a specific question not answered here?</h4>
+            <p className="text-xs text-slate-500 mt-0.5">Our support team and 24/7 AI chatbot are available around the clock.</p>
           </div>
           <Link
             href="#contact"
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg text-xs sm:text-sm transition whitespace-nowrap"
+            className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl text-xs sm:text-sm transition whitespace-nowrap shadow-sm"
           >
-            Contact Support
+            Contact Support →
           </Link>
         </div>
 

@@ -17,7 +17,7 @@ export const metadata = {
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white text-slate-900 flex flex-col antialiased">
+    <main className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col antialiased selection:bg-teal-500/20 selection:text-teal-900">
       <Navbar />
       <Hero />
       <TrackingShowcase />

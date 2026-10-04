@@ -171,11 +171,11 @@ export default function RefundModal({ isOpen, onClose, shipment, onRefundSubmit 
               <div>
                 <h3 className="text-xl font-semibold mb-4 text-black">What was the issue with your delivery?</h3>
                 {refundData.category && (
-                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800">
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200/80 rounded-xl">
+                    <p className="text-sm font-semibold text-amber-900">
                       <strong>Currently selected:</strong> {refundData.reason}
                     </p>
-                    <p className="text-xs text-yellow-600 mt-1">
+                    <p className="text-xs text-amber-700 mt-1">
                       Click on a different option below to change your selection
                     </p>
                   </div>
@@ -414,8 +414,8 @@ export default function RefundModal({ isOpen, onClose, shipment, onRefundSubmit 
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-60 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
-                <AlertTriangle className="h-6 w-6 text-yellow-600" />
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-50 border border-amber-200 mb-4">
+                <AlertTriangle className="h-6 w-6 text-amber-600" />
               </div>
               <h3 className="text-lg font-semibold text-black mb-2">Confirm Refund Request</h3>
               <p className="text-black text-sm mb-6">

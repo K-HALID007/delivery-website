@@ -214,6 +214,8 @@ class AuthService {
     sessionStorage.removeItem(this.adminUserKey);
     sessionStorage.removeItem(this.userTokenKey);
     sessionStorage.removeItem(this.userUserKey);
+    sessionStorage.removeItem('draft_shipment_form');
+    sessionStorage.removeItem('pendingShipment');
     this.token = null;
     this.user = null;
     this.isAdminSession = false;
@@ -225,7 +227,48 @@ class AuthService {
   }
 
   getCurrentUser() {
+    if (typeof window !== 'undefined') {
+      const adminToken = sessionStorage.getItem(this.adminTokenKey);
+      const userToken = sessionStorage.getItem(this.userTokenKey);
+      if (!adminToken && !userToken) {
+        this.token = null;
+        this.user = null;
+        this.isAdminSession = false;
+        return null;
+      }
+      if (adminToken && sessionStorage.getItem(this.adminUserKey)) {
+        try {
+          this.user = JSON.parse(sessionStorage.getItem(this.adminUserKey));
+          return this.user;
+        } catch (e) {
+          return null;
+        }
+      }
+      if (userToken && sessionStorage.getItem(this.userUserKey)) {
+        try {
+          this.user = JSON.parse(sessionStorage.getItem(this.userUserKey));
+          return this.user;
+        } catch (e) {
+          return null;
+        }
+      }
+    }
     return this.user;
+  }
+
+  getToken() {
+    if (typeof window !== 'undefined') {
+      const adminToken = sessionStorage.getItem(this.adminTokenKey);
+      const userToken = sessionStorage.getItem(this.userTokenKey);
+      if (adminToken && !this._isTokenExpired(adminToken)) {
+        return adminToken;
+      }
+      if (userToken && !this._isTokenExpired(userToken)) {
+        return userToken;
+      }
+      return null;
+    }
+    return this.token;
   }
 
   // Helper to decode JWT and check expiration

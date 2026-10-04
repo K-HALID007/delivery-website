@@ -186,7 +186,7 @@ export default function AdminNotifications() {
           <button
             onClick={loadNotifications}
             disabled={loading}
-            className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors flex items-center disabled:opacity-50"
+            className="px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition font-semibold text-xs shadow-xs flex items-center disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -198,23 +198,23 @@ export default function AdminNotifications() {
         {/* Sidebar */}
         <div className="lg:col-span-1">
           {/* Search */}
-          <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-200 mb-6">
+          <div className="bg-white rounded-xl shadow-2xs p-4 border border-slate-200 mb-6">
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search notifications..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900"
+                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-teal-600"
               />
             </div>
           </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-200 mb-6">
-            <h3 className="font-semibold text-black mb-4">Filter by Type</h3>
-            <div className="space-y-2">
+          <div className="bg-white rounded-xl shadow-2xs p-4 border border-slate-200 mb-6">
+            <h3 className="font-bold text-slate-900 text-xs mb-3 uppercase tracking-wider">Filter by Type</h3>
+            <div className="space-y-1.5">
               {notificationTypes.map(type => {
                 const count = type.id === 'all' 
                   ? notifications.length 
@@ -224,14 +224,14 @@ export default function AdminNotifications() {
                   <button
                     key={type.id}
                     onClick={() => setFilter(type.id)}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between ${
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
                       filter === type.id 
-                        ? 'bg-amber-100 text-amber-800 border border-amber-300' 
-                        : 'hover:bg-gray-100 text-gray-700'
+                        ? 'bg-teal-50 text-teal-800 border border-teal-200 font-semibold' 
+                        : 'hover:bg-slate-50 text-slate-600'
                     }`}
                   >
                     <span>{type.label}</span>
-                    <span className="text-sm bg-gray-200 px-2 py-1 rounded-full">
+                    <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-semibold">
                       {count}
                     </span>
                   </button>
@@ -241,21 +241,21 @@ export default function AdminNotifications() {
           </div>
 
           {/* Notification Settings */}
-          <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-200">
-            <h3 className="font-semibold text-black mb-4 flex items-center">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
+          <div className="bg-white rounded-xl shadow-2xs p-4 border border-slate-200">
+            <h3 className="font-bold text-slate-900 text-xs mb-3 uppercase tracking-wider flex items-center">
+              <Settings className="w-3.5 h-3.5 mr-1.5 text-teal-600" />
+              Alert Preferences
             </h3>
             <div className="space-y-3">
               {Object.entries(settings).map(([key, value]) => (
                 <div key={key} className="flex items-center justify-between">
-                  <label className="text-sm text-gray-700 capitalize">
+                  <label className="text-xs text-slate-600 capitalize">
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </label>
                   <button
                     onClick={() => setSettings(prev => ({ ...prev, [key]: !value }))}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      value ? 'bg-amber-500' : 'bg-gray-200'
+                      value ? 'bg-teal-600' : 'bg-slate-200'
                     }`}
                   >
                     <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
@@ -292,8 +292,8 @@ export default function AdminNotifications() {
                 return (
                   <div
                     key={notification.id}
-                    className={`bg-white rounded-xl shadow-lg border-l-4 p-6 transition-all duration-200 hover:shadow-xl ${
-                      notification.read ? 'border-gray-300' : 'border-amber-500'
+                    className={`bg-white rounded-xl shadow-2xs border-l-4 p-5 transition-all duration-200 hover:shadow-xs ${
+                      notification.read ? 'border-slate-200' : 'border-teal-600'
                     }`}
                   >
                     <div className="flex items-start justify-between">
@@ -304,11 +304,11 @@ export default function AdminNotifications() {
                         
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
-                            <h3 className={`font-semibold ${notification.read ? 'text-gray-700' : 'text-black'}`}>
+                            <h3 className={`font-semibold ${notification.read ? 'text-slate-600' : 'text-slate-900 font-bold'}`}>
                               {notification.title}
                             </h3>
                             {!notification.read && (
-                              <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                              <span className="w-2 h-2 bg-teal-600 rounded-full"></span>
                             )}
                           </div>
                           
