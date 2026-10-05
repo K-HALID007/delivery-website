@@ -73,6 +73,15 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileMenuOpen]);
+
   const handleNavClick = (e, sectionId) => {
     if (pathname === '/') {
       e.preventDefault();
@@ -214,13 +223,16 @@ export default function Navbar() {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+          className="xl:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+          aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="public-mobile-menu"
         >
           {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
 
         {/* Desktop Nav Links */}
-        <ul className="hidden md:flex items-center space-x-1 lg:space-x-2 font-medium relative">
+        <ul className="hidden xl:flex items-center space-x-1 lg:space-x-2 font-medium relative">
           <li>
             <Link 
               href="/#hero" 
@@ -386,8 +398,8 @@ export default function Navbar() {
         </ul>
 
         {/* Mobile Menu */}
-        <div className={`md:hidden fixed inset-0 top-[65px] bg-white border-b border-slate-200 z-40 transform transition-transform duration-300 ease-in-out ${
-          mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        <div id="public-mobile-menu" className={`xl:hidden absolute left-0 right-0 top-full h-[calc(100dvh-61px)] bg-white border-b border-slate-200 z-40 transform transition-transform duration-300 ease-in-out ${
+          mobileMenuOpen ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'
         }`}>
           <div className="flex flex-col h-full bg-white">
             <div className="flex-1 px-5 py-6 space-y-2 overflow-y-auto">

@@ -223,12 +223,12 @@ export default function PaymentPage() {
             </div>
 
             {/* Tracking ID Box */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between mb-6">
-              <div>
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 mb-6 min-w-0">
+              <div className="min-w-0 flex-1">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-teal-800 block mb-0.5">
                   Tracking ID
                 </span>
-                <span className="font-mono text-base sm:text-lg font-bold text-slate-900 tracking-wide">
+                <span className="block break-all font-mono text-sm sm:text-lg font-bold text-slate-900 tracking-wide">
                   {trackingId}
                 </span>
               </div>

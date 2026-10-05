@@ -346,7 +346,7 @@ const LoginRegisterModal = ({ isOpen, onClose, onLoginSuccess, initialData = {},
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="flex min-h-[100dvh] items-start sm:items-center justify-center p-3 sm:p-4">
         {/* Backdrop */}
         <div 
           className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm transition-opacity" 
@@ -354,7 +354,7 @@ const LoginRegisterModal = ({ isOpen, onClose, onLoginSuccess, initialData = {},
         />
 
         {/* Modal - Responsive and Professional */}
-        <div className={`relative transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all w-full border border-slate-200 ${
+        <div className={`relative my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto transform rounded-2xl bg-white shadow-2xl transition-all w-full border border-slate-200 ${
           isLogin ? 'max-w-md' : 'max-w-2xl'
         }`}>
           {/* Header */}
@@ -373,7 +373,7 @@ const LoginRegisterModal = ({ isOpen, onClose, onLoginSuccess, initialData = {},
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />

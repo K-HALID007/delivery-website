@@ -206,18 +206,18 @@ const Profile = () => {
           {/* Header Bar */}
           <div className="bg-slate-900 px-6 sm:px-8 py-8 text-white">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+              <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-teal-300 text-xl font-bold">
                   {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-white tracking-tight">{user?.name || 'Customer'}</h1>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="max-w-full break-words text-xl sm:text-2xl font-bold text-white tracking-tight">{user?.name || 'Customer'}</h1>
                     <span className="px-2 py-0.5 rounded-full bg-teal-500/20 text-[11px] font-semibold text-teal-300 border border-teal-500/30">
                       Verified Account
                     </span>
                   </div>
-                  <p className="text-xs text-slate-300 mt-1">{user?.email}</p>
+                  <p className="break-all text-xs text-slate-300 mt-1">{user?.email}</p>
                 </div>
               </div>
 

@@ -212,12 +212,12 @@ const Tracking = () => {
               
               {/* Top Bar: Tracking ID + Status Pill */}
               <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-100">
-                <div>
+                <div className="min-w-0 flex-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                     Waybill Number
                   </span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                  <div className="flex items-center gap-2 mt-1 min-w-0">
+                    <span className="min-w-0 break-all font-mono text-base sm:text-2xl font-extrabold text-slate-900 tracking-tight">
                       {trackingData.trackingId}
                     </span>
                     <button

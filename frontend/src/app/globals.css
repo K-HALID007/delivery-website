@@ -105,11 +105,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Improve performance for fixed elements */
-.fixed {
-  transform: translateZ(0);
-}
-
 /* Custom easing functions for smoother animations */
 .ease-out-quart {
   transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);

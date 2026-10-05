@@ -439,9 +439,9 @@ export default function MyShipments() {
                         <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-800 flex-shrink-0">
                           <Package className="w-4 h-4" />
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm font-bold text-slate-900 tracking-tight">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="min-w-0 break-all font-mono text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
                               {shipment.trackingId}
                             </span>
                             <button
